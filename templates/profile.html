@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}Profile - EduTrack{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="bg-white rounded-xl shadow-lg p-6">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold text-gray-900 flex items-center">
+                <i class="fas fa-user mr-3"></i>User Profile
+            </h1>
+            <a href="{{ url_for('index') }}" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition duration-200">
+                <i class="fas fa-arrow-left mr-2"></i>Back to Dashboard
+            </a>
+        </div>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Profile Picture Section -->
+            <div class="text-center">
+                <div class="relative inline-block">
+                    {% if current_user.profile_picture %}
+                        <img src="{{ url_for('static', filename=current_user.profile_picture) }}" 
+                             alt="Profile Picture" class="w-32 h-32 rounded-full object-cover mx-auto">
+                    {% else %}
+                        <div class="w-32 h-32 bg-primary bg-opacity-10 rounded-full flex items-center justify-center mx-auto">
+                            <i class="fas fa-user text-4xl text-primary"></i>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <h3 class="text-xl font-semibold text-gray-900 mt-4">{{ current_user.first_name }} {{ current_user.last_name }}</h3>
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium {% if current_user.role == 'admin' %}bg-primary text-white{% elif current_user.role == 'teacher' %}bg-success text-white{% else %}bg-info text-white{% endif %}">
+                    {{ current_user.role.title() }}
+                </span>
+                
+                <!-- Profile Picture Upload -->
+                <div class="mt-6">
+                    <form method="POST" action="{{ url_for('upload_profile_picture') }}" enctype="multipart/form-data" class="space-y-4">
+                        <div>
+                            <label for="profile_picture" class="block text-sm font-medium text-gray-700 mb-2">Update Profile Picture</label>
+                            <input type="file" id="profile_picture" name="profile_picture" accept="image/*" 
+                                   class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-primary file:text-white hover:file:bg-blue-700">
+                        </div>
+                        <button type="submit" class="w-full bg-primary text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-200 text-sm">
+                            <i class="fas fa-upload mr-2"></i>Upload Picture
+                        </button>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Profile Information -->
+            <div class="lg:col-span-2">
+                <h2 class="text-xl font-semibold text-gray-900 mb-6">Profile Information</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-500 mb-1">Username</label>
+                        <p class="text-lg text-gray-900">{{ current_user.username }}</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-500 mb-1">Email</label>
+                        <p class="text-lg text-gray-900">{{ current_user.email }}</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-500 mb-1">First Name</label>
+                        <p class="text-lg text-gray-900">{{ current_user.first_name }}</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-500 mb-1">Last Name</label>
+                        <p class="text-lg text-gray-900">{{ current_user.last_name }}</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-500 mb-1">Role</label>
+                        <p class="text-lg text-gray-900">{{ current_user.role.title() }}</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-500 mb-1">Member Since</label>
+                        <p class="text-lg text-gray-900">{{ current_user.created_at.strftime('%B %d, %Y') }}</p>
+                    </div>
+                </div>
+                
+                <!-- Account Status -->
+                <div class="mt-6 p-4 bg-gray-50 rounded-lg">
+                    <h3 class="text-sm font-medium text-gray-900 mb-2">Account Status</h3>
+                    <div class="flex items-center">
+                        {% if current_user.is_active %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                <i class="fas fa-check-circle mr-1"></i>Active
+                            </span>
+                        {% else %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                <i class="fas fa-times-circle mr-1"></i>Inactive
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Password Reset Link -->
+                <div class="mt-6">
+                    <a href="{{ url_for('reset_password') }}" class="text-primary hover:text-blue-700 text-sm font-medium">
+                        <i class="fas fa-key mr-1"></i>Reset Password
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

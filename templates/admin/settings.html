@@ -1,0 +1,490 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - EduTrack{% endblock %}
+
+{% block content %}
+<div class="flex justify-between items-center mb-8">
+    <h1 class="text-3xl font-bold text-gray-900 flex items-center">
+        <i class="fas fa-cog mr-3"></i>System Settings
+    </h1>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Settings Navigation -->
+    <div class="bg-white rounded-xl shadow-lg p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Settings Categories</h2>
+        <nav class="space-y-2">
+            <a href="#school-info" onclick="showSection('school-info')" class="block px-3 py-2 text-sm font-medium text-primary bg-primary bg-opacity-10 rounded-lg">
+                <i class="fas fa-school mr-2"></i>School Information
+            </a>
+            <a href="#user-management" onclick="showSection('user-management')" class="block px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">
+                <i class="fas fa-users mr-2"></i>User Management
+            </a>
+            <a href="#notifications" onclick="showSection('notifications')" class="block px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">
+                <i class="fas fa-bell mr-2"></i>Notifications
+            </a>
+            <a href="#security" onclick="showSection('security')" class="block px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">
+                <i class="fas fa-shield-alt mr-2"></i>Security
+            </a>
+            <a href="#backup" onclick="showSection('backup')" class="block px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">
+                <i class="fas fa-database mr-2"></i>Backup & Restore
+            </a>
+        </nav>
+    </div>
+
+    <!-- Settings Content -->
+    <div class="lg:col-span-2">
+        <!-- School Information Section -->
+        <div id="school-info" class="bg-white rounded-xl shadow-lg p-6">
+            <h2 class="text-xl font-semibold text-gray-900 mb-6">School Information</h2>
+            
+            <form method="POST" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="school_name" class="block text-sm font-medium text-gray-700 mb-2">School Name</label>
+                        <input type="text" id="school_name" name="school_name" value="{{ settings.school_name }}" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                    </div>
+                    <div>
+                        <label for="school_code" class="block text-sm font-medium text-gray-700 mb-2">School Code</label>
+                        <input type="text" id="school_code" name="school_code" value="{{ settings.school_code }}" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="school_address" class="block text-sm font-medium text-gray-700 mb-2">School Address</label>
+                    <textarea id="school_address" name="school_address" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="Enter complete school address">{{ settings.school_address }}</textarea>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="school_phone" class="block text-sm font-medium text-gray-700 mb-2">School Phone Number</label>
+                        <input type="tel" id="school_phone" name="school_phone" value="{{ settings.school_phone }}" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="e.g., +234 123 456 7890">
+                    </div>
+                    <div>
+                        <label for="school_email" class="block text-sm font-medium text-gray-700 mb-2">School Email Address</label>
+                        <input type="email" id="school_email" name="school_email" value="{{ settings.school_email }}" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="e.g., info@schoolname.edu">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="school_website" class="block text-sm font-medium text-gray-700 mb-2">School Website</label>
+                    <input type="text" id="school_website" name="school_website" value="{{ settings.school_website }}" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="e.g., https://www.schoolname.edu or www.schoolname.edu">
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="academic_year" class="block text-sm font-medium text-gray-700 mb-2">Academic Year</label>
+                        <input type="text" id="academic_year" name="academic_year" value="{{ settings.academic_year }}" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                    </div>
+                    <div>
+                        <label for="max_students_per_class" class="block text-sm font-medium text-gray-700 mb-2">Max Students per Class</label>
+                        <input type="number" id="max_students_per_class" name="max_students_per_class" value="{{ settings.max_students_per_class }}" min="1" max="50" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                    </div>
+                </div>
+
+                <!-- Auto Backup Settings -->
+                <div class="border-t pt-6">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Auto Backup Settings</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="auto_backup_enabled" class="flex items-center">
+                                <input type="checkbox" id="auto_backup_enabled" name="auto_backup_enabled" {% if settings.auto_backup_enabled %}checked{% endif %} class="mr-2 rounded border-gray-300 text-primary focus:ring-primary">
+                                <span class="text-sm font-medium text-gray-700">Enable Auto Backup</span>
+                            </label>
+                            <p class="text-xs text-gray-500 mt-1">Automatically create backups at scheduled intervals</p>
+                        </div>
+                        <div>
+                            <label for="auto_backup_frequency" class="block text-sm font-medium text-gray-700 mb-2">Backup Frequency</label>
+                            <select id="auto_backup_frequency" name="auto_backup_frequency" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                                <option value="daily" {% if settings.auto_backup_frequency == 'daily' %}selected{% endif %}>Daily</option>
+                                <option value="weekly" {% if settings.auto_backup_frequency == 'weekly' %}selected{% endif %}>Weekly</option>
+                                <option value="monthly" {% if settings.auto_backup_frequency == 'monthly' %}selected{% endif %}>Monthly</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <label for="auto_backup_time" class="block text-sm font-medium text-gray-700 mb-2">Backup Time (24-hour format)</label>
+                        <input type="time" id="auto_backup_time" name="auto_backup_time" value="{{ settings.auto_backup_time or '02:00' }}" class="w-full md:w-48 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                        <p class="text-xs text-gray-500 mt-1">Time when automatic backups should be created</p>
+                    </div>
+                    <div class="mt-4">
+                        <label for="auto_backup_retention" class="block text-sm font-medium text-gray-700 mb-2">Backup Retention (days)</label>
+                        <input type="number" id="auto_backup_retention" name="auto_backup_retention" value="{{ settings.auto_backup_retention or 30 }}" min="1" max="365" class="w-full md:w-48 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                        <p class="text-xs text-gray-500 mt-1">Number of days to keep automatic backups (older backups will be deleted)</p>
+                    </div>
+                </div>
+
+                <div class="flex justify-end space-x-4">
+                    <button type="button" onclick="resetForm()" class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition duration-200">
+                        Reset
+                    </button>
+                    <button type="submit" class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-blue-700 transition duration-200">
+                        <i class="fas fa-save mr-2"></i>Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- User Management Section -->
+        <div id="user-management" class="bg-white rounded-xl shadow-lg p-6 hidden">
+            <h2 class="text-xl font-semibold text-gray-900 mb-6">User Management</h2>
+            <div class="space-y-4">
+                <div class="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                    <div>
+                        <h3 class="font-medium text-gray-900">Password Policy</h3>
+                        <p class="text-sm text-gray-600">Configure password requirements for all users</p>
+                    </div>
+                    <button class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-700 transition duration-200">
+                        Configure
+                    </button>
+                </div>
+                <div class="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                    <div>
+                        <h3 class="font-medium text-gray-900">User Roles</h3>
+                        <p class="text-sm text-gray-600">Manage user roles and permissions</p>
+                    </div>
+                    <button class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-700 transition duration-200">
+                        Manage
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notifications Section -->
+        <div id="notifications" class="bg-white rounded-xl shadow-lg p-6 hidden">
+            <h2 class="text-xl font-semibold text-gray-900 mb-6">Notification Settings</h2>
+            <form class="space-y-4">
+                <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                    <div>
+                        <h3 class="font-medium text-gray-900">Email Notifications</h3>
+                        <p class="text-sm text-gray-600">Send email notifications for important events</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" name="notification_email" {% if settings.notification_email %}checked{% endif %} class="sr-only peer">
+                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                </div>
+                <div class="flex justify-end">
+                    <button type="submit" class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-blue-700 transition duration-200">
+                        Save Settings
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Security Section -->
+        <div id="security" class="bg-white rounded-xl shadow-lg p-6 hidden">
+            <h2 class="text-xl font-semibold text-gray-900 mb-6">Security Settings</h2>
+            <div class="space-y-4">
+                <div class="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <h3 class="font-medium text-yellow-800">Security Warning</h3>
+                    <p class="text-sm text-yellow-700 mt-1">Security settings are critical for system protection. Changes should be made carefully.</p>
+                </div>
+                <div class="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                    <div>
+                        <h3 class="font-medium text-gray-900">Session Timeout</h3>
+                        <p class="text-sm text-gray-600">Configure automatic logout after inactivity</p>
+                    </div>
+                    <button class="px-4 py-2 bg-warning text-white rounded-lg hover:bg-yellow-700 transition duration-200">
+                        Configure
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Backup & Restore Section -->
+        <div id="backup" class="bg-white rounded-xl shadow-lg p-6 hidden">
+            <h2 class="text-xl font-semibold text-gray-900 mb-6">Backup & Restore</h2>
+            <div class="space-y-6">
+                <!-- Create New Backup -->
+                <div class="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                    <div>
+                        <h3 class="font-medium text-gray-900">Create New Backup</h3>
+                        <p class="text-sm text-gray-600">Create and download a backup of all system data</p>
+                    </div>
+                    <a href="{{ url_for('backup_data') }}" class="px-4 py-2 bg-success text-white rounded-lg hover:bg-green-700 transition duration-200">
+                        <i class="fas fa-download mr-2"></i>Create & Download
+                    </a>
+                </div>
+
+                <!-- Auto Backup Status -->
+                <div>
+                    <h3 class="font-medium text-gray-900 mb-4">Auto Backup Status</h3>
+                    <div id="auto-backup-status" class="p-4 bg-blue-50 rounded-lg">
+                        <div class="text-center py-4">
+                            <i class="fas fa-spinner fa-spin text-blue-400 text-2xl mb-2"></i>
+                            <p class="text-blue-500">Loading auto backup status...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Available Backups -->
+                <div>
+                    <h3 class="font-medium text-gray-900 mb-4">Available Backups</h3>
+                    <div id="backups-list" class="space-y-2">
+                        <div class="text-center py-4">
+                            <i class="fas fa-spinner fa-spin text-gray-400 text-2xl mb-2"></i>
+                            <p class="text-gray-500">Loading backups...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Restore Database -->
+                <div class="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                    <div>
+                        <h3 class="font-medium text-gray-900">Restore Database</h3>
+                        <p class="text-sm text-gray-600">Restore from a previous backup</p>
+                    </div>
+                    <form method="POST" action="{{ url_for('restore_data') }}" class="inline">
+                        <button type="submit" class="px-4 py-2 bg-danger text-white rounded-lg hover:bg-red-700 transition duration-200" onclick="return confirm('Are you sure you want to restore the database? This action cannot be undone.')">
+                            <i class="fas fa-upload mr-2"></i>Restore
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Navigation functionality
+function showSection(sectionId) {
+    // Hide all sections
+    const sections = ['school-info', 'user-management', 'notifications', 'security', 'backup'];
+    sections.forEach(id => {
+        const section = document.getElementById(id);
+        if (section) {
+            section.classList.add('hidden');
+        }
+    });
+    
+    // Show selected section
+    const selectedSection = document.getElementById(sectionId);
+    if (selectedSection) {
+        selectedSection.classList.remove('hidden');
+    }
+    
+    // Update navigation active state
+    const navLinks = document.querySelectorAll('nav a');
+    navLinks.forEach(link => {
+        link.classList.remove('text-primary', 'bg-primary', 'bg-opacity-10');
+        link.classList.add('text-gray-700', 'hover:bg-gray-100');
+    });
+    
+    const activeLink = document.querySelector(`a[href="#${sectionId}"]`);
+    if (activeLink) {
+        activeLink.classList.remove('text-gray-700', 'hover:bg-gray-100');
+        activeLink.classList.add('text-primary', 'bg-primary', 'bg-opacity-10');
+    }
+}
+
+// Form reset functionality
+function resetForm() {
+    const form = document.querySelector('form');
+    if (form) {
+        form.reset();
+        // Reset to original values
+        const originalValues = {
+            'school_name': '{{ settings.school_name }}',
+            'school_code': '{{ settings.school_code }}',
+            'address': '{{ settings.address }}',
+            'phone': '{{ settings.phone }}',
+            'email': '{{ settings.email }}',
+            'academic_year': '{{ settings.academic_year }}',
+            'max_students_per_class': '{{ settings.max_students_per_class }}'
+        };
+        
+        Object.keys(originalValues).forEach(key => {
+            const input = document.getElementById(key);
+            if (input) {
+                input.value = originalValues[key];
+            }
+        });
+    }
+}
+
+// Form validation
+function validateWebsiteUrl(url) {
+    if (!url) return true; // Allow empty values
+    
+    // Add http:// if no protocol is specified
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        return 'https://' + url;
+    }
+    return url;
+}
+
+// Load auto backup status
+function loadAutoBackupStatus() {
+    fetch('/admin/auto-backup/status')
+        .then(response => response.json())
+        .then(data => {
+            const statusDiv = document.getElementById('auto-backup-status');
+            const statusIcon = data.enabled ? 'fa-check-circle text-green-500' : 'fa-times-circle text-red-500';
+            const statusText = data.enabled ? 'Enabled' : 'Disabled';
+            const statusColor = data.enabled ? 'text-green-600' : 'text-red-600';
+            
+            let nextRunText = '';
+            if (data.next_run) {
+                const nextRun = new Date(data.next_run);
+                nextRunText = `Next run: ${nextRun.toLocaleString()}`;
+            } else {
+                nextRunText = 'No scheduled runs';
+            }
+            
+            statusDiv.innerHTML = `
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <i class="fas ${statusIcon} text-2xl"></i>
+                        <div>
+                            <p class="font-medium ${statusColor}">Auto Backup ${statusText}</p>
+                            <p class="text-sm text-gray-600">
+                                ${data.frequency} at ${data.backup_time} • 
+                                ${data.auto_backup_count} auto backups • 
+                                Keep ${data.retention_days} days
+                            </p>
+                            <p class="text-xs text-gray-500">${nextRunText}</p>
+                        </div>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button onclick="triggerAutoBackup()" 
+                                class="px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 transition duration-200">
+                            <i class="fas fa-play mr-1"></i>Run Now
+                        </button>
+                        <button onclick="loadAutoBackupStatus()" 
+                                class="px-3 py-1 bg-gray-500 text-white text-sm rounded hover:bg-gray-600 transition duration-200">
+                            <i class="fas fa-refresh mr-1"></i>Refresh
+                        </button>
+                    </div>
+                </div>
+            `;
+        })
+        .catch(error => {
+            console.error('Error loading auto backup status:', error);
+            document.getElementById('auto-backup-status').innerHTML = `
+                <div class="text-center py-4">
+                    <i class="fas fa-exclamation-triangle text-red-400 text-2xl mb-2"></i>
+                    <p class="text-red-500">Error loading auto backup status</p>
+                    <button onclick="loadAutoBackupStatus()" class="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition duration-200">
+                        <i class="fas fa-refresh mr-2"></i>Retry
+                    </button>
+                </div>
+            `;
+        });
+}
+
+// Trigger auto backup manually
+function triggerAutoBackup() {
+    const button = event.target;
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Running...';
+    button.disabled = true;
+    
+    fetch('/admin/auto-backup/trigger', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Auto backup created successfully!');
+            loadAutoBackupStatus();
+            loadBackups(); // Refresh backup list
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error triggering auto backup:', error);
+        alert('Error triggering auto backup');
+    })
+    .finally(() => {
+        button.innerHTML = originalText;
+        button.disabled = false;
+    });
+}
+
+// Load available backups
+function loadBackups() {
+    fetch('/admin/backups')
+        .then(response => response.json())
+        .then(data => {
+            const backupsList = document.getElementById('backups-list');
+            if (data.backups && data.backups.length > 0) {
+                backupsList.innerHTML = data.backups.map(backup => `
+                    <div class="flex justify-between items-center p-3 bg-white border border-gray-200 rounded-lg">
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-3">
+                                <i class="fas fa-database text-blue-500"></i>
+                                <div>
+                                    <p class="font-medium text-gray-900">${backup.filename}</p>
+                                    <p class="text-sm text-gray-500">
+                                        ${new Date(backup.created).toLocaleString()} • ${backup.size_mb} MB
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex space-x-2">
+                            <a href="/admin/backup/${backup.filename}" 
+                               class="px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 transition duration-200">
+                                <i class="fas fa-download mr-1"></i>Download
+                            </a>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                backupsList.innerHTML = `
+                    <div class="text-center py-8">
+                        <i class="fas fa-database text-gray-400 text-4xl mb-4"></i>
+                        <p class="text-gray-500">No backups available</p>
+                        <p class="text-sm text-gray-400">Create your first backup using the button above</p>
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error loading backups:', error);
+            document.getElementById('backups-list').innerHTML = `
+                <div class="text-center py-8">
+                    <i class="fas fa-exclamation-triangle text-red-400 text-4xl mb-4"></i>
+                    <p class="text-red-500">Error loading backups</p>
+                    <button onclick="loadBackups()" class="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition duration-200">
+                        <i class="fas fa-refresh mr-2"></i>Retry
+                    </button>
+                </div>
+            `;
+        });
+}
+
+// Add form submission handler
+document.addEventListener('DOMContentLoaded', function() {
+    // Show school-info section by default
+    showSection('school-info');
+    
+    // Add form validation
+    const forms = document.querySelectorAll('form');
+    forms.forEach(form => {
+        form.addEventListener('submit', function(e) {
+            const websiteInput = document.getElementById('school_website');
+            if (websiteInput && websiteInput.value.trim()) {
+                const correctedUrl = validateWebsiteUrl(websiteInput.value.trim());
+                websiteInput.value = correctedUrl;
+            }
+        });
+    });
+    
+    // Load backups when backup section is shown
+    const backupNavLink = document.querySelector('a[href="#backup"]');
+    if (backupNavLink) {
+        backupNavLink.addEventListener('click', function() {
+            setTimeout(() => {
+                loadBackups();
+                loadAutoBackupStatus();
+            }, 100); // Small delay to ensure section is visible
+        });
+    }
+});
+</script>
+{% endblock %}

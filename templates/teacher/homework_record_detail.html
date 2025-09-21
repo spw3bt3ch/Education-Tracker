@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Homework Record Details - EduTrack{% endblock %}
+
+{% block content %}
+<div class="flex justify-between items-center mb-8">
+    <h1 class="text-3xl font-bold text-gray-900 flex items-center">
+        <i class="fas fa-book-open mr-3"></i>Homework Record Details
+    </h1>
+    <div class="flex space-x-2">
+        <a href="{{ url_for('teacher_homework_records') }}" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition duration-200">
+            <i class="fas fa-arrow-left mr-2"></i>Back to Records
+        </a>
+        <a href="{{ url_for('teacher_edit_homework_record', record_id=record.id) }}" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-200">
+            <i class="fas fa-edit mr-2"></i>Edit Record
+        </a>
+    </div>
+</div>
+
+<!-- Homework Record Details -->
+<div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+    <h2 class="text-xl font-semibold text-gray-900 mb-6">Record Information</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+            <label class="text-sm font-medium text-gray-500">Week</label>
+            <p class="text-lg text-gray-900">{{ record.week }}</p>
+        </div>
+        <div>
+            <label class="text-sm font-medium text-gray-500">Class</label>
+            <p class="text-lg text-gray-900">{{ record.class_obj.name }} (Basic {{ record.class_obj.grade_level }})</p>
+        </div>
+        <div>
+            <label class="text-sm font-medium text-gray-500">Date Created</label>
+            <p class="text-lg text-gray-900">{{ record.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+        </div>
+        <div>
+            <label class="text-sm font-medium text-gray-500">Status</label>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                <i class="fas fa-check-circle mr-1"></i>Submitted
+            </span>
+        </div>
+    </div>
+</div>
+
+<!-- Description -->
+<div class="bg-white rounded-xl shadow-lg p-6">
+    <h2 class="text-xl font-semibold text-gray-900 mb-4">Homework Description</h2>
+    <div class="prose max-w-none">
+        <p class="text-gray-700 whitespace-pre-wrap">{{ record.description }}</p>
+    </div>
+</div>
+{% endblock %}

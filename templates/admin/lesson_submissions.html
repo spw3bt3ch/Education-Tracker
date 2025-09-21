@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+
+{% block title %}Lesson Submissions - Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8 space-y-2 sm:space-y-0">
+    <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center">
+        <i class="fas fa-chalkboard mr-2 sm:mr-3"></i>Lesson Submissions
+    </h1>
+    <div class="flex items-center space-x-3">
+        <a href="{{ url_for('admin_dashboard') }}" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition duration-200 text-sm">
+            <i class="fas fa-arrow-left mr-1"></i>Back to Dashboard
+        </a>
+    </div>
+</div>
+
+<!-- Filter Options -->
+<div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+    <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+        <i class="fas fa-filter mr-2 text-primary"></i>Filter Lessons
+    </h2>
+    <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div>
+            <label for="teacherFilter" class="block text-sm font-medium text-gray-700 mb-2">Filter by Teacher</label>
+            <select id="teacherFilter" name="teacher_filter" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary">
+                <option value="">All Teachers</option>
+                {% for teacher in teachers %}
+                <option value="{{ teacher.id }}" {% if teacher_filter == teacher.id|string %}selected{% endif %}>{{ teacher.first_name }} {{ teacher.last_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label for="weekFilter" class="block text-sm font-medium text-gray-700 mb-2">Filter by Week</label>
+            <select id="weekFilter" name="week_filter" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary">
+                <option value="">All Weeks</option>
+                {% for week in weeks %}
+                <option value="{{ week }}" {% if week_filter == week %}selected{% endif %}>{{ week }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label for="termFilter" class="block text-sm font-medium text-gray-700 mb-2">Filter by Term</label>
+            <select id="termFilter" name="term_filter" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary">
+                <option value="">All Terms</option>
+                {% for term in terms %}
+                <option value="{{ term }}" {% if term_filter == term %}selected{% endif %}>{{ term }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label for="statusFilter" class="block text-sm font-medium text-gray-700 mb-2">Filter by Status</label>
+            <select id="statusFilter" name="status_filter" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary">
+                <option value="">All Status</option>
+                <option value="planned" {% if status_filter == 'planned' %}selected{% endif %}>Planned</option>
+                <option value="in_progress" {% if status_filter == 'in_progress' %}selected{% endif %}>In Progress</option>
+                <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Completed</option>
+            </select>
+        </div>
+        <div class="md:col-span-4 pt-2">
+            <button type="submit" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-200">
+                <i class="fas fa-search mr-1"></i>Apply Filter
+            </button>
+            <a href="{{ url_for('admin_lesson_submissions') }}" class="ml-2 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition duration-200">
+                <i class="fas fa-times mr-1"></i>Clear Filters
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- Lessons Table -->
+<div class="bg-white rounded-xl shadow-lg overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-200">
+        <h2 class="text-lg font-semibold text-gray-900 flex items-center">
+            <i class="fas fa-list mr-2 text-primary"></i>Submitted Lessons
+            <span class="ml-2 text-sm text-gray-500">({{ lessons|length }} total)</span>
+        </h2>
+    </div>
+    
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Teacher</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subject</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Week</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Term</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% if lessons %}
+                    {% for lesson in lessons %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">{{ lesson.title }}</div>
+                            <div class="text-sm text-gray-500">{{ lesson.session }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 bg-primary bg-opacity-10 rounded-full flex items-center justify-center mr-3">
+                                    <i class="fas fa-user text-primary text-xs"></i>
+                                </div>
+                                <div>
+                                    <div class="text-sm font-medium text-gray-900">{{ lesson.teacher.first_name }} {{ lesson.teacher.last_name }}</div>
+                                    <div class="text-sm text-gray-500">{{ lesson.teacher.email }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ lesson.subject.name }}<br>
+                            <span class="text-xs text-gray-500">{{ lesson.subject.class_obj.name }}</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                                {{ lesson.week }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ lesson.term }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if lesson.status == 'planned' %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                    <i class="fas fa-calendar mr-1"></i>Planned
+                                </span>
+                            {% elif lesson.status == 'in_progress' %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                    <i class="fas fa-play mr-1"></i>In Progress
+                                </span>
+                            {% elif lesson.status == 'completed' %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    <i class="fas fa-check-circle mr-1"></i>Completed
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ lesson.created_at.strftime('%Y-%m-%d') }}<br>
+                            <span class="text-xs">{{ lesson.created_at.strftime('%H:%M') }}</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div class="flex space-x-2">
+                                <a href="{{ url_for('admin_view_lesson', lesson_id=lesson.id) }}" class="text-primary hover:text-blue-700" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{{ url_for('edit_lesson', lesson_id=lesson.id) }}" class="text-warning hover:text-yellow-700" title="Edit Lesson">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="8" class="px-6 py-12 text-center">
+                            <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="fas fa-chalkboard text-2xl text-gray-400"></i>
+                            </div>
+                            <p class="text-gray-500 text-lg">No lessons found</p>
+                            <p class="text-gray-400 text-sm mt-1">Try adjusting your filters or check back later</p>
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Statistics Summary -->
+{% if lessons %}
+<div class="mt-8 grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div class="bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-xl p-6 text-white shadow-lg">
+        <div class="flex justify-between items-center">
+            <div>
+                <h3 class="text-2xl font-bold">{{ lessons|length }}</h3>
+                <p class="text-indigo-100">Total Lessons</p>
+            </div>
+            <div class="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                <i class="fas fa-chalkboard text-xl"></i>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-gradient-to-r from-green-500 to-green-600 rounded-xl p-6 text-white shadow-lg">
+        <div class="flex justify-between items-center">
+            <div>
+                <h3 class="text-2xl font-bold">{{ lessons|selectattr('status', 'equalto', 'completed')|list|length }}</h3>
+                <p class="text-green-100">Completed</p>
+            </div>
+            <div class="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                <i class="fas fa-check-circle text-xl"></i>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-xl p-6 text-white shadow-lg">
+        <div class="flex justify-between items-center">
+            <div>
+                <h3 class="text-2xl font-bold">{{ lessons|selectattr('status', 'equalto', 'in_progress')|list|length }}</h3>
+                <p class="text-yellow-100">In Progress</p>
+            </div>
+            <div class="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                <i class="fas fa-play text-xl"></i>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-6 text-white shadow-lg">
+        <div class="flex justify-between items-center">
+            <div>
+                <h3 class="text-2xl font-bold">{{ lessons|selectattr('status', 'equalto', 'planned')|list|length }}</h3>
+                <p class="text-blue-100">Planned</p>
+            </div>
+            <div class="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                <i class="fas fa-calendar text-xl"></i>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

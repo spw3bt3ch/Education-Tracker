@@ -1,0 +1,6 @@
+This is a placeholder for notification sound files.
+In a real implementation, you would place actual audio files here:
+- notification.mp3
+- notification.wav
+
+For now, the notification system will work without sound if these files are missing.

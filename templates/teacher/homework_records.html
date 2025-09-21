@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Homework Records - Teacher Dashboard{% endblock %}
+
+{% block content %}
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8 space-y-2 sm:space-y-0">
+    <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center">
+        <i class="fas fa-book-open mr-2 sm:mr-3"></i>Homework Records
+    </h1>
+    <a href="{{ url_for('create_homework_record') }}" class="bg-success text-white px-4 py-2 rounded-lg hover:bg-green-700 transition duration-200 text-sm">
+        <i class="fas fa-plus mr-1"></i>Add Homework Record
+    </a>
+</div>
+
+<!-- Homework Records Table -->
+<div class="bg-white rounded-xl shadow-lg overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-200">
+        <h2 class="text-lg font-semibold text-gray-900 flex items-center">
+            <i class="fas fa-list mr-2 text-primary"></i>Submitted Homework Records
+        </h2>
+    </div>
+    
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Week</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Class</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date Created</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% if homework_records %}
+                    {% for record in homework_records %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary text-white">
+                                {{ record.week }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ record.class_obj.name }} (Basic {{ record.class_obj.grade_level }})
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-900">
+                            <div class="max-w-xs truncate" title="{{ record.description }}">
+                                {{ record.description[:100] }}{% if record.description|length > 100 %}...{% endif %}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ record.created_at.strftime('%Y-%m-%d %H:%M') }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <a href="{{ url_for('teacher_view_homework_record', record_id=record.id) }}" class="text-primary hover:text-blue-700 mr-3" title="View Details">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <a href="{{ url_for('teacher_edit_homework_record', record_id=record.id) }}" class="text-warning hover:text-yellow-700" title="Edit Record">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-12 text-center">
+                            <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="fas fa-book-open text-2xl text-gray-400"></i>
+                            </div>
+                            <p class="text-gray-500 mb-4">No homework records created yet.</p>
+                            <a href="{{ url_for('create_homework_record') }}" class="bg-success text-white px-6 py-3 rounded-lg hover:bg-green-700 transition duration-200">
+                                <i class="fas fa-plus mr-2"></i>Create Your First Record
+                            </a>
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

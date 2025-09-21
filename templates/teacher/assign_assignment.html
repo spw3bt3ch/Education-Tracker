@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}Assign Assignment - EduTrack{% endblock %}
+
+{% block content %}
+<div class="flex justify-between items-center mb-8">
+    <h1 class="text-3xl font-bold text-gray-900 flex items-center">
+        <i class="fas fa-user-plus mr-3"></i>Assign Assignment
+    </h1>
+    <a href="{{ url_for('view_assignment', assignment_id=assignment.id) }}" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition duration-200">
+        <i class="fas fa-arrow-left mr-2"></i>Back to Assignment
+    </a>
+</div>
+
+<div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+    <h2 class="text-xl font-semibold text-gray-900 mb-4">Assignment Details</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+            <label class="text-sm font-medium text-gray-600">Assignment Title</label>
+            <p class="text-lg text-gray-900">{{ assignment.title }}</p>
+        </div>
+        <div>
+            <label class="text-sm font-medium text-gray-600">Subject</label>
+            <p class="text-lg text-gray-900">{{ assignment.subject.name }} ({{ assignment.subject.class_obj.name }})</p>
+        </div>
+        <div>
+            <label class="text-sm font-medium text-gray-600">Due Date</label>
+            <p class="text-lg text-gray-900">{{ assignment.due_date.strftime('%B %d, %Y') }}</p>
+        </div>
+        <div>
+            <label class="text-sm font-medium text-gray-600">Description</label>
+            <p class="text-lg text-gray-900">{{ assignment.description or 'No description provided' }}</p>
+        </div>
+    </div>
+</div>
+
+<div class="bg-white rounded-xl shadow-lg p-6">
+    <h2 class="text-xl font-semibold text-gray-900 mb-6">Select Students to Assign</h2>
+    
+    <form method="POST" class="space-y-4">
+        <div class="flex justify-between items-center mb-4">
+            <div class="flex space-x-2">
+                <button type="button" onclick="selectAll()" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-200 text-sm">
+                    <i class="fas fa-check-double mr-1"></i>Select All
+                </button>
+                <button type="button" onclick="selectNone()" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition duration-200 text-sm">
+                    <i class="fas fa-times mr-1"></i>Select None
+                </button>
+            </div>
+            <span class="text-sm text-gray-600">
+                <span id="selected-count">0</span> students selected
+            </span>
+        </div>
+        
+        {% if students %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {% for student in students %}
+                <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200">
+                    <div class="flex items-center space-x-3">
+                        <input type="checkbox" 
+                               id="student_{{ student.id }}" 
+                               name="student_ids" 
+                               value="{{ student.id }}"
+                               class="student-checkbox rounded border-gray-300 text-primary focus:ring-primary"
+                               {% if student.id in assigned_student_ids %}checked disabled{% endif %}
+                               onchange="updateSelectedCount()">
+                        <div class="flex-1">
+                            <label for="student_{{ student.id }}" class="cursor-pointer">
+                                <div class="flex items-center space-x-2">
+                                    <div class="w-10 h-10 bg-primary bg-opacity-10 rounded-full flex items-center justify-center">
+                                        <i class="fas fa-user text-primary"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-medium text-gray-900">{{ student.first_name }} {{ student.last_name }}</h3>
+                                        <p class="text-sm text-gray-600">ID: {{ student.student_id }}</p>
+                                        {% if student.id in assigned_student_ids %}
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                            <i class="fas fa-check mr-1"></i>Already Assigned
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-8">
+                <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-user-graduate text-2xl text-gray-400"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">No Students Found</h3>
+                <p class="text-gray-500">No students are enrolled in this class yet.</p>
+            </div>
+        {% endif %}
+        
+        {% if students %}
+        <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+            <button type="button" onclick="history.back()" class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition duration-200">
+                Cancel
+            </button>
+            <button type="submit" class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-blue-700 transition duration-200">
+                <i class="fas fa-user-plus mr-2"></i>Assign to Selected Students
+            </button>
+        </div>
+        {% endif %}
+    </form>
+</div>
+
+<script>
+function selectAll() {
+    const checkboxes = document.querySelectorAll('.student-checkbox:not([disabled])');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = true;
+    });
+    updateSelectedCount();
+}
+
+function selectNone() {
+    const checkboxes = document.querySelectorAll('.student-checkbox:not([disabled])');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    updateSelectedCount();
+}
+
+function updateSelectedCount() {
+    const checkedBoxes = document.querySelectorAll('.student-checkbox:checked:not([disabled])');
+    document.getElementById('selected-count').textContent = checkedBoxes.length;
+}
+
+// Initialize count on page load
+document.addEventListener('DOMContentLoaded', updateSelectedCount);
+</script>
+{% endblock %}

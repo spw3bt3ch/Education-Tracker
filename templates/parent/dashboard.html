@@ -1,0 +1,408 @@
+{% extends "base.html" %}
+
+{% block title %}Academic Report - EduTrack{% endblock %}
+
+{% block content %}
+<!-- School Information Header -->
+<div class="bg-gradient-to-r from-primary to-blue-600 rounded-xl shadow-lg p-6 mb-8 text-white">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+        <div class="mb-4 sm:mb-0">
+            <h1 class="text-2xl sm:text-3xl font-bold mb-2 flex items-center">
+                <i class="fas fa-school mr-2 sm:mr-3"></i>{{ school_name }}
+            </h1>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+                {% if school_address %}
+                <div class="flex items-center text-sm sm:text-base opacity-90">
+                    <i class="fas fa-map-marker-alt mr-2 flex-shrink-0"></i>
+                    <span class="truncate">{{ school_address }}</span>
+                </div>
+                {% endif %}
+                {% if school_phone %}
+                <div class="flex items-center text-sm sm:text-base opacity-90">
+                    <i class="fas fa-phone mr-2 flex-shrink-0"></i>
+                    <span>{{ school_phone }}</span>
+                </div>
+                {% endif %}
+                {% if school_email %}
+                <div class="flex items-center text-sm sm:text-base opacity-90">
+                    <i class="fas fa-envelope mr-2 flex-shrink-0"></i>
+                    <span class="truncate">{{ school_email }}</span>
+                </div>
+                {% endif %}
+                {% if school_website %}
+                <div class="flex items-center text-sm sm:text-base opacity-90">
+                    <i class="fas fa-globe mr-2 flex-shrink-0"></i>
+                    <a href="{{ school_website }}" target="_blank" class="hover:underline truncate">{{ school_website }}</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-white bg-opacity-20 text-white">
+                <i class="fas fa-user-friends mr-1"></i>Parent Portal
+            </span>
+            <button onclick="window.print()" class="bg-white bg-opacity-20 text-white px-4 py-2 rounded-lg hover:bg-opacity-30 transition duration-200 text-sm w-full sm:w-auto">
+                <i class="fas fa-print mr-2"></i>Print Report
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Academic Report Header -->
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8 space-y-3 sm:space-y-0">
+    <h2 class="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center">
+        <i class="fas fa-chart-line mr-2 sm:mr-3"></i>Academic Report & Statistics
+    </h2>
+</div>
+
+<!-- Student Overview Cards -->
+{% if children %}
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+    {% for child in children %}
+    {% set assignment_records_list = child.assignment_records|list %}
+    {% set total_assignments = assignment_records_list|length %}
+    {% set completed_assignments = assignment_records_list|selectattr('completed', 'equalto', true)|list|length %}
+    {% set completion_rate = (completed_assignments / total_assignments * 100) if total_assignments > 0 else 0 %}
+    {% set pending_assignments = total_assignments - completed_assignments %}
+    
+    <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-primary">
+        <div class="flex justify-between items-start mb-4">
+            <div>
+                <h3 class="text-xl font-bold text-gray-900">{{ child.first_name }} {{ child.last_name }}</h3>
+                <p class="text-sm text-gray-600">Student ID: {{ child.student_id }}</p>
+                <p class="text-sm text-gray-600">{{ child.class_obj.name if child.class_obj else 'No Class Assigned' }}</p>
+            </div>
+            <div class="w-16 h-16 bg-primary bg-opacity-10 rounded-full flex items-center justify-center">
+                <i class="fas fa-user text-2xl text-primary"></i>
+            </div>
+        </div>
+        
+        <!-- Progress Bar -->
+        <div class="mb-4">
+            <div class="flex justify-between text-sm text-gray-600 mb-2">
+                <span>Overall Progress</span>
+                <span>{{ "%.1f"|format(completion_rate) }}%</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-3">
+                <div class="bg-primary h-3 rounded-full transition-all duration-300" style="width: {{ completion_rate }}%"></div>
+            </div>
+        </div>
+        
+        <!-- Statistics Grid -->
+        <div class="grid grid-cols-2 gap-4 mb-4">
+            <div class="text-center p-3 bg-green-50 rounded-lg">
+                <div class="text-2xl font-bold text-green-600">{{ completed_assignments }}</div>
+                <div class="text-xs text-green-600">Completed</div>
+            </div>
+            <div class="text-center p-3 bg-yellow-50 rounded-lg">
+                <div class="text-2xl font-bold text-yellow-600">{{ pending_assignments }}</div>
+                <div class="text-xs text-yellow-600">Pending</div>
+            </div>
+        </div>
+        
+        <a href="{{ url_for('child_progress', student_id=child.id) }}" class="w-full bg-primary text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-200 text-center block text-sm">
+            <i class="fas fa-chart-line mr-2"></i>View Detailed Report
+        </a>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Overall Statistics Summary -->
+<div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+    <h2 class="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+        <i class="fas fa-chart-bar mr-2 text-primary"></i>Overall Academic Statistics
+    </h2>
+    
+    {% set total_children = children|length %}
+    {% set all_assignment_records = [] %}
+    {% for child in children %}
+        {% set _ = all_assignment_records.extend(child.assignment_records|list) %}
+    {% endfor %}
+    {% set total_assignments = all_assignment_records|length %}
+    {% set total_completed = all_assignment_records|selectattr('completed', 'equalto', true)|list|length %}
+    {% set overall_completion_rate = (total_completed / total_assignments * 100) if total_assignments > 0 else 0 %}
+    
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="text-center p-6 bg-blue-50 rounded-lg">
+            <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <i class="fas fa-users text-blue-600"></i>
+            </div>
+            <div class="text-3xl font-bold text-blue-600">{{ total_children }}</div>
+            <div class="text-sm text-blue-600">Children</div>
+        </div>
+        
+        <div class="text-center p-6 bg-green-50 rounded-lg">
+            <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <i class="fas fa-book text-green-600"></i>
+            </div>
+            <div class="text-3xl font-bold text-green-600">{{ total_assignments }}</div>
+            <div class="text-sm text-green-600">Total Assignments</div>
+        </div>
+        
+        <div class="text-center p-6 bg-success-50 rounded-lg">
+            <div class="w-12 h-12 bg-success-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <i class="fas fa-check-circle text-success-600"></i>
+            </div>
+            <div class="text-3xl font-bold text-success-600">{{ total_completed }}</div>
+            <div class="text-sm text-success-600">Completed</div>
+        </div>
+        
+        <div class="text-center p-6 bg-primary-50 rounded-lg">
+            <div class="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <i class="fas fa-percentage text-primary-600"></i>
+            </div>
+            <div class="text-3xl font-bold text-primary-600">{{ "%.1f"|format(overall_completion_rate) }}%</div>
+            <div class="text-sm text-primary-600">Completion Rate</div>
+        </div>
+    </div>
+</div>
+
+{% else %}
+<div class="bg-white rounded-xl shadow-lg p-12 text-center">
+    <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+        <i class="fas fa-child text-3xl text-gray-400"></i>
+    </div>
+    <h3 class="text-xl font-semibold text-gray-900 mb-2">No Children Registered</h3>
+    <p class="text-gray-500 mb-4">No children are currently registered under your account.</p>
+    <p class="text-sm text-gray-400">Please contact your child's teacher or school administration to register your child's account.</p>
+</div>
+{% endif %}
+
+<!-- Recent Activity Report -->
+<div class="bg-white rounded-xl shadow-lg">
+    <div class="px-6 py-4 border-b border-gray-200">
+        <h2 class="text-xl font-semibold text-gray-900 flex items-center">
+            <i class="fas fa-history mr-2 text-primary"></i>Recent Assignment Activity
+        </h2>
+        <p class="text-sm text-gray-600 mt-1">Latest updates on your children's assignments</p>
+    </div>
+    <div class="p-6">
+        {% if recent_records %}
+            <div class="space-y-4">
+                {% for record in recent_records %}
+                <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200">
+                    <div class="flex items-start justify-between">
+                        <div class="flex items-start space-x-4">
+                            <div class="flex-shrink-0">
+                                {% if record.completed %}
+                                    <div class="w-12 h-12 bg-success rounded-full flex items-center justify-center">
+                                        <i class="fas fa-check text-white"></i>
+                                    </div>
+                                {% else %}
+                                    <div class="w-12 h-12 bg-warning rounded-full flex items-center justify-center">
+                                        <i class="fas fa-clock text-white"></i>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex items-center space-x-2 mb-2">
+                                    <h4 class="text-lg font-semibold text-gray-900">
+                                        {{ record.student.first_name }} {{ record.student.last_name }}
+                                    </h4>
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if record.completed %}bg-green-100 text-green-800{% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                        {% if record.completed %}Completed{% else %}Pending{% endif %}
+                                    </span>
+                                </div>
+                                <h5 class="text-md font-medium text-gray-800 mb-1">{{ record.assignment.title }}</h5>
+                                <p class="text-sm text-gray-600 mb-2">{{ record.assignment.subject.name }} - {{ record.assignment.subject.class_obj.name }}</p>
+                                
+                                <div class="flex items-center space-x-4 text-sm text-gray-500">
+                                    <span><i class="fas fa-calendar mr-1"></i>{{ record.created_at.strftime('%B %d, %Y') }}</span>
+                                    <span><i class="fas fa-clock mr-1"></i>{{ record.created_at.strftime('%I:%M %p') }}</span>
+                                    {% if record.assignment.due_date %}
+                                    <span><i class="fas fa-flag mr-1"></i>Due: {{ record.assignment.due_date.strftime('%B %d, %Y') }}</span>
+                                    {% endif %}
+                                </div>
+                                
+                                {% if record.grade %}
+                                <div class="mt-2 p-2 bg-blue-50 rounded-lg">
+                                    <span class="text-sm font-medium text-blue-800">Grade: </span>
+                                    <span class="text-sm font-bold text-blue-900">{{ record.grade }}</span>
+                                </div>
+                                {% endif %}
+                                
+                                {% if record.feedback %}
+                                <div class="mt-2 p-3 bg-gray-50 rounded-lg">
+                                    <p class="text-sm text-gray-700 italic">
+                                        <i class="fas fa-comment mr-1"></i>"{{ record.feedback }}"
+                                    </p>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs text-gray-400">{{ record.created_at.strftime('%m/%d/%Y') }}</span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <div class="mt-6 text-center">
+                <button class="text-primary hover:text-blue-700 text-sm font-medium">
+                    <i class="fas fa-arrow-down mr-1"></i>Load More Activity
+                </button>
+            </div>
+        {% else %}
+            <div class="text-center py-12">
+                <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-clipboard-list text-2xl text-gray-400"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">No Recent Activity</h3>
+                <p class="text-gray-500">No assignment activity to display at this time.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Print Styles -->
+<style>
+@media print {
+    .no-print { display: none !important; }
+    .bg-white { box-shadow: none !important; border: 1px solid #e5e7eb !important; }
+    .text-primary { color: #1f2937 !important; }
+    .bg-primary { background-color: #1f2937 !important; }
+}
+</style>
+
+<script>
+// Real-time updates for parent dashboard
+function refreshParentDashboardData() {
+    fetch('/api/parent/dashboard-data')
+        .then(response => response.json())
+        .then(data => {
+            // Update children overview cards
+            updateChildrenOverview(data.children);
+            
+            // Update recent records
+            updateRecentRecords(data.recent_records);
+            
+            // Show last updated time
+            updateLastRefreshTime();
+        })
+        .catch(error => console.error('Error refreshing parent dashboard data:', error));
+}
+
+function updateChildrenOverview(childrenData) {
+    const childrenContainer = document.querySelector('.grid.grid-cols-1.sm\:grid-cols-2.lg\:grid-cols-3.gap-4.sm\:gap-6');
+    if (!childrenContainer) return;
+    
+    childrenContainer.innerHTML = '';
+    
+    childrenData.forEach(child => {
+        const childCard = document.createElement('div');
+        childCard.className = 'bg-white rounded-xl shadow-lg p-6 border-l-4 border-primary';
+        childCard.innerHTML = `
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <h3 class="text-xl font-bold text-gray-900">${child.first_name} ${child.last_name}</h3>
+                    <p class="text-sm text-gray-600">Student ID: ${child.student_id}</p>
+                    <p class="text-sm text-gray-600">${child.class_name}</p>
+                </div>
+                <div class="w-16 h-16 bg-primary bg-opacity-10 rounded-full flex items-center justify-center">
+                    <i class="fas fa-user text-2xl text-primary"></i>
+                </div>
+            </div>
+            
+            <!-- Progress Bar -->
+            <div class="mb-4">
+                <div class="flex justify-between text-sm text-gray-600 mb-2">
+                    <span>Overall Progress</span>
+                    <span>${child.completion_rate.toFixed(1)}%</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-3">
+                    <div class="bg-primary h-3 rounded-full transition-all duration-300" style="width: ${child.completion_rate}%"></div>
+                </div>
+            </div>
+            
+            <!-- Stats -->
+            <div class="grid grid-cols-3 gap-4 text-center">
+                <div>
+                    <div class="text-2xl font-bold text-primary">${child.total_assignments}</div>
+                    <div class="text-xs text-gray-500">Total</div>
+                </div>
+                <div>
+                    <div class="text-2xl font-bold text-green-600">${child.completed_assignments}</div>
+                    <div class="text-xs text-gray-500">Completed</div>
+                </div>
+                <div>
+                    <div class="text-2xl font-bold text-yellow-600">${child.pending_assignments}</div>
+                    <div class="text-xs text-gray-500">Pending</div>
+                </div>
+            </div>
+        `;
+        childrenContainer.appendChild(childCard);
+    });
+}
+
+function updateRecentRecords(recordsData) {
+    const recordsContainer = document.querySelector('#recent-records-table tbody');
+    if (!recordsContainer) return;
+    
+    recordsContainer.innerHTML = '';
+    
+    recordsData.forEach(record => {
+        const row = document.createElement('tr');
+        row.className = 'hover:bg-gray-50';
+        
+        const statusBadge = record.completed ? 
+            '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"><i class="fas fa-check-circle mr-1"></i>Completed</span>' :
+            '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800"><i class="fas fa-clock mr-1"></i>Pending</span>';
+        
+        const gradeDisplay = record.grade ? 
+            `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">${record.grade}</span>` :
+            '<span class="text-gray-400">-</span>';
+        
+        row.innerHTML = `
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${record.assignment.title}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${record.assignment.subject}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${record.student.first_name} ${record.student.last_name}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${record.submitted_date || '-'}</td>
+            <td class="px-6 py-4 whitespace-nowrap">${statusBadge}</td>
+            <td class="px-6 py-4 whitespace-nowrap">${gradeDisplay}</td>
+        `;
+        recordsContainer.appendChild(row);
+    });
+}
+
+function updateLastRefreshTime() {
+    const now = new Date();
+    const timeString = now.toLocaleTimeString();
+    
+    // Create or update refresh indicator
+    let refreshIndicator = document.getElementById('refresh-indicator');
+    if (!refreshIndicator) {
+        refreshIndicator = document.createElement('div');
+        refreshIndicator.id = 'refresh-indicator';
+        refreshIndicator.className = 'fixed bottom-4 right-4 bg-green-500 text-white px-3 py-2 rounded-lg text-sm shadow-lg z-50';
+        document.body.appendChild(refreshIndicator);
+    }
+    
+    refreshIndicator.innerHTML = `
+        <i class="fas fa-sync-alt mr-2"></i>Last updated: ${timeString}
+    `;
+    
+    // Hide after 3 seconds
+    setTimeout(() => {
+        if (refreshIndicator.parentNode) {
+            refreshIndicator.remove();
+        }
+    }, 3000);
+}
+
+// Start auto-refresh for parent dashboard
+setInterval(refreshParentDashboardData, 30000); // Refresh every 30 seconds
+
+// Initial load when page is ready
+document.addEventListener('DOMContentLoaded', function() {
+    // Add IDs to elements for easier targeting
+    const recordsTable = document.querySelector('table tbody');
+    if (recordsTable) {
+        recordsTable.closest('table').id = 'recent-records-table';
+    }
+    
+    // Start refreshing
+    refreshParentDashboardData();
+});
+</script>
+{% endblock %}

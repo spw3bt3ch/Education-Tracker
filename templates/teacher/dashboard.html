@@ -1,0 +1,587 @@
+{% extends "base.html" %}
+
+{% block title %}Teacher Dashboard - EduTrack{% endblock %}
+
+{% block content %}
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8 space-y-2 sm:space-y-0">
+    <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center">
+        <i class="fas fa-chalkboard-teacher mr-2 sm:mr-3"></i>Teacher Dashboard
+    </h1>
+    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-success text-white">
+        Class Teacher
+    </span>
+</div>
+
+<!-- My Classes -->
+<div class="bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-6 sm:mb-8">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 space-y-2 sm:space-y-0">
+        <h2 class="text-lg sm:text-xl font-semibold text-gray-900 flex items-center">
+            <i class="fas fa-school mr-2 text-primary"></i>My Classes
+        </h2>
+        <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+            <a href="{{ url_for('register_parent') }}" class="bg-success text-white px-4 py-2 rounded-lg hover:bg-green-700 transition duration-200 text-sm text-center">
+                <i class="fas fa-user-plus mr-1"></i>Register Parent
+            </a>
+            <span class="text-xs sm:text-sm text-gray-500 self-center">Classes assigned by Head Teacher</span>
+        </div>
+    </div>
+    
+    {% if classes %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for class in classes %}
+            <div class="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow duration-200">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900">{{ class.name }}</h3>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary text-white">
+                        Basic {{ class.grade_level }}
+                    </span>
+                </div>
+                <div class="space-y-2 text-sm text-gray-600 mb-4">
+                    <div class="flex items-center">
+                        <i class="fas fa-user-graduate mr-2"></i>
+                        {{ class.students|length }} students
+                    </div>
+                    <div class="flex items-center">
+                        <i class="fas fa-book mr-2"></i>
+                        {{ class.subjects|length }} subjects
+                    </div>
+                </div>
+                <div class="flex space-x-2">
+                    <a href="{{ url_for('view_class', class_id=class.id) }}" class="flex-1 bg-primary text-white px-3 py-2 rounded text-sm hover:bg-blue-700 transition duration-200 text-center">
+                        <i class="fas fa-eye mr-1"></i>View
+                    </a>
+                    <a href="{{ url_for('manage_students', class_id=class.id) }}" class="flex-1 bg-success text-white px-3 py-2 rounded text-sm hover:bg-green-700 transition duration-200 text-center">
+                        <i class="fas fa-users mr-1"></i>Students
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="text-center py-12">
+            <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-school text-2xl text-gray-400"></i>
+            </div>
+            <p class="text-gray-500 mb-4">No classes assigned yet.</p>
+            <a href="{{ url_for('create_class') }}" class="bg-primary text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition duration-200">
+                <i class="fas fa-plus mr-2"></i>Create Your First Class
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Quick Actions -->
+<div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+    <h2 class="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+        <i class="fas fa-tools mr-2 text-primary"></i>Quick Actions
+    </h2>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <a href="{{ url_for('manage_students') }}" class="bg-primary text-white p-4 rounded-lg hover:bg-blue-700 transition duration-200 text-center">
+            <i class="fas fa-user-graduate text-2xl mb-2"></i>
+            <div class="text-sm font-medium">Manage Students</div>
+        </a>
+        
+        <a href="{{ url_for('manage_subjects') }}" class="bg-success text-white p-4 rounded-lg hover:bg-green-700 transition duration-200 text-center">
+            <i class="fas fa-book text-2xl mb-2"></i>
+            <div class="text-sm font-medium">Manage Subjects</div>
+        </a>
+        
+        <a href="{{ url_for('manage_assignments') }}" class="bg-warning text-white p-4 rounded-lg hover:bg-yellow-700 transition duration-200 text-center">
+            <i class="fas fa-tasks text-2xl mb-2"></i>
+            <div class="text-sm font-medium">Manage Assignments</div>
+        </a>
+        
+        <a href="{{ url_for('register_parent') }}" class="bg-info text-white p-4 rounded-lg hover:bg-cyan-700 transition duration-200 text-center">
+            <i class="fas fa-user-plus text-2xl mb-2"></i>
+            <div class="text-sm font-medium">Register Parent</div>
+        </a>
+        
+        <a href="{{ url_for('create_lesson') }}" class="bg-indigo-500 text-white p-4 rounded-lg hover:bg-indigo-600 transition duration-200 text-center">
+            <i class="fas fa-chalkboard text-2xl mb-2"></i>
+            <div class="text-sm font-medium">Create Lesson</div>
+        </a>
+        
+        <a href="{{ url_for('teacher_lessons') }}" class="bg-teal-500 text-white p-4 rounded-lg hover:bg-teal-600 transition duration-200 text-center">
+            <i class="fas fa-list text-2xl mb-2"></i>
+            <div class="text-sm font-medium">Manage Lessons</div>
+        </a>
+        
+        <a href="{{ url_for('teacher_homework_records') }}" class="bg-purple-500 text-white p-4 rounded-lg hover:bg-purple-600 transition duration-200 text-center">
+            <i class="fas fa-book-open text-2xl mb-2"></i>
+            <div class="text-sm font-medium">Homework Records</div>
+        </a>
+        
+        <a href="{{ url_for('teacher_messages') }}" class="bg-orange-500 text-white p-4 rounded-lg hover:bg-orange-600 transition duration-200 text-center relative">
+            <i class="fas fa-envelope text-2xl mb-2"></i>
+            <div class="text-sm font-medium">Messages</div>
+            <span id="messageBadge" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center hidden">0</span>
+        </a>
+    </div>
+</div>
+
+<!-- Recent Assignments -->
+<div class="bg-white rounded-xl shadow-lg">
+    <div class="px-6 py-4 border-b border-gray-200">
+        <div class="flex justify-between items-center">
+            <h2 class="text-xl font-semibold text-gray-900 flex items-center">
+                <i class="fas fa-tasks mr-2 text-success"></i>Recent Assignments
+            </h2>
+            <a href="{{ url_for('create_assignment') }}" class="bg-success text-white px-4 py-2 rounded-lg hover:bg-green-700 transition duration-200 text-sm">
+                <i class="fas fa-plus mr-1"></i>New Assignment
+            </a>
+        </div>
+    </div>
+    <div class="p-6">
+        {% if recent_assignments %}
+            <div class="space-y-4">
+                {% for assignment in recent_assignments %}
+                <div class="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow duration-200">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900">{{ assignment.title }}</h3>
+                            <p class="text-sm text-gray-600 mt-1">{{ assignment.description[:100] if assignment.description else 'No description' }}{% if assignment.description and assignment.description|length > 100 %}...{% endif %}</p>
+                        </div>
+                        <div class="flex space-x-2">
+                            <a href="{{ url_for('view_assignment', assignment_id=assignment.id) }}" class="text-primary hover:text-blue-700 p-2">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <a href="{{ url_for('edit_assignment', assignment_id=assignment.id) }}" class="text-warning hover:text-yellow-700 p-2">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+                        <div class="flex items-center text-gray-600">
+                            <i class="fas fa-book mr-2"></i>
+                            {{ assignment.subject.name }}
+                        </div>
+                        <div class="flex items-center text-gray-600">
+                            <i class="fas fa-school mr-2"></i>
+                            {{ assignment.subject.class_obj.name }}
+                        </div>
+                        <div class="flex items-center text-gray-600">
+                            <i class="fas fa-calendar mr-2"></i>
+                            Due: {{ assignment.due_date.strftime('%Y-%m-%d') }}
+                        </div>
+                        <div class="flex items-center">
+                            {% set completed = assignment.assignment_records|selectattr('completed', 'equalto', true)|list|length %}
+                            {% set total = assignment.assignment_records|length %}
+                            {% if total > 0 %}
+                                <div class="flex-1 bg-gray-200 rounded-full h-2 mr-2">
+                                    <div class="bg-success h-2 rounded-full" style="width: {{ (completed/total*100)|round(1) }}%"></div>
+                                </div>
+                                <span class="text-sm text-gray-600">{{ completed }}/{{ total }}</span>
+                            {% else %}
+                                <span class="text-sm text-gray-500">No students assigned</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 flex justify-between items-center">
+                        <div class="flex space-x-2">
+                            {% if assignment.due_date < date.today() %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Overdue</span>
+                            {% elif assignment.due_date == date.today() %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Due Today</span>
+                            {% else %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Active</span>
+                            {% endif %}
+                        </div>
+                        <a href="{{ url_for('view_assignment', assignment_id=assignment.id) }}" class="text-primary hover:text-blue-700 text-sm font-medium">
+                            View Details <i class="fas fa-arrow-right ml-1"></i>
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-12">
+                <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-tasks text-2xl text-gray-400"></i>
+                </div>
+                <p class="text-gray-500 mb-4">No assignments created yet.</p>
+                <a href="{{ url_for('create_assignment') }}" class="bg-success text-white px-6 py-3 rounded-lg hover:bg-green-700 transition duration-200">
+                    <i class="fas fa-plus mr-2"></i>Create Your First Assignment
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Lesson Planning Section -->
+<div class="bg-white rounded-xl shadow-lg mt-8">
+    <div class="px-6 py-4 border-b border-gray-200">
+        <div class="flex justify-between items-center">
+            <h2 class="text-xl font-semibold text-gray-900 flex items-center">
+                <i class="fas fa-chalkboard mr-2 text-indigo-500"></i>Lesson Planning
+            </h2>
+            <div class="flex space-x-2">
+                <a href="{{ url_for('teacher_lessons') }}" class="bg-indigo-500 text-white px-4 py-2 rounded-lg hover:bg-indigo-600 transition duration-200 text-sm">
+                    <i class="fas fa-list mr-1"></i>All Lessons
+                </a>
+                <a href="{{ url_for('create_lesson') }}" class="bg-teal-500 text-white px-4 py-2 rounded-lg hover:bg-teal-600 transition duration-200 text-sm">
+                    <i class="fas fa-plus mr-1"></i>Create Lesson
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="p-6">
+        <div class="text-center py-8">
+            <div class="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-chalkboard text-2xl text-indigo-500"></i>
+            </div>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">Unified Lesson Planning</h3>
+            <p class="text-gray-500 mb-4">Create comprehensive lesson plans and take notes in one integrated system following Nigerian education standards</p>
+            <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                <a href="{{ url_for('create_lesson') }}" class="bg-indigo-500 text-white px-6 py-3 rounded-lg hover:bg-indigo-600 transition duration-200">
+                    <i class="fas fa-plus mr-2"></i>Create New Lesson
+                </a>
+                <a href="{{ url_for('teacher_lessons') }}" class="bg-gray-500 text-white px-6 py-3 rounded-lg hover:bg-gray-600 transition duration-200">
+                    <i class="fas fa-list mr-2"></i>View All Lessons
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Homework Records Section -->
+<div class="bg-white rounded-xl shadow-lg mt-8">
+    <div class="px-6 py-4 border-b border-gray-200">
+        <div class="flex justify-between items-center">
+            <h2 class="text-xl font-semibold text-gray-900 flex items-center">
+                <i class="fas fa-book-open mr-2 text-purple-500"></i>Homework Records
+            </h2>
+            <a href="{{ url_for('teacher_homework_records') }}" class="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 transition duration-200 text-sm">
+                <i class="fas fa-plus mr-1"></i>Manage Records
+            </a>
+        </div>
+    </div>
+    <div class="p-6">
+        <div class="text-center py-8">
+            <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-book-open text-2xl text-purple-500"></i>
+            </div>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">Track Weekly Homework</h3>
+            <p class="text-gray-500 mb-4">Submit weekly homework records for head teacher review</p>
+            <a href="{{ url_for('create_homework_record') }}" class="bg-purple-500 text-white px-6 py-3 rounded-lg hover:bg-purple-600 transition duration-200">
+                <i class="fas fa-plus mr-2"></i>Create Homework Record
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Admin Comments Section -->
+{% if recent_comments %}
+<div class="bg-white rounded-xl shadow-lg mt-8">
+    <div class="px-6 py-4 border-b border-gray-200">
+        <h2 class="text-xl font-semibold text-gray-900 flex items-center">
+            <i class="fas fa-comments mr-2 text-primary"></i>Recent Admin Comments
+        </h2>
+    </div>
+    <div class="p-6">
+        <div class="space-y-4">
+            {% for comment in recent_comments %}
+            <div class="border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow duration-200">
+                <div class="flex justify-between items-start mb-3">
+                    <div class="flex items-center">
+                        <div class="w-8 h-8 bg-primary bg-opacity-10 rounded-full flex items-center justify-center mr-3">
+                            <i class="fas fa-user text-primary text-sm"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-900">{{ comment.admin.first_name }} {{ comment.admin.last_name }}</h4>
+                            <p class="text-xs text-gray-500">{{ comment.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                        </div>
+                    </div>
+                    <a href="{{ url_for('view_lesson', lesson_id=comment.lesson.id) }}" class="text-primary hover:text-blue-700 text-sm">
+                        <i class="fas fa-eye mr-1"></i>View Lesson
+                    </a>
+                </div>
+                
+                <div class="mb-2">
+                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                        {{ comment.lesson.title }}
+                    </span>
+                </div>
+                
+                <p class="text-gray-700 whitespace-pre-wrap">{{ comment.comment }}</p>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <div class="mt-4 text-center">
+            <a href="{{ url_for('teacher_lessons') }}" class="text-primary hover:text-blue-700 text-sm font-medium">
+                <i class="fas fa-list mr-1"></i>View All Lessons with Comments
+            </a>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Notification Sound -->
+<audio id="notificationSound" preload="auto">
+    <source src="{{ url_for('static', filename='sounds/notification.mp3') }}" type="audio/mpeg">
+    <source src="{{ url_for('static', filename='sounds/notification.wav') }}" type="audio/wav">
+</audio>
+
+<script>
+// Check for new messages and comments every 30 seconds
+function checkNotifications() {
+    fetch('/api/teacher/notifications')
+        .then(response => response.json())
+        .then(data => {
+            const messageBadge = document.getElementById('messageBadge');
+            
+            if (data.unread_messages > 0) {
+                messageBadge.textContent = data.unread_messages;
+                messageBadge.classList.remove('hidden');
+                
+                // Play notification sound
+                const audio = document.getElementById('notificationSound');
+                audio.play().catch(e => console.log('Could not play notification sound:', e));
+                
+                // Show browser notification if permission granted
+                if (Notification.permission === 'granted') {
+                    new Notification('New Message Received', {
+                        body: 'You have received a new message from the head teacher.',
+                        icon: '/static/images/notification-icon.png'
+                    });
+                }
+            } else {
+                messageBadge.classList.add('hidden');
+            }
+            
+            // Show recent homework comments if any
+            if (data.recent_comments && data.recent_comments.length > 0) {
+                showCommentNotifications(data.recent_comments);
+            }
+        })
+        .catch(error => console.error('Error checking notifications:', error));
+}
+
+function showCommentNotifications(comments) {
+    // Show toast notifications for new comments
+    comments.forEach(comment => {
+        if (isNewComment(comment)) {
+            showToast(`New comment on ${comment.week} homework record`, comment.comment);
+        }
+    });
+}
+
+function isNewComment(comment) {
+    // Check if comment is from the last 5 minutes
+    const commentTime = new Date(comment.created_at);
+    const now = new Date();
+    const diffMinutes = (now - commentTime) / (1000 * 60);
+    return diffMinutes <= 5;
+}
+
+function showToast(title, message) {
+    // Create toast notification
+    const toast = document.createElement('div');
+    toast.className = 'fixed top-4 right-4 bg-blue-500 text-white p-4 rounded-lg shadow-lg z-50 max-w-sm';
+    toast.innerHTML = `
+        <div class="flex justify-between items-start">
+            <div>
+                <h4 class="font-semibold">${title}</h4>
+                <p class="text-sm mt-1">${message.substring(0, 100)}${message.length > 100 ? '...' : ''}</p>
+            </div>
+            <button onclick="this.parentElement.parentElement.remove()" class="ml-2 text-white hover:text-gray-200">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        if (toast.parentElement) {
+            toast.remove();
+        }
+    }, 5000);
+}
+
+// Check notifications on page load
+document.addEventListener('DOMContentLoaded', function() {
+    checkNotifications();
+    
+    // Check every 30 seconds
+    setInterval(checkNotifications, 30000);
+    
+    // Request notification permission
+    if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+    }
+});
+
+// Real-time updates for teacher dashboard
+function refreshTeacherDashboardData() {
+    fetch('/api/teacher/dashboard-data')
+        .then(response => response.json())
+        .then(data => {
+            // Update classes section
+            updateClassesSection(data.classes);
+            
+            // Update recent assignments
+            updateRecentAssignments(data.recent_assignments);
+            
+            // Update recent comments
+            updateRecentComments(data.recent_comments);
+            
+            // Show last updated time
+            updateLastRefreshTime();
+        })
+        .catch(error => console.error('Error refreshing teacher dashboard data:', error));
+}
+
+function updateClassesSection(classesData) {
+    const classesContainer = document.querySelector('.grid.grid-cols-1.md\:grid-cols-2.lg\:grid-cols-3.gap-6');
+    if (!classesContainer) return;
+    
+    classesContainer.innerHTML = '';
+    
+    classesData.forEach(classData => {
+        const classCard = document.createElement('div');
+        classCard.className = 'border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow duration-200';
+        classCard.innerHTML = `
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-900">${classData.name}</h3>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary text-white">
+                    Basic ${classData.grade_level}
+                </span>
+            </div>
+            <div class="space-y-2 text-sm text-gray-600 mb-4">
+                <div class="flex items-center">
+                    <i class="fas fa-user-graduate mr-2"></i>
+                    ${classData.student_count} students
+                </div>
+                <div class="flex items-center">
+                    <i class="fas fa-book mr-2"></i>
+                    ${classData.subject_count} subjects
+                </div>
+            </div>
+            <div class="flex space-x-2">
+                <a href="/teacher/class/${classData.id}" class="flex-1 bg-primary text-white px-3 py-2 rounded text-sm hover:bg-blue-700 transition duration-200 text-center">
+                    <i class="fas fa-eye mr-1"></i>View Details
+                </a>
+            </div>
+        `;
+        classesContainer.appendChild(classCard);
+    });
+}
+
+function updateRecentAssignments(assignmentsData) {
+    const assignmentsContainer = document.querySelector('#recent-assignments-table tbody');
+    if (!assignmentsContainer) return;
+    
+    assignmentsContainer.innerHTML = '';
+    
+    assignmentsData.forEach(assignment => {
+        const row = document.createElement('tr');
+        row.className = 'hover:bg-gray-50';
+        row.innerHTML = `
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${assignment.title}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${assignment.subject.name}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${assignment.due_date}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${assignment.created_at}</td>
+        `;
+        assignmentsContainer.appendChild(row);
+    });
+}
+
+function updateRecentComments(commentsData) {
+    const commentsContainer = document.querySelector('#recent-comments-container');
+    if (!commentsContainer) return;
+    
+    if (commentsData.length === 0) {
+        commentsContainer.innerHTML = `
+            <div class="text-center py-8">
+                <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-comments text-2xl text-gray-400"></i>
+                </div>
+                <p class="text-gray-500">No admin comments yet</p>
+                <p class="text-gray-400 text-sm mt-1">Comments from administrators will appear here</p>
+            </div>
+        `;
+        return;
+    }
+    
+    commentsContainer.innerHTML = '';
+    
+    commentsData.forEach(comment => {
+        const commentDiv = document.createElement('div');
+        commentDiv.className = 'border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow duration-200';
+        commentDiv.innerHTML = `
+            <div class="flex justify-between items-start mb-3">
+                <div class="flex items-center">
+                    <div class="w-8 h-8 bg-primary bg-opacity-10 rounded-full flex items-center justify-center mr-3">
+                        <i class="fas fa-user text-primary text-sm"></i>
+                    </div>
+                    <div>
+                                        <h4 class="text-sm font-medium text-gray-900">${comment.admin.first_name} ${comment.admin.last_name}</h4>
+                        <p class="text-xs text-gray-500">${comment.created_at}</p>
+                    </div>
+                </div>
+                <a href="/teacher/lesson/${comment.lesson.id}" class="text-primary hover:text-blue-700 text-sm">
+                    <i class="fas fa-eye mr-1"></i>View Lesson
+                </a>
+            </div>
+            <div class="mb-2">
+                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                    ${comment.lesson.title}
+                </span>
+            </div>
+            <p class="text-gray-700 whitespace-pre-wrap">${comment.comment}</p>
+        `;
+        commentsContainer.appendChild(commentDiv);
+    });
+}
+
+function updateLastRefreshTime() {
+    const now = new Date();
+    const timeString = now.toLocaleTimeString();
+    
+    // Create or update refresh indicator
+    let refreshIndicator = document.getElementById('refresh-indicator');
+    if (!refreshIndicator) {
+        refreshIndicator = document.createElement('div');
+        refreshIndicator.id = 'refresh-indicator';
+        refreshIndicator.className = 'fixed bottom-4 right-4 bg-green-500 text-white px-3 py-2 rounded-lg text-sm shadow-lg z-50';
+        document.body.appendChild(refreshIndicator);
+    }
+    
+    refreshIndicator.innerHTML = `
+        <i class="fas fa-sync-alt mr-2"></i>Last updated: ${timeString}
+    `;
+    
+    // Hide after 3 seconds
+    setTimeout(() => {
+        if (refreshIndicator.parentNode) {
+            refreshIndicator.remove();
+        }
+    }, 3000);
+}
+
+// Start auto-refresh for teacher dashboard
+setInterval(refreshTeacherDashboardData, 30000); // Refresh every 30 seconds
+
+// Initial load when page is ready
+document.addEventListener('DOMContentLoaded', function() {
+    // Add IDs to elements for easier targeting
+    const assignmentsTable = document.querySelector('table tbody');
+    if (assignmentsTable) {
+        assignmentsTable.closest('table').id = 'recent-assignments-table';
+    }
+    
+    const commentsContainer = document.querySelector('.space-y-4');
+    if (commentsContainer) {
+        commentsContainer.id = 'recent-comments-container';
+    }
+    
+    // Start refreshing
+    refreshTeacherDashboardData();
+});
+</script>
+{% endblock %}

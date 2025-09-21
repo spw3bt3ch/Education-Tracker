@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Students - EduTrack{% endblock %}
+
+{% block content %}
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8 space-y-3 sm:space-y-0">
+    <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center">
+        <i class="fas fa-user-graduate mr-2 sm:mr-3"></i>Manage Students
+    </h1>
+    <a href="{{ url_for('create_student') }}" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-200 w-full sm:w-auto text-center">
+        <i class="fas fa-plus mr-2"></i>Add Student
+    </a>
+</div>
+
+<div class="bg-white rounded-xl shadow-lg">
+    <div class="px-4 sm:px-6 py-4 border-b border-gray-200">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-3 sm:space-y-0">
+            <h2 class="text-lg sm:text-xl font-semibold text-gray-900">Students List</h2>
+            <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
+                <input type="text" placeholder="Search students..." class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent w-full sm:w-auto">
+                <button class="bg-gray-100 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-200 transition duration-200 w-full sm:w-auto">
+                    <i class="fas fa-filter"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="p-4 sm:p-6">
+        {% if students %}
+            <!-- Responsive Table with Horizontal Scrolling -->
+            <div class="table-container">
+                <table class="students-table">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap" style="min-width: 200px;">Student</th>
+                            <th class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap" style="min-width: 120px;">Student ID</th>
+                            <th class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap" style="min-width: 100px;">Class</th>
+                            <th class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap" style="min-width: 100px;">Assignments</th>
+                            <th class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap" style="min-width: 100px;">Status</th>
+                            <th class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap" style="min-width: 120px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for student in students %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 sm:px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="w-10 h-10 bg-primary bg-opacity-10 rounded-full flex items-center justify-center mr-3">
+                                        <i class="fas fa-user text-primary"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-sm font-medium text-gray-900">{{ student.first_name }} {{ student.last_name }}</div>
+                                        <div class="text-sm text-gray-500">{{ student.email if student.email else 'No email' }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ student.student_id }}</td>
+                            <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ student.class_obj.name }}</td>
+                            <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ student.assignment_records|length }}</td>
+                            <td class="px-4 sm:px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    Active
+                                </span>
+                            </td>
+                            <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <div class="flex space-x-2">
+                                    <a href="{{ url_for('view_student', student_id=student.id) }}" class="text-primary hover:text-blue-700 p-1 rounded hover:bg-blue-50" title="View Student">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{{ url_for('edit_student', student_id=student.id) }}" class="text-primary hover:text-blue-700 p-1 rounded hover:bg-blue-50" title="Edit Student">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button onclick="deleteStudent({{ student.id }}, '{{ student.first_name }} {{ student.last_name }}')" class="text-danger hover:text-red-700 p-1 rounded hover:bg-red-50" title="Delete Student">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-12">
+                <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-user-graduate text-2xl text-gray-400"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">No Students Found</h3>
+                <p class="text-gray-500 mb-4">No students are currently enrolled in your classes.</p>
+                <a href="{{ url_for('create_student') }}" class="bg-primary text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition duration-200 inline-flex items-center">
+                    <i class="fas fa-plus mr-2"></i>Add Your First Student
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+/* Enhanced Table Responsiveness */
+.table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+.table-responsive::-webkit-scrollbar {
+    height: 8px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Ensure table has proper minimum width for all columns */
+.table-responsive table {
+    min-width: 800px;
+}
+
+
+/* Improve touch targets for mobile */
+@media (max-width: 768px) {
+    button, a {
+        min-height: 44px;
+        min-width: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+
+/* Student action buttons functionality */
+function deleteStudent(studentId, studentName) {
+    if (confirm(`Are you sure you want to delete ${studentName}? This action cannot be undone.`)) {
+        // Create a form to submit the delete request
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/teacher/student/${studentId}/delete`;
+        
+        // Add CSRF token if available
+        const csrfToken = document.querySelector('meta[name=csrf-token]');
+        if (csrfToken) {
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrf_token';
+            csrfInput.value = csrfToken.getAttribute('content');
+            form.appendChild(csrfInput);
+        }
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</style>
+{% endblock %}

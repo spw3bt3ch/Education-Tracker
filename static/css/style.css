@@ -1,0 +1,657 @@
+/* Custom styles for EduTrack with Tailwind CSS */
+
+/* ===========================================
+   COMPREHENSIVE TABLE RESPONSIVE STYLES
+   =========================================== */
+
+/* Table container - handles overflow and scrolling */
+.table-container {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    border: 1px solid #e5e7eb;
+}
+
+/* Students table styling */
+.students-table {
+    width: 100%;
+    min-width: 800px; /* Minimum width to trigger horizontal scroll on mobile */
+    border-collapse: collapse;
+    background: white;
+}
+
+/* Desktop: Full width table */
+@media (min-width: 769px) {
+    .students-table {
+        min-width: 100%;
+        width: 100%;
+    }
+}
+
+/* Mobile: Fixed width to trigger scroll */
+@media (max-width: 768px) {
+    .students-table {
+        min-width: 800px;
+        width: 800px;
+    }
+}
+
+/* Custom scrollbar styling */
+.table-container::-webkit-scrollbar {
+    height: 8px;
+}
+
+.table-container::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+}
+
+.table-container::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Mobile scrollbar enhancement */
+@media (max-width: 768px) {
+    .table-container::-webkit-scrollbar {
+        height: 12px;
+    }
+}
+
+/* Prevent page horizontal scroll */
+body {
+    overflow-x: hidden;
+}
+
+/* Ensure main content doesn't overflow */
+main {
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+/* ===========================================
+   NAVIGATION RESPONSIVENESS FIXES
+   =========================================== */
+
+/* Global navigation improvements */
+nav {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Navigation container responsiveness */
+nav .max-w-7xl {
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
+@media (min-width: 640px) {
+    nav .max-w-7xl {
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+    }
+}
+
+@media (min-width: 1024px) {
+    nav .max-w-7xl {
+        padding-left: 2rem;
+        padding-right: 2rem;
+    }
+}
+
+/* Navigation height consistency */
+nav .h-16 {
+    min-height: 4rem;
+}
+
+/* Mobile menu button positioning */
+nav .sm\\:hidden {
+    position: relative;
+    z-index: 10;
+}
+
+/* Navigation link text wrapping prevention */
+nav a {
+    white-space: nowrap;
+}
+
+/* User menu responsiveness */
+nav .flex.items-center span {
+    display: none;
+}
+
+@media (min-width: 640px) {
+    nav .flex.items-center span {
+        display: inline;
+    }
+}
+
+/* Desktop full-width table */
+@media (min-width: 769px) {
+    .table-responsive {
+        width: 100%;
+    }
+    
+    .table-responsive table {
+        width: 100%;
+        min-width: 100%;
+    }
+}
+
+/* Hero Section Styles */
+.hero-section {
+    position: relative;
+    min-height: 500px;
+    background-attachment: fixed;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.hero-overlay {
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.6) 100%);
+}
+
+.hero-content {
+    animation: fadeInUp 1s ease-out;
+}
+
+/* ===========================================
+   COMPREHENSIVE MOBILE OPTIMIZATION
+   =========================================== */
+
+/* Mobile-first responsive design */
+@media (max-width: 640px) {
+    /* Typography adjustments */
+    .text-5xl { font-size: 2.5rem; }
+    .text-4xl { font-size: 2rem; }
+    .text-3xl { font-size: 1.75rem; }
+    .text-2xl { font-size: 1.5rem; }
+    .text-xl { font-size: 1.25rem; }
+    
+    /* Spacing adjustments */
+    .py-16 { padding-top: 2rem; padding-bottom: 2rem; }
+    .py-12 { padding-top: 1.5rem; padding-bottom: 1.5rem; }
+    .py-8 { padding-top: 1rem; padding-bottom: 1rem; }
+    .px-8 { padding-left: 1rem; padding-right: 1rem; }
+    .px-6 { padding-left: 0.75rem; padding-right: 0.75rem; }
+    
+    /* Grid adjustments */
+    .grid-cols-3 { grid-template-columns: 1fr; }
+    .grid-cols-2 { grid-template-columns: 1fr; }
+    .md\\:grid-cols-3 { grid-template-columns: 1fr; }
+    .md\\:grid-cols-2 { grid-template-columns: 1fr; }
+    
+    /* Button adjustments */
+    .px-8 { padding-left: 1rem; padding-right: 1rem; }
+    .py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+    
+    /* Card adjustments */
+    .p-8 { padding: 1rem; }
+    .p-6 { padding: 0.75rem; }
+    
+    /* Table adjustments - using global styles */
+    
+    /* Mobile table to card conversion - Fixed conflicts */
+    
+    .mobile-card {
+        display: block;
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.75rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    .mobile-card .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.75rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .mobile-card .card-body {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+        margin-bottom: 0.75rem;
+    }
+    
+    .mobile-card .card-field {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .mobile-card .card-field-label {
+        font-size: 0.75rem;
+        color: #6b7280;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 0.25rem;
+    }
+    
+    .mobile-card .card-field-value {
+        font-size: 0.875rem;
+        color: #111827;
+        font-weight: 500;
+    }
+    
+    .mobile-card .card-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.5rem;
+        padding-top: 0.75rem;
+        border-top: 1px solid #e5e7eb;
+    }
+    
+    /* Show mobile layout, hide desktop */
+    .mobile-table {
+        display: block;
+    }
+    
+    .table-container {
+        display: block;
+    }
+    
+    /* Form adjustments */
+    .form-mobile {
+        padding: 1rem;
+    }
+    
+    .form-mobile input,
+    .form-mobile select,
+    .form-mobile textarea {
+        font-size: 16px; /* Prevents zoom on iOS */
+        padding: 0.75rem;
+    }
+    
+    /* Navigation adjustments */
+    .nav-mobile {
+        padding: 0.5rem 1rem;
+    }
+    
+    /* Dashboard adjustments */
+    .dashboard-mobile {
+        padding: 1rem;
+    }
+    
+    .dashboard-mobile .card {
+        margin-bottom: 1rem;
+    }
+    
+    /* Touch-friendly interactions - exclude navigation links */
+    input, select, textarea {
+        min-height: 44px; /* Apple's recommended minimum touch target */
+        min-width: 44px;
+    }
+    
+    /* Navigation-specific touch targets */
+    nav button {
+        min-height: 44px;
+        min-width: 44px;
+    }
+    
+    /* Mobile menu items */
+    nav a {
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+    }
+    
+    /* Prevent zoom on input focus */
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="number"],
+    select,
+    textarea {
+        font-size: 16px;
+    }
+    
+    /* Better touch scrolling */
+    .overflow-x-auto {
+        -webkit-overflow-scrolling: touch;
+        scroll-behavior: smooth;
+    }
+    
+    /* Mobile-specific button styles */
+    .btn-mobile {
+        padding: 12px 16px;
+        font-size: 16px;
+        border-radius: 8px;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    /* Mobile navigation improvements */
+    .mobile-menu-item {
+        padding: 16px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        display: flex;
+        align-items: center;
+        min-height: 48px;
+    }
+    
+    /* Navigation responsiveness fixes */
+    nav {
+        position: relative;
+        z-index: 50;
+    }
+    
+    /* Mobile menu button improvements */
+    nav .sm\\:hidden button {
+        padding: 8px;
+        border-radius: 4px;
+        transition: background-color 0.2s;
+    }
+    
+    nav .sm\\:hidden button:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    /* Mobile menu container */
+    #mobile-menu {
+        background-color: rgba(59, 130, 246, 0.95);
+        backdrop-filter: blur(10px);
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    /* Mobile menu links */
+    #mobile-menu a {
+        padding: 12px 16px;
+        margin: 0 8px;
+        border-radius: 6px;
+        transition: all 0.2s;
+    }
+    
+    #mobile-menu a:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+        transform: translateX(4px);
+    }
+    
+    /* Mobile menu divider */
+    #mobile-menu .border-t {
+        border-color: rgba(255, 255, 255, 0.2);
+        margin: 8px 0;
+    }
+    
+    /* Mobile card improvements - consolidated */
+    
+    /* Mobile form improvements */
+    .form-mobile .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-mobile label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: #374151;
+    }
+    
+    .form-mobile input,
+    .form-mobile select,
+    .form-mobile textarea {
+        width: 100%;
+        padding: 12px 16px;
+        border: 2px solid #d1d5db;
+        border-radius: 8px;
+        font-size: 16px;
+        transition: border-color 0.2s;
+    }
+    
+    .form-mobile input:focus,
+    .form-mobile select:focus,
+    .form-mobile textarea:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+}
+
+/* Tablet adjustments */
+@media (min-width: 641px) and (max-width: 1024px) {
+    .grid-cols-3 { grid-template-columns: repeat(2, 1fr); }
+    .md\\:grid-cols-3 { grid-template-columns: repeat(2, 1fr); }
+    .md\\:grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+    
+    /* Show desktop table on tablets */
+    .mobile-table {
+        display: none;
+    }
+    
+    .table-container {
+        display: block;
+    }
+    
+    /* Tablet navigation improvements */
+    nav .sm\\:flex {
+        gap: 0.5rem;
+    }
+    
+    nav .sm\\:flex a {
+        padding: 8px 12px;
+        font-size: 0.875rem;
+    }
+    
+    /* Tablet user menu */
+    nav .sm\\:flex .flex.items-center {
+        gap: 0.75rem;
+    }
+}
+
+/* Desktop adjustments */
+@media (min-width: 769px) {
+    /* Show desktop layout, hide mobile */
+    .mobile-table {
+        display: none;
+    }
+    
+    .table-container {
+        display: block;
+    }
+    
+    /* Desktop navigation improvements */
+    nav .sm\\:flex {
+        gap: 1rem;
+    }
+    
+    nav .sm\\:flex a {
+        padding: 10px 16px;
+        font-size: 0.9rem;
+        transition: all 0.2s;
+    }
+    
+    nav .sm\\:flex a:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+        border-radius: 6px;
+        transform: translateY(-1px);
+    }
+    
+    /* Desktop user menu */
+    nav .sm\\:flex .flex.items-center {
+        gap: 1rem;
+    }
+    
+    /* Desktop brand logo */
+    nav .flex-shrink-0 a {
+        font-size: 1.25rem;
+        transition: transform 0.2s;
+    }
+    
+    nav .flex-shrink-0 a:hover {
+        transform: scale(1.05);
+    }
+}
+
+/* Mobile responsiveness for hero section */
+@media (max-width: 768px) {
+    .hero-section {
+        min-height: 400px;
+        background-attachment: scroll; /* Better performance on mobile */
+    }
+    
+    .hero-content h1 {
+        font-size: 2.5rem; /* Smaller text on mobile */
+    }
+    
+    .hero-content p {
+        font-size: 1rem; /* Smaller text on mobile */
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Custom animations and utilities */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInLeft {
+    from { opacity: 0; transform: translateX(-30px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideInRight {
+    from { opacity: 0; transform: translateX(30px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Custom utility classes */
+.fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+.slide-in-left {
+    animation: slideInLeft 0.5s ease-out;
+}
+
+.slide-in-right {
+    animation: slideInRight 0.5s ease-out;
+}
+
+.loading {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(255,255,255,.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 1s ease-in-out infinite;
+}
+
+/* Timeline styles for parent dashboard */
+.timeline-item {
+    position: relative;
+    padding-left: 20px;
+}
+
+.timeline-item::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background-color: #e5e7eb;
+}
+
+.timeline-item:last-child::before {
+    display: none;
+}
+
+/* Custom hover effects */
+.hover-lift {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* Custom gradient backgrounds */
+.gradient-primary {
+    background: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);
+}
+
+.gradient-success {
+    background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+}
+
+.gradient-warning {
+    background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+}
+
+.gradient-danger {
+    background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+}
+
+.gradient-info {
+    background: linear-gradient(135deg, #06B6D4 0%, #0891B2 100%);
+}
+
+/* Custom scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Print styles */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    
+    .print-break {
+        page-break-before: always;
+    }
+}
+
+/* Dark mode support (if needed in future) */
+@media (prefers-color-scheme: dark) {
+    .dark-mode {
+        background-color: #1f2937;
+        color: #f9fafb;
+    }
+}

@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block title %}{{ student.first_name }}'s Progress - EduTrack{% endblock %}
+
+{% block content %}
+<div class="flex justify-between items-center mb-8">
+    <h1 class="text-3xl font-bold text-gray-900 flex items-center">
+        <i class="fas fa-chart-line mr-3"></i>{{ student.first_name }} {{ student.last_name }}'s Progress
+    </h1>
+    <a href="{{ url_for('parent_dashboard') }}" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition duration-200">
+        <i class="fas fa-arrow-left mr-2"></i>Back to Dashboard
+    </a>
+</div>
+
+<!-- Student Info -->
+<div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+    <h2 class="text-xl font-semibold text-gray-900 mb-6">Student Information</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Student Details</h3>
+            <div class="space-y-3">
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Student ID:</span>
+                    <span class="font-medium text-gray-900">{{ student.student_id }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Class:</span>
+                    <span class="font-medium text-gray-900">{{ student.class_obj.name if student.class_obj else 'No Class' }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Basic Level:</span>
+                    <span class="font-medium text-gray-900">{{ student.class_obj.grade_level if student.class_obj else '-' }}</span>
+                </div>
+            </div>
+        </div>
+        <div>
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Class Teacher</h3>
+            <div class="space-y-3">
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Name:</span>
+                    <span class="font-medium text-gray-900">{{ student.class_obj.teacher.first_name }} {{ student.class_obj.teacher.last_name }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Email:</span>
+                    <span class="font-medium text-gray-900">{{ student.class_obj.teacher.email }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Assignment Progress -->
+<div class="bg-white rounded-xl shadow-lg">
+    <div class="px-6 py-4 border-b border-gray-200">
+        <h2 class="text-xl font-semibold text-gray-900 flex items-center">
+            <i class="fas fa-tasks mr-2 text-primary"></i>Assignment Progress
+        </h2>
+    </div>
+    <div class="p-6">
+        {% set assignment_records_list = student.assignment_records|list %}
+        {% if assignment_records_list %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assignment</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subject</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Grade</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Submitted Date</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for record in assignment_records_list|sort(attribute='assignment.due_date', reverse=true) %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                {{ record.assignment.title }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {{ record.assignment.subject.name }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {{ record.assignment.due_date.strftime('%Y-%m-%d') }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                {% if record.completed %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                        <i class="fas fa-check-circle mr-1"></i>Completed
+                                    </span>
+                                {% else %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                        <i class="fas fa-clock mr-1"></i>Pending
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                {% if record.grade %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                        {{ record.grade }}
+                                    </span>
+                                {% else %}
+                                    <span class="text-gray-400">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {% if record.submitted_date %}
+                                    {{ record.submitted_date.strftime('%Y-%m-%d') }}
+                                {% else %}
+                                    <span class="text-gray-400">-</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-12">
+                <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-inbox text-2xl text-gray-400"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">No Assignment Records</h3>
+                <p class="text-gray-500">No assignment records found for this student.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Progress Summary -->
+{% if assignment_records_list %}
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+    <div class="bg-white rounded-xl shadow-lg p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4 text-center">Completion Rate</h3>
+        {% set completed = assignment_records_list|selectattr('completed', 'equalto', true)|list|length %}
+        {% set total = assignment_records_list|length %}
+        {% set percentage = (completed / total * 100)|round(1) if total > 0 else 0 %}
+        
+        <div class="mb-4">
+            <div class="flex justify-between text-sm text-gray-600 mb-2">
+                <span>Progress</span>
+                <span>{{ percentage }}%</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-4">
+                <div class="bg-primary h-4 rounded-full transition-all duration-300" style="width: {{ percentage }}%"></div>
+            </div>
+        </div>
+        <p class="text-center text-gray-600">{{ completed }} out of {{ total }} assignments completed</p>
+    </div>
+    
+    <div class="bg-white rounded-xl shadow-lg p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4 text-center">Recent Activity</h3>
+        {% set recent = assignment_records_list|sort(attribute='created_at', reverse=true)|first %}
+        {% if recent %}
+            <div class="text-center">
+                <p class="mb-2">
+                    {% if recent.completed %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            <i class="fas fa-check-circle mr-1"></i>Completed
+                        </span>
+                    {% else %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                            <i class="fas fa-clock mr-1"></i>Pending
+                        </span>
+                    {% endif %}
+                </p>
+                <p class="font-medium text-gray-900 mb-1">{{ recent.assignment.title }}</p>
+                <p class="text-sm text-gray-500">{{ recent.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+            </div>
+        {% else %}
+            <p class="text-center text-gray-500">No recent activity</p>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}

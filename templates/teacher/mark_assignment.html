@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block title %}Mark Assignment - EduTrack{% endblock %}
+
+{% block content %}
+<div class="flex justify-between items-center mb-8">
+    <h1 class="text-3xl font-bold text-gray-900 flex items-center">
+        <i class="fas fa-check-circle mr-3"></i>Mark Assignment
+    </h1>
+    <a href="{{ url_for('view_assignment', assignment_id=assignment.id) }}" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition duration-200">
+        <i class="fas fa-arrow-left mr-2"></i>Back to Assignment
+    </a>
+</div>
+
+<div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+    <h2 class="text-xl font-semibold text-gray-900 mb-4">Assignment Details</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+            <label class="text-sm font-medium text-gray-600">Assignment Title</label>
+            <p class="text-lg text-gray-900">{{ assignment.title }}</p>
+        </div>
+        <div>
+            <label class="text-sm font-medium text-gray-600">Subject</label>
+            <p class="text-lg text-gray-900">{{ assignment.subject.name }} ({{ assignment.subject.class_obj.name }})</p>
+        </div>
+        <div>
+            <label class="text-sm font-medium text-gray-600">Due Date</label>
+            <p class="text-lg text-gray-900">{{ assignment.due_date.strftime('%B %d, %Y') }}</p>
+        </div>
+        <div>
+            <label class="text-sm font-medium text-gray-600">Total Students</label>
+            <p class="text-lg text-gray-900">{{ assignment_records|length }} students</p>
+        </div>
+    </div>
+</div>
+
+<div class="bg-white rounded-xl shadow-lg p-6">
+    <h2 class="text-xl font-semibold text-gray-900 mb-6">Student Submissions</h2>
+    
+    {% if assignment_records %}
+        <form method="POST" class="space-y-6">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Submitted</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Grade</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Feedback</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for record in assignment_records %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="w-10 h-10 bg-primary bg-opacity-10 rounded-full flex items-center justify-center mr-3">
+                                        <i class="fas fa-user text-primary"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-sm font-medium text-gray-900">
+                                            {{ record.student.first_name }} {{ record.student.last_name }}
+                                        </div>
+                                        <div class="text-sm text-gray-500">ID: {{ record.student.student_id }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex space-x-2">
+                                    <label class="inline-flex items-center">
+                                        <input type="radio" 
+                                               name="completed_{{ record.student_id }}" 
+                                               value="yes" 
+                                               {% if record.completed %}checked{% endif %}
+                                               class="form-radio text-green-600">
+                                        <span class="ml-2 text-sm text-green-600">Submitted</span>
+                                    </label>
+                                    <label class="inline-flex items-center">
+                                        <input type="radio" 
+                                               name="completed_{{ record.student_id }}" 
+                                               value="no" 
+                                               {% if not record.completed %}checked{% endif %}
+                                               class="form-radio text-red-600">
+                                        <span class="ml-2 text-sm text-red-600">Not Submitted</span>
+                                    </label>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {% if record.submitted_date %}
+                                    {{ record.submitted_date.strftime('%m/%d/%Y') }}
+                                {% else %}
+                                    <span class="text-gray-400">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <select name="grade_{{ record.student_id }}" 
+                                        class="w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                                    <option value="">-</option>
+                                    <option value="A+" {% if record.grade == 'A+' %}selected{% endif %}>A+</option>
+                                    <option value="A" {% if record.grade == 'A' %}selected{% endif %}>A</option>
+                                    <option value="A-" {% if record.grade == 'A-' %}selected{% endif %}>A-</option>
+                                    <option value="B+" {% if record.grade == 'B+' %}selected{% endif %}>B+</option>
+                                    <option value="B" {% if record.grade == 'B' %}selected{% endif %}>B</option>
+                                    <option value="B-" {% if record.grade == 'B-' %}selected{% endif %}>B-</option>
+                                    <option value="C+" {% if record.grade == 'C+' %}selected{% endif %}>C+</option>
+                                    <option value="C" {% if record.grade == 'C' %}selected{% endif %}>C</option>
+                                    <option value="C-" {% if record.grade == 'C-' %}selected{% endif %}>C-</option>
+                                    <option value="D+" {% if record.grade == 'D+' %}selected{% endif %}>D+</option>
+                                    <option value="D" {% if record.grade == 'D' %}selected{% endif %}>D</option>
+                                    <option value="D-" {% if record.grade == 'D-' %}selected{% endif %}>D-</option>
+                                    <option value="F" {% if record.grade == 'F' %}selected{% endif %}>F</option>
+                                </select>
+                            </td>
+                            <td class="px-6 py-4">
+                                <textarea name="feedback_{{ record.student_id }}" 
+                                          rows="2" 
+                                          placeholder="Add feedback..."
+                                          class="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">{{ record.feedback or '' }}</textarea>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+                <button type="button" onclick="history.back()" class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition duration-200">
+                    Cancel
+                </button>
+                <button type="submit" class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-blue-700 transition duration-200">
+                    <i class="fas fa-save mr-2"></i>Save Marks
+                </button>
+            </div>
+        </form>
+    {% else %}
+        <div class="text-center py-8">
+            <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-user-graduate text-2xl text-gray-400"></i>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">No Students Assigned</h3>
+            <p class="text-gray-500 mb-4">This assignment hasn't been assigned to any students yet.</p>
+            <a href="{{ url_for('assign_assignment', assignment_id=assignment.id) }}" class="bg-primary text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition duration-200 inline-flex items-center">
+                <i class="fas fa-user-plus mr-2"></i>Assign to Students
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

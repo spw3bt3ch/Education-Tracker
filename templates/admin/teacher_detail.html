@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}{{ teacher.first_name }} {{ teacher.last_name }} - Teacher Details{% endblock %}
+
+{% block content %}
+<div class="flex justify-between items-center mb-8">
+    <h1 class="text-3xl font-bold text-gray-900 flex items-center">
+        <i class="fas fa-chalkboard-teacher mr-3"></i>{{ teacher.first_name }} {{ teacher.last_name }}
+    </h1>
+    <div class="flex space-x-2">
+        <a href="{{ url_for('manage_teachers') }}" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition duration-200">
+            <i class="fas fa-arrow-left mr-2"></i>Back to Teachers
+        </a>
+        <a href="{{ url_for('admin_reset_password', user_id=teacher.id) }}" class="bg-warning text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition duration-200">
+            <i class="fas fa-key mr-2"></i>Reset Password
+        </a>
+    </div>
+</div>
+
+<!-- Teacher Information -->
+<div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+    <h2 class="text-xl font-semibold text-gray-900 mb-6">Teacher Information</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div>
+            <label class="text-sm font-medium text-gray-500">Full Name</label>
+            <p class="text-lg text-gray-900">{{ teacher.first_name }} {{ teacher.last_name }}</p>
+        </div>
+        <div>
+            <label class="text-sm font-medium text-gray-500">Email</label>
+            <p class="text-lg text-gray-900">{{ teacher.email }}</p>
+        </div>
+        <div>
+            <label class="text-sm font-medium text-gray-500">Username</label>
+            <p class="text-lg text-gray-900">@{{ teacher.username }}</p>
+        </div>
+        <div>
+            <label class="text-sm font-medium text-gray-500">Status</label>
+            <p class="text-lg">
+                {% if teacher.is_active %}
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        <i class="fas fa-check-circle mr-1"></i>Active
+                    </span>
+                {% else %}
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                        <i class="fas fa-times-circle mr-1"></i>Inactive
+                    </span>
+                {% endif %}
+            </p>
+        </div>
+        <div>
+            <label class="text-sm font-medium text-gray-500">Date Joined</label>
+            <p class="text-lg text-gray-900">{{ teacher.created_at.strftime('%Y-%m-%d') }}</p>
+        </div>
+        <div>
+            <label class="text-sm font-medium text-gray-500">Total Classes</label>
+            <p class="text-lg text-gray-900">{{ classes|length }}</p>
+        </div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <!-- Classes -->
+    <div class="bg-white rounded-xl shadow-lg p-6">
+        <h2 class="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+            <i class="fas fa-school mr-2 text-primary"></i>Classes
+        </h2>
+        {% if classes %}
+            <div class="space-y-4">
+                {% for class in classes %}
+                <div class="border border-gray-200 rounded-lg p-4">
+                    <h3 class="font-medium text-gray-900">{{ class.name }}</h3>
+                    <p class="text-sm text-gray-600">Basic {{ class.grade_level }} • {{ class.students|length }} students</p>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-gray-500 text-center py-8">No classes assigned</p>
+        {% endif %}
+    </div>
+
+    <!-- Recent Assignments -->
+    <div class="bg-white rounded-xl shadow-lg p-6">
+        <h2 class="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+            <i class="fas fa-tasks mr-2 text-success"></i>Recent Assignments
+        </h2>
+        {% if assignments %}
+            <div class="space-y-4">
+                {% for assignment in assignments %}
+                <div class="border border-gray-200 rounded-lg p-4">
+                    <h3 class="font-medium text-gray-900">{{ assignment.title }}</h3>
+                    <p class="text-sm text-gray-600">{{ assignment.subject.name }} • Due: {{ assignment.due_date.strftime('%Y-%m-%d') }}</p>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-gray-500 text-center py-8">No assignments created</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Recent Homework Records -->
+<div class="bg-white rounded-xl shadow-lg p-6 mt-8">
+    <h2 class="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+        <i class="fas fa-book-open mr-2 text-purple-500"></i>Recent Homework Records
+    </h2>
+    {% if homework_records %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Week</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Class</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for record in homework_records %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                {{ record.week }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ record.class_obj.name }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-900">
+                            <div class="max-w-xs truncate">{{ record.description[:50] }}{% if record.description|length > 50 %}...{% endif %}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ record.created_at.strftime('%Y-%m-%d') }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="text-gray-500 text-center py-8">No homework records submitted</p>
+    {% endif %}
+</div>
+{% endblock %}

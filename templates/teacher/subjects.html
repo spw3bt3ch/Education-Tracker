@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Subjects - EduTrack{% endblock %}
+
+{% block content %}
+<div class="flex justify-between items-center mb-8">
+    <h1 class="text-3xl font-bold text-gray-900 flex items-center">
+        <i class="fas fa-book mr-3"></i>Manage Subjects
+    </h1>
+    <a href="{{ url_for('create_subject') }}" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-200">
+        <i class="fas fa-plus mr-2"></i>Add Subject
+    </a>
+</div>
+
+<div class="bg-white rounded-xl shadow-lg">
+    <div class="px-6 py-4 border-b border-gray-200">
+        <div class="flex justify-between items-center">
+            <h2 class="text-xl font-semibold text-gray-900">Subjects List</h2>
+            <div class="flex space-x-2">
+                <input type="text" placeholder="Search subjects..." class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                <button class="bg-gray-100 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-200 transition duration-200">
+                    <i class="fas fa-filter"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="p-6">
+        {% if subjects %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for subject in subjects %}
+                <div class="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow duration-200">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900">{{ subject.name }}</h3>
+                            <p class="text-sm text-gray-600">{{ subject.class_obj.name }}</p>
+                            {% if subject.description %}
+                            <p class="text-sm text-gray-500 mt-2">{{ subject.description[:100] }}{% if subject.description|length > 100 %}...{% endif %}</p>
+                            {% endif %}
+                        </div>
+                        <div class="w-12 h-12 bg-primary bg-opacity-10 rounded-full flex items-center justify-center">
+                            <i class="fas fa-book text-primary"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-2 text-sm text-gray-600 mb-4">
+                        <div class="flex items-center">
+                            <i class="fas fa-graduation-cap mr-2"></i>
+                            Basic {{ subject.class_obj.grade_level }}
+                        </div>
+                        <div class="flex items-center">
+                            <i class="fas fa-tasks mr-2"></i>
+                            {{ subject.assignments|length }} assignments
+                        </div>
+                        <div class="flex items-center">
+                            <i class="fas fa-user-graduate mr-2"></i>
+                            {{ subject.class_obj.students|length }} students
+                        </div>
+                    </div>
+                    
+                    <div class="flex space-x-2">
+                        <a href="{{ url_for('teacher_create_assignment') }}?subject_id={{ subject.id }}" class="flex-1 bg-primary text-white px-3 py-2 rounded text-sm hover:bg-blue-700 transition duration-200 text-center">
+                            <i class="fas fa-plus mr-1"></i>Add Assignment
+                        </a>
+                        <button class="bg-gray-100 text-gray-700 px-3 py-2 rounded text-sm hover:bg-gray-200 transition duration-200">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-12">
+                <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-book text-2xl text-gray-400"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">No Subjects Found</h3>
+                <p class="text-gray-500 mb-4">No subjects are currently created for your classes.</p>
+                <a href="{{ url_for('create_subject') }}" class="bg-primary text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition duration-200 inline-flex items-center">
+                    <i class="fas fa-plus mr-2"></i>Create Your First Subject
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

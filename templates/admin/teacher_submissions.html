@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+
+{% block title %}Teacher Submissions - Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8 space-y-2 sm:space-y-0">
+    <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center">
+        <i class="fas fa-clipboard-check mr-2 sm:mr-3"></i>Teacher Submissions
+    </h1>
+    <div class="flex items-center space-x-3">
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary text-white">
+            {{ current_week }}
+        </span>
+        <a href="{{ url_for('admin_homework_records') }}" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition duration-200 text-sm">
+            <i class="fas fa-arrow-left mr-1"></i>Back to Records
+        </a>
+    </div>
+</div>
+
+<!-- Week Filter -->
+<div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+    <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+        <i class="fas fa-filter mr-2 text-primary"></i>Filter by Week
+    </h2>
+    <form method="GET" class="flex items-center space-x-4">
+        <div>
+            <label for="weekFilter" class="block text-sm font-medium text-gray-700 mb-2">Select Week</label>
+            <select id="weekFilter" name="week_filter" class="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary">
+                <option value="">Current Week (Auto)</option>
+                <option value="Week 1" {% if week_filter == 'Week 1' %}selected{% endif %}>Week 1</option>
+                <option value="Week 2" {% if week_filter == 'Week 2' %}selected{% endif %}>Week 2</option>
+                <option value="Week 3" {% if week_filter == 'Week 3' %}selected{% endif %}>Week 3</option>
+                <option value="Week 4" {% if week_filter == 'Week 4' %}selected{% endif %}>Week 4</option>
+                <option value="Week 5" {% if week_filter == 'Week 5' %}selected{% endif %}>Week 5</option>
+                <option value="Week 6" {% if week_filter == 'Week 6' %}selected{% endif %}>Week 6</option>
+                <option value="Week 7" {% if week_filter == 'Week 7' %}selected{% endif %}>Week 7</option>
+                <option value="Week 8" {% if week_filter == 'Week 8' %}selected{% endif %}>Week 8</option>
+                <option value="Week 9" {% if week_filter == 'Week 9' %}selected{% endif %}>Week 9</option>
+                <option value="Week 10" {% if week_filter == 'Week 10' %}selected{% endif %}>Week 10</option>
+                <option value="Week 11" {% if week_filter == 'Week 11' %}selected{% endif %}>Week 11</option>
+                <option value="Week 12" {% if week_filter == 'Week 12' %}selected{% endif %}>Week 12</option>
+                <option value="Week 13" {% if week_filter == 'Week 13' %}selected{% endif %}>Week 13</option>
+            </select>
+        </div>
+        <div class="pt-6">
+            <button type="submit" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-200">
+                <i class="fas fa-search mr-1"></i>Apply Filter
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Statistics Cards -->
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+    <div class="bg-gradient-to-r from-success to-green-600 rounded-xl p-6 text-white shadow-lg">
+        <div class="flex justify-between items-center">
+            <div>
+                <h3 class="text-3xl font-bold">{{ submitted_teachers|length }}</h3>
+                <p class="text-green-100">Submitted</p>
+            </div>
+            <div class="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                <i class="fas fa-check-circle text-2xl"></i>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-gradient-to-r from-warning to-yellow-600 rounded-xl p-6 text-white shadow-lg">
+        <div class="flex justify-between items-center">
+            <div>
+                <h3 class="text-3xl font-bold">{{ not_submitted_teachers|length }}</h3>
+                <p class="text-yellow-100">Not Submitted</p>
+            </div>
+            <div class="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                <i class="fas fa-exclamation-triangle text-2xl"></i>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-gradient-to-r from-info to-cyan-600 rounded-xl p-6 text-white shadow-lg">
+        <div class="flex justify-between items-center">
+            <div>
+                <h3 class="text-3xl font-bold">{{ (submitted_teachers|length + not_submitted_teachers|length) }}</h3>
+                <p class="text-cyan-100">Total Teachers</p>
+            </div>
+            <div class="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                <i class="fas fa-users text-2xl"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Submitted Teachers -->
+<div class="bg-white rounded-xl shadow-lg mb-6">
+    <div class="px-6 py-4 border-b border-gray-200">
+        <h2 class="text-lg font-semibold text-gray-900 flex items-center">
+            <i class="fas fa-check-circle mr-2 text-success"></i>Teachers Who Submitted ({{ submitted_teachers|length }})
+        </h2>
+    </div>
+    
+    <div class="p-6">
+        {% if submitted_teachers %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for item in submitted_teachers %}
+                <div class="border border-green-200 rounded-lg p-4 bg-green-50">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 bg-success bg-opacity-20 rounded-full flex items-center justify-center mr-3">
+                                <i class="fas fa-user text-success"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-gray-900">{{ item.teacher.first_name }} {{ item.teacher.last_name }}</h3>
+                                <p class="text-sm text-gray-500">{{ item.teacher.email }}</p>
+                            </div>
+                        </div>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-success text-white">
+                            <i class="fas fa-check mr-1"></i>Submitted
+                        </span>
+                    </div>
+                    
+                    <div class="space-y-2 text-sm text-gray-600 mb-4">
+                        <div class="flex items-center">
+                            <i class="fas fa-calendar mr-2"></i>
+                            Submitted: {{ item.record.created_at.strftime('%Y-%m-%d %H:%M') }}
+                        </div>
+                        <div class="flex items-center">
+                            <i class="fas fa-school mr-2"></i>
+                            Class: {{ item.record.class_obj.name }}
+                        </div>
+                        <div class="flex items-center">
+                            <i class="fas fa-chart-line mr-2"></i>
+                            Total Submissions: {{ item.submission_count }}
+                        </div>
+                    </div>
+                    
+                    <div class="flex space-x-2">
+                        <a href="{{ url_for('admin_view_homework_record', record_id=item.record.id) }}" class="flex-1 bg-primary text-white px-3 py-2 rounded text-sm hover:bg-blue-700 transition duration-200 text-center">
+                            <i class="fas fa-eye mr-1"></i>View Record
+                        </a>
+                        <a href="{{ url_for('admin_send_message') }}?teacher_id={{ item.teacher.id }}&teacher_name={{ item.teacher.first_name }} {{ item.teacher.last_name }}" class="flex-1 bg-orange-500 text-white px-3 py-2 rounded text-sm hover:bg-orange-600 transition duration-200 text-center">
+                            <i class="fas fa-envelope mr-1"></i>Message
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-12">
+                <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-check-circle text-2xl text-gray-400"></i>
+                </div>
+                <p class="text-gray-500 mb-4">No teachers have submitted homework records for {{ current_week }} yet.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Not Submitted Teachers -->
+<div class="bg-white rounded-xl shadow-lg">
+    <div class="px-6 py-4 border-b border-gray-200">
+        <h2 class="text-lg font-semibold text-gray-900 flex items-center">
+            <i class="fas fa-exclamation-triangle mr-2 text-warning"></i>Teachers Who Haven't Submitted ({{ not_submitted_teachers|length }})
+        </h2>
+    </div>
+    
+    <div class="p-6">
+        {% if not_submitted_teachers %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for item in not_submitted_teachers %}
+                <div class="border border-yellow-200 rounded-lg p-4 bg-yellow-50">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 bg-warning bg-opacity-20 rounded-full flex items-center justify-center mr-3">
+                                <i class="fas fa-user text-warning"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-gray-900">{{ item.teacher.first_name }} {{ item.teacher.last_name }}</h3>
+                                <p class="text-sm text-gray-500">{{ item.teacher.email }}</p>
+                            </div>
+                        </div>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-warning text-white">
+                            <i class="fas fa-clock mr-1"></i>Pending
+                        </span>
+                    </div>
+                    
+                    <div class="space-y-2 text-sm text-gray-600 mb-4">
+                        <div class="flex items-center">
+                            <i class="fas fa-chart-line mr-2"></i>
+                            Total Submissions: {{ item.submission_count }}
+                        </div>
+                        <div class="flex items-center">
+                            <i class="fas fa-calendar-times mr-2"></i>
+                            Status: Not submitted for {{ current_week }}
+                        </div>
+                    </div>
+                    
+                    <div class="flex space-x-2">
+                        <a href="{{ url_for('admin_send_message') }}?teacher_id={{ item.teacher.id }}&teacher_name={{ item.teacher.first_name }} {{ item.teacher.last_name }}" class="flex-1 bg-orange-500 text-white px-3 py-2 rounded text-sm hover:bg-orange-600 transition duration-200 text-center">
+                            <i class="fas fa-envelope mr-1"></i>Send Reminder
+                        </a>
+                        <button onclick="sendBulkReminder({{ item.teacher.id }})" class="flex-1 bg-warning text-white px-3 py-2 rounded text-sm hover:bg-yellow-600 transition duration-200 text-center">
+                            <i class="fas fa-bell mr-1"></i>Notify
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-12">
+                <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-check-circle text-2xl text-gray-400"></i>
+                </div>
+                <p class="text-gray-500 mb-4">All teachers have submitted their homework records for {{ current_week }}!</p>
+                <p class="text-sm text-gray-400">Great job everyone! 🎉</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Bulk Actions -->
+{% if not_submitted_teachers %}
+<div class="mt-6 bg-white rounded-xl shadow-lg p-6">
+    <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+        <i class="fas fa-bullhorn mr-2 text-primary"></i>Bulk Actions
+    </h2>
+    
+    <div class="flex flex-wrap gap-3">
+        <button onclick="sendBulkReminder()" class="bg-warning text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition duration-200">
+            <i class="fas fa-bell mr-1"></i>Send Reminder to All
+        </button>
+        <a href="{{ url_for('admin_send_message') }}" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-200">
+            <i class="fas fa-envelope mr-1"></i>Send Message to All
+        </a>
+    </div>
+</div>
+{% endif %}
+
+<script>
+function sendBulkReminder(teacherId = null) {
+    if (teacherId) {
+        // Send reminder to specific teacher
+        alert(`Sending reminder to teacher ID: ${teacherId}`);
+    } else {
+        // Send reminder to all teachers who haven't submitted
+        alert('Sending reminder to all teachers who haven\'t submitted their homework records.');
+    }
+}
+</script>
+{% endblock %}

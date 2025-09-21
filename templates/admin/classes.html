@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Classes - EduTrack{% endblock %}
+
+{% block content %}
+<div class="flex justify-between items-center mb-8">
+    <h1 class="text-3xl font-bold text-gray-900 flex items-center">
+        <i class="fas fa-school mr-3"></i>Manage Classes
+    </h1>
+    <div class="flex space-x-2">
+        <a href="{{ url_for('admin_create_class') }}" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-200">
+            <i class="fas fa-plus mr-2"></i>Add Class
+        </a>
+        <a href="{{ url_for('admin_dashboard') }}" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition duration-200">
+            <i class="fas fa-arrow-left mr-2"></i>Back to Dashboard
+        </a>
+    </div>
+</div>
+
+<div class="bg-white rounded-xl shadow-lg">
+    <div class="px-6 py-4 border-b border-gray-200">
+        <h2 class="text-xl font-semibold text-gray-900">Classes List</h2>
+    </div>
+    <div class="p-6">
+        {% if classes %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for class in classes %}
+                <div class="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow duration-200">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900">{{ class.name }}</h3>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary text-white">
+                            Basic {{ class.grade_level }}
+                        </span>
+                    </div>
+                    <div class="space-y-2 text-sm text-gray-600">
+                        <div class="flex items-center">
+                            <i class="fas fa-chalkboard-teacher mr-2"></i>
+                            {{ class.teacher.first_name }} {{ class.teacher.last_name }}
+                        </div>
+                        <div class="flex items-center">
+                            <i class="fas fa-user-graduate mr-2"></i>
+                            {{ class.students|length }} students
+                        </div>
+                        <div class="flex items-center">
+                            <i class="fas fa-book mr-2"></i>
+                            {{ class.subjects|length }} subjects
+                        </div>
+                    </div>
+                    <div class="mt-4 flex space-x-2">
+                        <a href="{{ url_for('admin_view_class', class_id=class.id) }}" class="flex-1 bg-primary text-white px-3 py-2 rounded text-sm hover:bg-blue-700 transition duration-200 text-center">
+                            <i class="fas fa-eye mr-1"></i>View
+                        </a>
+                        <button class="flex-1 bg-gray-100 text-gray-700 px-3 py-2 rounded text-sm hover:bg-gray-200 transition duration-200">
+                            <i class="fas fa-edit mr-1"></i>Edit
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-12">
+                <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-school text-2xl text-gray-400"></i>
+                </div>
+                <p class="text-gray-500">No classes found.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
