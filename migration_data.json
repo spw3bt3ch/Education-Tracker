@@ -1,0 +1,820 @@
+{
+  "user": {
+    "columns": [
+      "id",
+      "username",
+      "email",
+      "password_hash",
+      "role",
+      "first_name",
+      "last_name",
+      "profile_picture",
+      "is_active",
+      "created_at"
+    ],
+    "data": [
+      {
+        "id": 1,
+        "username": "admin",
+        "email": "admin@school.com",
+        "password_hash": "pbkdf2:sha256:600000$UZY3IW6kii3mxmM8$ff46f277f6b0dc01689efda76e9df589cc19263014c46cb79f4e012e85a0eba3",
+        "role": "admin",
+        "first_name": "Admin",
+        "last_name": "User",
+        "profile_picture": "uploads/1_ChatGPT_Image_Sep_6_2025_12_57_27_AM.png",
+        "is_active": 1,
+        "created_at": "2025-09-20 12:34:34.744547"
+      },
+      {
+        "id": 2,
+        "username": "teacher1",
+        "email": "teacher1@school.com",
+        "password_hash": "pbkdf2:sha256:600000$d2p8V7HsAi2djM4E$b35d67f54f8cdbdab9d067d7f3a80ac8636cb8b19fcfcdf88086b812ab0687d4",
+        "role": "teacher",
+        "first_name": "John",
+        "last_name": "Teacher",
+        "profile_picture": null,
+        "is_active": 1,
+        "created_at": "2025-09-20 12:34:34.744552"
+      },
+      {
+        "id": 3,
+        "username": "parent1",
+        "email": "parent1@school.com",
+        "password_hash": "pbkdf2:sha256:600000$dyLojsMK4qOhEaGF$f8863c179a57d5d609e0a3d2279c385f20fb2593aca90c5d601c57391a8d8f51",
+        "role": "parent",
+        "first_name": "Jane",
+        "last_name": "Parent",
+        "profile_picture": null,
+        "is_active": 1,
+        "created_at": "2025-09-20 12:34:34.744554"
+      },
+      {
+        "id": 4,
+        "username": "oluwatosinoyedokun393",
+        "email": "oyedokuntosin8592@gmail.com",
+        "password_hash": "pbkdf2:sha256:600000$ZmVb4t2MxC38sXYn$c0865f6d2337815946fd81e034ea86a1536afa9150d2e4d66393904a6f6d83bc",
+        "role": "teacher",
+        "first_name": "Oluwatosin",
+        "last_name": "Oyedokun",
+        "profile_picture": "uploads/4_Snapchat-1119927197.jpg",
+        "is_active": 1,
+        "created_at": "2025-09-20 12:38:24.013168"
+      },
+      {
+        "id": 5,
+        "username": "emmanueljohnson303",
+        "email": "m.johnson@gmail.com",
+        "password_hash": "pbkdf2:sha256:600000$T7S0kPoy9N0b7WoD$f8dd353670618c748b74f37d4a027db4c2d0dd92f910161a95bdd437c2dc8d55",
+        "role": "teacher",
+        "first_name": "Emmanuel",
+        "last_name": "Johnson",
+        "profile_picture": null,
+        "is_active": 1,
+        "created_at": "2025-09-20 12:39:16.163684"
+      },
+      {
+        "id": 6,
+        "username": "danieladebayo690",
+        "email": "adebayodaniel@yahoo.com",
+        "password_hash": "pbkdf2:sha256:600000$CTnvXSApJCrvHlNx$83bbdb311b4005c594a71eddbaec1eb8ff577d6accac0e23011d57c3888a26c6",
+        "role": "teacher",
+        "first_name": "Daniel",
+        "last_name": "Adebayo",
+        "profile_picture": null,
+        "is_active": 1,
+        "created_at": "2025-09-20 12:40:34.508147"
+      },
+      {
+        "id": 7,
+        "username": "bodejohnson369",
+        "email": "bodejohnson@icloud.com",
+        "password_hash": "pbkdf2:sha256:600000$m7z3iWIdcLfwTwZS$db41005b40df474dae9caf5d6fbca5ba2ba9dd36c0ce144fb1e685a83ed93664",
+        "role": "teacher",
+        "first_name": "Bode",
+        "last_name": "Johnson",
+        "profile_picture": null,
+        "is_active": 1,
+        "created_at": "2025-09-20 12:41:30.834370"
+      },
+      {
+        "id": 8,
+        "username": "samueliretanmiwa792",
+        "email": "sam.iret@aol.com",
+        "password_hash": "pbkdf2:sha256:600000$fLzNP7eSL9HBl3rT$60e6b2d54f9d465ee53f5a4a432b21ca16a69db71733bebaf6eab05ef328aaf4",
+        "role": "teacher",
+        "first_name": "Samuel",
+        "last_name": "Iretanmiwa",
+        "profile_picture": null,
+        "is_active": 1,
+        "created_at": "2025-09-20 12:42:03.802646"
+      },
+      {
+        "id": 9,
+        "username": "temitopefarotimi281",
+        "email": "topefar@mymail.com",
+        "password_hash": "pbkdf2:sha256:600000$0F2bMTaOgDytnutQ$bd2f02063131c2b2977ad3b7f2827eb31931a8d9055a38e813aea4bf3e038870",
+        "role": "teacher",
+        "first_name": "Temitope",
+        "last_name": "Farotimi",
+        "profile_picture": null,
+        "is_active": 1,
+        "created_at": "2025-09-20 12:43:24.662513"
+      },
+      {
+        "id": 10,
+        "username": "ainabolatitoSTU20257745",
+        "email": "ainabolatito@gmail.com",
+        "password_hash": "pbkdf2:sha256:600000$GU5h6000QP0sh15t$86ed4076a7e8c5a136bb1bc0f35eb14419c076dcdd81c426143df3724a0e8a22",
+        "role": "parent",
+        "first_name": "Aina",
+        "last_name": "Bolatito",
+        "profile_picture": null,
+        "is_active": 1,
+        "created_at": "2025-09-20 12:53:08.620910"
+      },
+      {
+        "id": 11,
+        "username": "adebowalebabatundeSTU20255096",
+        "email": "adebowale.babatunde@gmail.com",
+        "password_hash": "pbkdf2:sha256:600000$uEJ6q2xaUIdebNbw$e04dbe31716ecf70817ce99aa5272e9e284d6e21002f1321da0ee318bca6bb6c",
+        "role": "parent",
+        "first_name": "Adebowale",
+        "last_name": "Babatunde",
+        "profile_picture": null,
+        "is_active": 1,
+        "created_at": "2025-09-21 00:20:28.779705"
+      }
+    ],
+    "count": 11
+  },
+  "class": {
+    "columns": [
+      "id",
+      "name",
+      "grade_level",
+      "teacher_id",
+      "created_at"
+    ],
+    "data": [
+      {
+        "id": 1,
+        "name": "Basic 5A",
+        "grade_level": "5",
+        "teacher_id": 2,
+        "created_at": "2025-09-20 12:34:34.838161"
+      },
+      {
+        "id": 2,
+        "name": "Ruby",
+        "grade_level": "1",
+        "teacher_id": 9,
+        "created_at": "2025-09-20 12:43:59.162357"
+      },
+      {
+        "id": 3,
+        "name": "Diamond",
+        "grade_level": "2",
+        "teacher_id": 8,
+        "created_at": "2025-09-20 12:44:32.958004"
+      },
+      {
+        "id": 4,
+        "name": "Pearl",
+        "grade_level": "3",
+        "teacher_id": 7,
+        "created_at": "2025-09-20 12:45:03.722927"
+      },
+      {
+        "id": 5,
+        "name": "Topaz",
+        "grade_level": "4",
+        "teacher_id": 4,
+        "created_at": "2025-09-20 12:46:24.543422"
+      }
+    ],
+    "count": 5
+  },
+  "subject": {
+    "columns": [
+      "id",
+      "name",
+      "description",
+      "class_id",
+      "teacher_id",
+      "created_at"
+    ],
+    "data": [
+      {
+        "id": 1,
+        "name": "Mathematics",
+        "description": null,
+        "class_id": 1,
+        "teacher_id": 2,
+        "created_at": "2025-09-20 12:34:34.848925"
+      },
+      {
+        "id": 2,
+        "name": "English Language",
+        "description": null,
+        "class_id": 1,
+        "teacher_id": 2,
+        "created_at": "2025-09-20 12:34:34.848933"
+      },
+      {
+        "id": 3,
+        "name": "Mathematics",
+        "description": "",
+        "class_id": 5,
+        "teacher_id": 4,
+        "created_at": "2025-09-21 00:15:23.862088"
+      },
+      {
+        "id": 4,
+        "name": "English Language",
+        "description": "",
+        "class_id": 5,
+        "teacher_id": 4,
+        "created_at": "2025-09-21 00:15:59.460079"
+      },
+      {
+        "id": 5,
+        "name": "Basic Science",
+        "description": "",
+        "class_id": 5,
+        "teacher_id": 4,
+        "created_at": "2025-09-21 00:16:16.108693"
+      },
+      {
+        "id": 6,
+        "name": "Quantitative Reasoning",
+        "description": "",
+        "class_id": 5,
+        "teacher_id": 4,
+        "created_at": "2025-09-21 00:16:47.932415"
+      },
+      {
+        "id": 7,
+        "name": "Verbal Reasoning",
+        "description": "",
+        "class_id": 5,
+        "teacher_id": 4,
+        "created_at": "2025-09-21 00:17:08.785120"
+      },
+      {
+        "id": 8,
+        "name": "Computer Education",
+        "description": "",
+        "class_id": 5,
+        "teacher_id": 4,
+        "created_at": "2025-09-21 00:17:35.338320"
+      },
+      {
+        "id": 9,
+        "name": "English Literature",
+        "description": "",
+        "class_id": 5,
+        "teacher_id": 4,
+        "created_at": "2025-09-21 00:18:07.197583"
+      },
+      {
+        "id": 10,
+        "name": "Spellings",
+        "description": "",
+        "class_id": 5,
+        "teacher_id": 4,
+        "created_at": "2025-09-21 00:18:19.861991"
+      }
+    ],
+    "count": 10
+  },
+  "student": {
+    "columns": [
+      "id",
+      "first_name",
+      "last_name",
+      "student_id",
+      "class_id",
+      "parent_id",
+      "date_of_birth",
+      "created_at"
+    ],
+    "data": [
+      {
+        "id": 1,
+        "first_name": "Alice",
+        "last_name": "Johnson",
+        "student_id": "STU20252528",
+        "class_id": 1,
+        "parent_id": 3,
+        "date_of_birth": null,
+        "created_at": "2025-09-20 12:34:34.864290"
+      },
+      {
+        "id": 2,
+        "first_name": "Bob",
+        "last_name": "Smith",
+        "student_id": "STU20255515",
+        "class_id": 1,
+        "parent_id": null,
+        "date_of_birth": null,
+        "created_at": "2025-09-20 12:34:34.864297"
+      },
+      {
+        "id": 3,
+        "first_name": "Aina",
+        "last_name": "James",
+        "student_id": "STU20257745",
+        "class_id": 5,
+        "parent_id": 10,
+        "date_of_birth": "2025-09-22",
+        "created_at": "2025-09-20 12:52:24.014358"
+      },
+      {
+        "id": 4,
+        "first_name": "Adebowale",
+        "last_name": "Daniel",
+        "student_id": "STU20255096",
+        "class_id": 5,
+        "parent_id": 11,
+        "date_of_birth": "2018-06-25",
+        "created_at": "2025-09-21 00:19:28.357021"
+      }
+    ],
+    "count": 4
+  },
+  "assignment": {
+    "columns": [
+      "id",
+      "title",
+      "description",
+      "subject_id",
+      "teacher_id",
+      "due_date",
+      "created_at"
+    ],
+    "data": [
+      {
+        "id": 1,
+        "title": "Parts of Speech",
+        "description": "Englisha Textbook pry 4\r\nExercise 41, page 19.\r\nNo 6 - 12",
+        "subject_id": 4,
+        "teacher_id": 4,
+        "due_date": "2025-09-22",
+        "created_at": "2025-09-21 00:22:40.608766"
+      },
+      {
+        "id": 2,
+        "title": "Fractions",
+        "description": "Stan Maths\r\nPage 28, Exercise 16\r\nNo. 1 - 10",
+        "subject_id": 3,
+        "teacher_id": 4,
+        "due_date": "2025-09-22",
+        "created_at": "2025-09-21 00:24:21.279397"
+      }
+    ],
+    "count": 2
+  },
+  "assignment_record": {
+    "columns": [
+      "id",
+      "student_id",
+      "assignment_id",
+      "completed",
+      "submitted_date",
+      "grade",
+      "feedback",
+      "created_at"
+    ],
+    "data": [
+      {
+        "id": 1,
+        "student_id": 3,
+        "assignment_id": 1,
+        "completed": 1,
+        "submitted_date": "2025-09-21",
+        "grade": "B+",
+        "feedback": "You've done well",
+        "created_at": "2025-09-21 00:23:12.619453"
+      },
+      {
+        "id": 2,
+        "student_id": 4,
+        "assignment_id": 1,
+        "completed": 0,
+        "submitted_date": null,
+        "grade": "",
+        "feedback": "Awaiting your submission",
+        "created_at": "2025-09-21 00:23:12.623063"
+      },
+      {
+        "id": 3,
+        "student_id": 3,
+        "assignment_id": 2,
+        "completed": 1,
+        "submitted_date": "2025-09-21",
+        "grade": "A",
+        "feedback": "Endeavour to submit earlier next time",
+        "created_at": "2025-09-21 00:24:44.380500"
+      },
+      {
+        "id": 4,
+        "student_id": 4,
+        "assignment_id": 2,
+        "completed": 1,
+        "submitted_date": "2025-09-21",
+        "grade": "B+",
+        "feedback": "Submitted wet books",
+        "created_at": "2025-09-21 00:24:44.386677"
+      }
+    ],
+    "count": 4
+  },
+  "comment": {
+    "columns": [
+      "id",
+      "content",
+      "giver_id",
+      "receiver_id",
+      "student_id",
+      "assignment_id",
+      "created_at"
+    ],
+    "data": [],
+    "count": 0
+  },
+  "homework_record": {
+    "columns": [
+      "id",
+      "week",
+      "description",
+      "class_id",
+      "teacher_id",
+      "created_at"
+    ],
+    "data": [
+      {
+        "id": 1,
+        "week": "Week 1",
+        "description": "Monday - Numeracy - Prograsive Maths, Exercise 5, No 1 - 5\r\nTuesday - Literacy - Sentences, Exercise 10, No 1 - 10\r\nWednesday - Quantitative - Exercise 2, No 1 - 8\r\nThursday - Verbal Reasoning - Exercise 2, No 1 - 10\r\nFriday - Key Spelling - Page 5\r\n\r\n",
+        "class_id": 5,
+        "teacher_id": 4,
+        "created_at": "2025-09-20 12:57:32.683888"
+      },
+      {
+        "id": 2,
+        "week": "Week 2",
+        "description": "It's excursion week, not home work given. Student are to make research based on the excursion.",
+        "class_id": 5,
+        "teacher_id": 4,
+        "created_at": "2025-09-21 04:54:41.660019"
+      },
+      {
+        "id": 3,
+        "week": "Week 3",
+        "description": "Write a composition about your excursion last week.",
+        "class_id": 5,
+        "teacher_id": 4,
+        "created_at": "2025-09-21 04:56:20.028002"
+      }
+    ],
+    "count": 3
+  },
+  "homework_comment": {
+    "columns": [
+      "id",
+      "homework_record_id",
+      "admin_id",
+      "comment",
+      "created_at"
+    ],
+    "data": [
+      {
+        "id": 1,
+        "homework_record_id": 1,
+        "admin_id": 1,
+        "comment": "Good job!\r\nJust make sure you monitor them.",
+        "created_at": "2025-09-20 12:59:03.977647"
+      }
+    ],
+    "count": 1
+  },
+  "message": {
+    "columns": [
+      "id",
+      "sender_id",
+      "recipient_id",
+      "subject",
+      "content",
+      "is_read",
+      "parent_message_id",
+      "created_at"
+    ],
+    "data": [
+      {
+        "id": 1,
+        "sender_id": 1,
+        "recipient_id": 4,
+        "subject": "Appreciation",
+        "content": "Good Job.\r\nPlease keep it up",
+        "is_read": 1,
+        "parent_message_id": null,
+        "created_at": "2025-09-20 13:02:14.496762"
+      },
+      {
+        "id": 2,
+        "sender_id": 4,
+        "recipient_id": 1,
+        "subject": "Re: Appreciation",
+        "content": "Thank you ma. \r\nThanks for the acknowlegement.",
+        "is_read": 0,
+        "parent_message_id": 1,
+        "created_at": "2025-09-21 00:25:51.603919"
+      },
+      {
+        "id": 3,
+        "sender_id": 1,
+        "recipient_id": 2,
+        "subject": "Public Holiday",
+        "content": "There is going to be a public holiday on Monday.",
+        "is_read": 1,
+        "parent_message_id": null,
+        "created_at": "2025-09-21 03:44:25.478435"
+      },
+      {
+        "id": 4,
+        "sender_id": 1,
+        "recipient_id": 4,
+        "subject": "Public Holiday",
+        "content": "There is going to be a public holiday on Monday.",
+        "is_read": 1,
+        "parent_message_id": null,
+        "created_at": "2025-09-21 03:44:25.478442"
+      },
+      {
+        "id": 5,
+        "sender_id": 1,
+        "recipient_id": 5,
+        "subject": "Public Holiday",
+        "content": "There is going to be a public holiday on Monday.",
+        "is_read": 0,
+        "parent_message_id": null,
+        "created_at": "2025-09-21 03:44:25.478445"
+      },
+      {
+        "id": 6,
+        "sender_id": 1,
+        "recipient_id": 6,
+        "subject": "Public Holiday",
+        "content": "There is going to be a public holiday on Monday.",
+        "is_read": 0,
+        "parent_message_id": null,
+        "created_at": "2025-09-21 03:44:25.478448"
+      },
+      {
+        "id": 7,
+        "sender_id": 1,
+        "recipient_id": 7,
+        "subject": "Public Holiday",
+        "content": "There is going to be a public holiday on Monday.",
+        "is_read": 0,
+        "parent_message_id": null,
+        "created_at": "2025-09-21 03:44:25.478451"
+      },
+      {
+        "id": 8,
+        "sender_id": 1,
+        "recipient_id": 8,
+        "subject": "Public Holiday",
+        "content": "There is going to be a public holiday on Monday.",
+        "is_read": 0,
+        "parent_message_id": null,
+        "created_at": "2025-09-21 03:44:25.478454"
+      },
+      {
+        "id": 9,
+        "sender_id": 1,
+        "recipient_id": 9,
+        "subject": "Public Holiday",
+        "content": "There is going to be a public holiday on Monday.",
+        "is_read": 0,
+        "parent_message_id": null,
+        "created_at": "2025-09-21 03:44:25.478457"
+      },
+      {
+        "id": 10,
+        "sender_id": 2,
+        "recipient_id": 1,
+        "subject": "Re: Public Holiday",
+        "content": "Okay ma\r\n",
+        "is_read": 0,
+        "parent_message_id": 3,
+        "created_at": "2025-09-21 03:45:12.425936"
+      },
+      {
+        "id": 11,
+        "sender_id": 4,
+        "recipient_id": 1,
+        "subject": "Re: Public Holiday",
+        "content": "Noted ma\r\n",
+        "is_read": 0,
+        "parent_message_id": 4,
+        "created_at": "2025-09-21 03:45:47.559466"
+      },
+      {
+        "id": 12,
+        "sender_id": 1,
+        "recipient_id": 4,
+        "subject": "Important Info",
+        "content": "Please see me before the closing of today.",
+        "is_read": 1,
+        "parent_message_id": null,
+        "created_at": "2025-09-21 04:34:31.073665"
+      },
+      {
+        "id": 13,
+        "sender_id": 4,
+        "recipient_id": 1,
+        "subject": "Re: Important Info",
+        "content": "Well noted boss.",
+        "is_read": 0,
+        "parent_message_id": 12,
+        "created_at": "2025-09-21 04:35:06.144640"
+      },
+      {
+        "id": 14,
+        "sender_id": 4,
+        "recipient_id": 1,
+        "subject": "Re: Important Info",
+        "content": "Though I still have tutorial for some of my pupils, but I definitely come before I leave ma.",
+        "is_read": 0,
+        "parent_message_id": 12,
+        "created_at": "2025-09-21 04:39:06.995824"
+      },
+      {
+        "id": 15,
+        "sender_id": 4,
+        "recipient_id": 1,
+        "subject": "Re: Important Info",
+        "content": "Just anothere test of the notification badge function.",
+        "is_read": 0,
+        "parent_message_id": 12,
+        "created_at": "2025-09-21 04:50:47.807538"
+      }
+    ],
+    "count": 15
+  },
+  "notification": {
+    "columns": [
+      "id",
+      "user_id",
+      "message_id",
+      "type",
+      "title",
+      "content",
+      "is_read",
+      "created_at"
+    ],
+    "data": [
+      {
+        "id": 1,
+        "user_id": 1,
+        "message_id": 13,
+        "type": "message_reply",
+        "title": "New Reply from Oluwatosin Oyedokun",
+        "content": "Re: Important Info",
+        "is_read": 1,
+        "created_at": "2025-09-21 04:35:06.152162"
+      },
+      {
+        "id": 2,
+        "user_id": 1,
+        "message_id": 14,
+        "type": "message_reply",
+        "title": "New Reply from Oluwatosin Oyedokun",
+        "content": "Re: Important Info",
+        "is_read": 1,
+        "created_at": "2025-09-21 04:39:07.007428"
+      },
+      {
+        "id": 3,
+        "user_id": 1,
+        "message_id": 15,
+        "type": "message_reply",
+        "title": "New Reply from Oluwatosin Oyedokun",
+        "content": "Re: Important Info",
+        "is_read": 1,
+        "created_at": "2025-09-21 04:50:47.810859"
+      },
+      {
+        "id": 4,
+        "user_id": 1,
+        "message_id": null,
+        "type": "homework_record_created",
+        "title": "New Homework Record Created",
+        "content": "Teacher Oluwatosin Oyedokun created a homework record for Week Week 2 in Topaz",
+        "is_read": 1,
+        "created_at": "2025-09-21 04:54:41.840133"
+      },
+      {
+        "id": 5,
+        "user_id": 1,
+        "message_id": null,
+        "type": "homework_record_created",
+        "title": "New Homework Record Created",
+        "content": "Teacher Oluwatosin Oyedokun created a homework record for Week Week 3 in Topaz",
+        "is_read": 1,
+        "created_at": "2025-09-21 04:56:20.143407"
+      }
+    ],
+    "count": 5
+  },
+  "lesson": {
+    "columns": [
+      "id",
+      "title",
+      "subject_id",
+      "teacher_id",
+      "week",
+      "term",
+      "session",
+      "objectives",
+      "content",
+      "activities",
+      "resources",
+      "assessment",
+      "lesson_notes",
+      "student_attendance",
+      "student_performance",
+      "challenges",
+      "next_steps",
+      "status",
+      "completion_percentage",
+      "planned_date",
+      "taught_date",
+      "created_at",
+      "updated_at"
+    ],
+    "data": [
+      {
+        "id": 1,
+        "title": "The Solar System",
+        "subject_id": 5,
+        "teacher_id": 4,
+        "week": "Week 1",
+        "term": "First Term",
+        "session": "2025/2026",
+        "objectives": "By the end of the lesson, students should be able to:\r\n\r\n1. Define the solar system.\r\n2. Identify and name the eight planets in the solar system.\r\n3. Describe the position of the planets relative to the sun.\r\n4. Understand the basic characteristics of each planet.\r\n5. Discuss the importance of the sun in the solar system.",
+        "content": "",
+        "activities": "Solar System Mobile\r\nObjective: To create a hanging model of the solar system.\r\n\r\nMaterials:\r\nStyrofoam balls of different sizes, Paint, String or wire, A hanger or stick\r\n\r\nSteps:\r\nIntroduction: Explain the concept of a mobile.\r\nPainting: Have students paint the Styrofoam balls to represent the sun and planets.\r\nAssembly: Attach the balls to the hanger or stick using string or wire, maintaining the correct order.\r\nDiscussion: Discuss the relative sizes and distances of the planets.\r\nOutcome: A hanging model that students can use to explain the solar system.",
+        "resources": "Teaching/Learning Materials:\r\n\r\n1. Solar system model or diagram\r\n2. Pictures of the planets\r\n3. Videos about the solar system (optional)\r\n4. Interactive whiteboard or blackboard\r\n5. Worksheets with solar system-related questions",
+        "assessment": "Homework:\r\nDraw and label the solar system, including the sun and all eight planets.\r\nWrite a short paragraph about your favorite planet and why you like it.",
+        "lesson_notes": "Introduction to the Solar System\r\n\r\nDefinition: The solar system is a group of planets and other objects that orbit around a star called the sun.\r\nImportance of the Sun: The sun is the center of the solar system. It is a star that provides light and heat, which are essential for life on Earth.\r\nThe Planets in the Solar System\r\n\r\nMercury:\r\nPosition: Closest to the sun.\r\nCharacteristics: Smallest planet, no moons, very hot during the day and very cold at night.\r\n\r\nVenus:\r\nPosition: Second from the sun.\r\nCharacteristics: Similar in size to Earth, thick atmosphere, very hot surface temperature.\r\n\r\nEarth:\r\nPosition: Third from the sun.\r\nCharacteristics: Only known planet with life, one moon, has water, and a breathable atmosphere.\r\n\r\nMars:\r\nPosition: Fourth from the sun.\r\nCharacteristics: Often called the \"Red Planet,\" has two small moons, signs of water in the past.\r\n\r\nJupiter:\r\nPosition: Fifth from the sun.\r\nCharacteristics: Largest planet, has many moons (over 70), has a giant red spot (a storm).\r\n\r\nSaturn:\r\nPosition: Sixth from the sun.\r\nCharacteristics: Known for its beautiful rings, has many moons.\r\n\r\nUranus:\r\nPosition: Seventh from the sun.\r\nCharacteristics: Blue-green in color, has rings, spins on its side.\r\n\r\nNeptune:\r\nPosition: Eighth from the sun.\r\nCharacteristics: Dark blue in color, has strong winds, has rings.\r\n\r\nOther Objects in the Solar System\r\nAsteroids: Small rocky objects that orbit the sun, mostly found in the asteroid belt between Mars and Jupiter.\r\nComets: Icy objects that develop a tail when they approach the sun.\r\nMoons: Natural satellites that orbit planets.\r\n\r\nImportance of the Solar System\r\nLife on Earth: The position of Earth in the solar system allows for conditions suitable for life.\r\nScientific Exploration: Studying the solar system helps us understand the universe and our place in it.\r\nTechnological Advancements: Space exploration has led to many technological innovations that benefit our daily lives.\r\n\r\nSummary:\r\nThe solar system consists of the sun and all the objects that orbit around it.\r\nThere are eight planets: Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, and Neptune.\r\nEach planet has unique characteristics and positions relative to the sun.\r\nThe sun is crucial for providing light and heat, which are essential for life on Earth.",
+        "student_attendance": "",
+        "student_performance": "",
+        "challenges": "",
+        "next_steps": "",
+        "status": "completed",
+        "completion_percentage": 0,
+        "planned_date": null,
+        "taught_date": null,
+        "created_at": "2025-09-21 01:55:34.277855",
+        "updated_at": "2025-09-21 02:40:28.702731"
+      }
+    ],
+    "count": 1
+  },
+  "lesson_plan": {
+    "columns": [
+      "id",
+      "title",
+      "subject_id",
+      "teacher_id",
+      "week",
+      "objectives",
+      "content",
+      "activities",
+      "resources",
+      "assessment",
+      "created_at",
+      "updated_at"
+    ],
+    "data": [],
+    "count": 0
+  },
+  "lesson_note": {
+    "columns": [
+      "id",
+      "title",
+      "subject_id",
+      "teacher_id",
+      "week",
+      "content",
+      "notes",
+      "created_at",
+      "updated_at"
+    ],
+    "data": [],
+    "count": 0
+  }
+}
