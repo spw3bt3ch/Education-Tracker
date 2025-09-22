@@ -1,0 +1,49 @@
+{% extends "emails/base.html" %}
+
+{% block title %}Welcome to EduTrack{% endblock %}
+
+{% block header_title %}Welcome to EduTrack!{% endblock %}
+{% block header_subtitle %}Your account has been created successfully{% endblock %}
+
+{% block content %}
+<h2>Welcome, {{ user.first_name }}!</h2>
+
+<p>We're excited to have you join the EduTrack community. Your account has been successfully created and you can now access all the features of our student assignment tracking system.</p>
+
+{% if school %}
+<div class="school-info">
+    <h3>School Information</h3>
+    <p><strong>School:</strong> {{ school.name }}</p>
+    <p><strong>School Code:</strong> {{ school.code }}</p>
+    <p><strong>Your Role:</strong> {{ user.role.title() }}</p>
+</div>
+{% endif %}
+
+<div class="login-credentials" style="background: #f0f9ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 20px; margin: 20px 0;">
+    <h3 style="color: #1e40af; margin-top: 0;">🔑 Your Login Credentials</h3>
+    <p><strong>Username:</strong> <code style="background: #e5e7eb; padding: 4px 8px; border-radius: 4px; font-family: monospace;">{{ username }}</code></p>
+    <p><strong>Password:</strong> <code style="background: #e5e7eb; padding: 4px 8px; border-radius: 4px; font-family: monospace;">{{ password }}</code></p>
+    <p style="color: #6b7280; font-size: 14px; margin-bottom: 0;"><em>Please keep these credentials safe and change your password after your first login.</em></p>
+</div>
+
+<div class="info-box">
+    <p><strong>Next Steps:</strong></p>
+    <ul>
+        <li>Log in to your account using your credentials</li>
+        <li>Complete your profile setup</li>
+        <li>Explore the dashboard and available features</li>
+        {% if user.role == 'teacher' %}
+        <li>Start creating assignments and managing your classes</li>
+        {% elif user.role == 'parent' %}
+        <li>View your child's assignments and progress</li>
+        {% elif user.role == 'school_admin' %}
+        <li>Set up your school's classes and manage users</li>
+        {% endif %}
+    </ul>
+</div>
+
+<p>If you have any questions or need assistance, please don't hesitate to contact your school administrator or our support team.</p>
+
+<p>Best regards,<br>
+The EduTrack Team</p>
+{% endblock %}

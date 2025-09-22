@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block title %}System Status - EduTrack{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-4xl mx-auto">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-900 mb-4">
+                <i class="fas fa-heartbeat mr-3"></i>System Status
+            </h1>
+            <p class="text-gray-600">Check the current status of EduTrack services</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <!-- Database Status -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-900">Database</h3>
+                        <p class="text-sm text-gray-500">Database connection</p>
+                    </div>
+                    <div id="database-status" class="flex items-center">
+                        <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                        <span class="ml-2 text-sm text-gray-500">Checking...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Internet Status -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-900">Internet</h3>
+                        <p class="text-sm text-gray-500">Network connectivity</p>
+                    </div>
+                    <div id="internet-status" class="flex items-center">
+                        <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                        <span class="ml-2 text-sm text-gray-500">Checking...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Email Status -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-900">Email</h3>
+                        <p class="text-sm text-gray-500">Email service</p>
+                    </div>
+                    <div id="email-status" class="flex items-center">
+                        <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                        <span class="ml-2 text-sm text-gray-500">Checking...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Overall Status -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-900">Overall</h3>
+                        <p class="text-sm text-gray-500">System health</p>
+                    </div>
+                    <div id="overall-status" class="flex items-center">
+                        <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                        <span class="ml-2 text-sm text-gray-500">Checking...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Details -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">
+                <i class="fas fa-info-circle mr-2"></i>Status Details
+            </h2>
+            <div id="status-details" class="space-y-4">
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <span class="text-gray-700">Loading status information...</span>
+                    <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="mt-8 text-center">
+            <button onclick="checkStatus()" 
+                    class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg mr-4 transition duration-200">
+                <i class="fas fa-refresh mr-2"></i>Refresh Status
+            </button>
+            <a href="{{ url_for('index') }}" 
+               class="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-lg transition duration-200">
+                <i class="fas fa-home mr-2"></i>Go Home
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateStatus(elementId, status, message) {
+    const element = document.getElementById(elementId);
+    const icon = status ? 'fas fa-check-circle text-green-500' : 'fas fa-times-circle text-red-500';
+    const textColor = status ? 'text-green-700' : 'text-red-700';
+    
+    element.innerHTML = `
+        <i class="${icon} text-xl"></i>
+        <span class="ml-2 text-sm ${textColor}">${message}</span>
+    `;
+}
+
+function updateStatusDetails(status) {
+    const detailsElement = document.getElementById('status-details');
+    let details = '';
+    
+    // Database details
+    details += `
+        <div class="flex items-center justify-between p-4 ${status.database ? 'bg-green-50' : 'bg-red-50'} rounded-lg">
+            <div>
+                <span class="font-medium ${status.database ? 'text-green-800' : 'text-red-800'}">Database Connection</span>
+                <p class="text-sm ${status.database ? 'text-green-600' : 'text-red-600'}">
+                    ${status.database ? 'Connected successfully' : 'Connection failed - check internet connection'}
+                </p>
+            </div>
+            <i class="fas ${status.database ? 'fa-check-circle text-green-500' : 'fa-times-circle text-red-500'} text-xl"></i>
+        </div>
+    `;
+    
+    // Internet details
+    details += `
+        <div class="flex items-center justify-between p-4 ${status.internet ? 'bg-green-50' : 'bg-red-50'} rounded-lg">
+            <div>
+                <span class="font-medium ${status.internet ? 'text-green-800' : 'text-red-800'}">Internet Connection</span>
+                <p class="text-sm ${status.internet ? 'text-green-600' : 'text-red-600'}">
+                    ${status.internet ? 'Connected to internet' : 'No internet connection - check your network'}
+                </p>
+            </div>
+            <i class="fas ${status.internet ? 'fa-check-circle text-green-500' : 'fa-times-circle text-red-500'} text-xl"></i>
+        </div>
+    `;
+    
+    // Email details
+    details += `
+        <div class="flex items-center justify-between p-4 ${status.email ? 'bg-green-50' : 'bg-yellow-50'} rounded-lg">
+            <div>
+                <span class="font-medium ${status.email ? 'text-green-800' : 'text-yellow-800'}">Email Service</span>
+                <p class="text-sm ${status.email ? 'text-green-600' : 'text-yellow-600'}">
+                    ${status.email ? 'Email configured' : 'Email not configured - welcome emails disabled'}
+                </p>
+            </div>
+            <i class="fas ${status.email ? 'fa-check-circle text-green-500' : 'fa-exclamation-triangle text-yellow-500'} text-xl"></i>
+        </div>
+    `;
+    
+    detailsElement.innerHTML = details;
+}
+
+async function checkStatus() {
+    try {
+        const response = await fetch('/system-status');
+        const status = await response.json();
+        
+        updateStatus('database-status', status.database, status.database ? 'Connected' : 'Disconnected');
+        updateStatus('internet-status', status.internet, status.internet ? 'Connected' : 'Disconnected');
+        updateStatus('email-status', status.email, status.email ? 'Configured' : 'Not Configured');
+        updateStatus('overall-status', status.overall, status.overall ? 'Healthy' : 'Issues Detected');
+        
+        updateStatusDetails(status);
+    } catch (error) {
+        console.error('Error checking status:', error);
+        updateStatus('database-status', false, 'Error');
+        updateStatus('internet-status', false, 'Error');
+        updateStatus('email-status', false, 'Error');
+        updateStatus('overall-status', false, 'Error');
+    }
+}
+
+// Check status on page load
+document.addEventListener('DOMContentLoaded', checkStatus);
+</script>
+{% endblock %}

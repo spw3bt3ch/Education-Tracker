@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify, current_app
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -11,16 +11,40 @@ import threading
 import time
 import schedule
 from dotenv import load_dotenv
+from email_service import init_mail, EmailService
+from database_monitor import db_monitor
+import socket
+import requests
+from sqlalchemy.exc import OperationalError, DisconnectionError, TimeoutError as SQLTimeoutError
+from requests.exceptions import ConnectionError, Timeout, RequestException
 
 # Load environment variables
-load_dotenv()
+load_dotenv('aiven_config.env')
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key-here')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///edutrack.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['DATABASE_TOTAL_CAPACITY_GB'] = int(os.getenv('DATABASE_TOTAL_CAPACITY_GB', '1'))
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+
+# Email Configuration
+app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
+app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 587))
+app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', 'True').lower() == 'true'
+app.config['MAIL_USE_SSL'] = os.getenv('MAIL_USE_SSL', 'False').lower() == 'true'
+app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
+app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER')
+app.config['MAIL_MAX_EMAILS'] = int(os.getenv('MAIL_MAX_EMAILS', 100))
+app.config['MAIL_SUPPRESS_SEND'] = os.getenv('MAIL_SUPPRESS_SEND', 'False').lower() == 'true'
+app.config['BASE_URL'] = os.getenv('BASE_URL', 'http://127.0.0.1:5000')
+
+# Paystack Configuration
+app.config['PAYSTACK_PUBLIC_KEY'] = os.getenv('PAYSTACK_PUBLIC_KEY')
+app.config['PAYSTACK_SECRET_KEY'] = os.getenv('PAYSTACK_SECRET_KEY')
+app.config['PAYSTACK_WEBHOOK_SECRET'] = os.getenv('PAYSTACK_WEBHOOK_SECRET')
 
 # Create upload directory if it doesn't exist
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
@@ -28,21 +52,141 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 db = SQLAlchemy(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
+
+# Initialize email system
+init_mail(app)
 login_manager.login_view = 'login'
+
+# Global Error Handlers
+@app.errorhandler(OperationalError)
+@app.errorhandler(DisconnectionError)
+@app.errorhandler(SQLTimeoutError)
+def handle_database_error(error):
+    """Handle database connection errors with user-friendly messages"""
+    print(f"Database error: {error}")
+    flash('🔌 Database connection issue detected. Please check your internet connection and try again.', 'error')
+    return render_template('error_pages/database_error.html'), 503
+
+@app.errorhandler(ConnectionError)
+@app.errorhandler(Timeout)
+@app.errorhandler(RequestException)
+def handle_network_error(error):
+    """Handle network connection errors with user-friendly messages"""
+    print(f"Network error: {error}")
+    flash('🌐 Network connection issue detected. Please check your internet connection and try again.', 'error')
+    return render_template('error_pages/network_error.html'), 503
+
+@app.errorhandler(socket.gaierror)
+def handle_dns_error(error):
+    """Handle DNS resolution errors"""
+    print(f"DNS error: {error}")
+    flash('🌍 Unable to connect to the server. Please check your internet connection.', 'error')
+    return render_template('error_pages/network_error.html'), 503
+
+@app.errorhandler(500)
+def handle_internal_error(error):
+    """Handle internal server errors"""
+    print(f"Internal server error: {error}")
+    flash('⚠️ An unexpected error occurred. Our team has been notified. Please try again later.', 'error')
+    return render_template('error_pages/internal_error.html'), 500
+
+@app.errorhandler(404)
+def handle_not_found(error):
+    """Handle page not found errors"""
+    return render_template('error_pages/not_found.html'), 404
+
+@app.errorhandler(403)
+def handle_forbidden(error):
+    """Handle forbidden access errors"""
+    flash('🚫 Access denied. You do not have permission to access this resource.', 'error')
+    return render_template('error_pages/forbidden.html'), 403
+
+# Utility Functions for Error Handling
+def check_database_connection():
+    """Check if database connection is available"""
+    try:
+        with db.engine.connect() as connection:
+            connection.execute(db.text("SELECT 1"))
+        return True
+    except Exception as e:
+        print(f"Database connection check failed: {e}")
+        return False
+
+def check_internet_connection():
+    """Check if internet connection is available"""
+    try:
+        # Try to connect to a reliable server
+        socket.create_connection(("8.8.8.8", 53), timeout=5)
+        return True
+    except OSError:
+        try:
+            # Fallback to Google DNS
+            socket.create_connection(("1.1.1.1", 53), timeout=5)
+            return True
+        except OSError:
+            return False
+
+def safe_database_operation(operation, error_message="Database operation failed"):
+    """Safely execute database operations with error handling"""
+    try:
+        return operation()
+    except (OperationalError, DisconnectionError, SQLTimeoutError) as e:
+        print(f"Database error: {e}")
+        flash('🔌 Database connection issue. Please check your internet connection and try again.', 'error')
+        return None
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+        flash('⚠️ An unexpected error occurred. Please try again later.', 'error')
+        return None
 
 # Database Models
 from flask_login import UserMixin
+
+class School(db.Model):
+    """School/Organization model for multi-tenancy"""
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    code = db.Column(db.String(20), unique=True, nullable=False)  # Unique school code
+    address = db.Column(db.Text, nullable=True)
+    phone = db.Column(db.String(20), nullable=True)
+    email = db.Column(db.String(120), nullable=True)
+    website = db.Column(db.String(200), nullable=True)
+    logo = db.Column(db.String(200), nullable=True)  # Path to school logo
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    users = db.relationship('User', backref='school', lazy=True)
+    classes = db.relationship('Class', backref='school', lazy=True)
+    students = db.relationship('Student', backref='school', lazy=True)
+    subjects = db.relationship('Subject', backref='school', lazy=True)
+    assignments = db.relationship('Assignment', backref='school', lazy=True)
+    messages = db.relationship('Message', backref='school', lazy=True)
+    notifications = db.relationship('Notification', backref='school', lazy=True)
+    lessons = db.relationship('Lesson', backref='school', lazy=True)
+    homework_records = db.relationship('HomeworkRecord', backref='school', lazy=True)
+    
+    @staticmethod
+    def generate_school_code():
+        """Generate a unique school code"""
+        import random
+        import string
+        while True:
+            code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+            if not School.query.filter_by(code=code).first():
+                return code
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(120), nullable=False)
-    role = db.Column(db.String(20), nullable=False)  # admin, teacher, parent
+    role = db.Column(db.String(20), nullable=False)  # super_admin, school_admin, teacher, parent
     first_name = db.Column(db.String(50), nullable=False)
     last_name = db.Column(db.String(50), nullable=False)
     profile_picture = db.Column(db.String(200), nullable=True)  # Path to profile picture
     is_active = db.Column(db.Boolean, default=True)  # For teacher activation/deactivation
+    school_id = db.Column(db.Integer, db.ForeignKey('school.id'), nullable=True)  # NULL for super_admin
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
@@ -61,6 +205,7 @@ class Class(db.Model):
     name = db.Column(db.String(100), nullable=False)
     grade_level = db.Column(db.String(20), nullable=False)
     teacher_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    school_id = db.Column(db.Integer, db.ForeignKey('school.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
@@ -73,6 +218,7 @@ class Subject(db.Model):
     description = db.Column(db.Text, nullable=True)
     class_id = db.Column(db.Integer, db.ForeignKey('class.id'), nullable=False)
     teacher_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    school_id = db.Column(db.Integer, db.ForeignKey('school.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
@@ -85,6 +231,7 @@ class Student(db.Model):
     student_id = db.Column(db.String(20), unique=True, nullable=False)
     class_id = db.Column(db.Integer, db.ForeignKey('class.id'), nullable=False)
     parent_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    school_id = db.Column(db.Integer, db.ForeignKey('school.id'), nullable=False)
     date_of_birth = db.Column(db.Date)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
@@ -92,18 +239,25 @@ class Student(db.Model):
     assignment_records = db.relationship('AssignmentRecord', backref='student', lazy=True)
     
     @staticmethod
-    def generate_student_id():
-        """Generate a unique student ID"""
+    def generate_student_id(school_id=None):
+        """Generate a unique student ID within a school"""
         import random
         year = datetime.now().year
         # Generate a 4-digit random number
         random_num = random.randint(1000, 9999)
         student_id = f"STU{year}{random_num}"
         
-        # Ensure uniqueness
-        while Student.query.filter_by(student_id=student_id).first():
+        # Ensure uniqueness within the school
+        query = Student.query.filter_by(student_id=student_id)
+        if school_id:
+            query = query.filter_by(school_id=school_id)
+        
+        while query.first():
             random_num = random.randint(1000, 9999)
             student_id = f"STU{year}{random_num}"
+            query = Student.query.filter_by(student_id=student_id)
+            if school_id:
+                query = query.filter_by(school_id=school_id)
         
         return student_id
     comments = db.relationship('Comment', foreign_keys='Comment.student_id', backref='student', lazy=True)
@@ -114,6 +268,7 @@ class Assignment(db.Model):
     description = db.Column(db.Text)
     subject_id = db.Column(db.Integer, db.ForeignKey('subject.id'), nullable=False)
     teacher_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    school_id = db.Column(db.Integer, db.ForeignKey('school.id'), nullable=False)
     due_date = db.Column(db.Date, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
@@ -124,6 +279,7 @@ class AssignmentRecord(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     student_id = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
     assignment_id = db.Column(db.Integer, db.ForeignKey('assignment.id'), nullable=False)
+    school_id = db.Column(db.Integer, db.ForeignKey('school.id'), nullable=False)
     completed = db.Column(db.Boolean, default=False)
     submitted_date = db.Column(db.Date)
     grade = db.Column(db.String(10))  # A, B, C, D, F, or percentage
@@ -140,6 +296,7 @@ class Comment(db.Model):
     receiver_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)  # For teacher-to-teacher comments
     student_id = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=True)  # For student-specific comments
     assignment_id = db.Column(db.Integer, db.ForeignKey('assignment.id'), nullable=True)  # For assignment-specific comments
+    school_id = db.Column(db.Integer, db.ForeignKey('school.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
@@ -151,6 +308,7 @@ class HomeworkRecord(db.Model):
     description = db.Column(db.Text, nullable=False)  # Description of homework given
     class_id = db.Column(db.Integer, db.ForeignKey('class.id'), nullable=False)
     teacher_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    school_id = db.Column(db.Integer, db.ForeignKey('school.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
@@ -162,6 +320,7 @@ class HomeworkComment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     homework_record_id = db.Column(db.Integer, db.ForeignKey('homework_record.id'), nullable=False)
     admin_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    school_id = db.Column(db.Integer, db.ForeignKey('school.id'), nullable=False)
     comment = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
@@ -176,6 +335,7 @@ class Message(db.Model):
     content = db.Column(db.Text, nullable=False)
     is_read = db.Column(db.Boolean, default=False)
     parent_message_id = db.Column(db.Integer, db.ForeignKey('message.id'), nullable=True)  # For replies
+    school_id = db.Column(db.Integer, db.ForeignKey('school.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
@@ -187,6 +347,7 @@ class Notification(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     message_id = db.Column(db.Integer, db.ForeignKey('message.id'), nullable=True)
+    school_id = db.Column(db.Integer, db.ForeignKey('school.id'), nullable=False)
     type = db.Column(db.String(50), nullable=False)  # 'message_reply', 'new_message', etc.
     title = db.Column(db.String(200), nullable=False)
     content = db.Column(db.Text, nullable=False)
@@ -202,6 +363,7 @@ class Lesson(db.Model):
     title = db.Column(db.String(200), nullable=False)
     subject_id = db.Column(db.Integer, db.ForeignKey('subject.id'), nullable=False)
     teacher_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    school_id = db.Column(db.Integer, db.ForeignKey('school.id'), nullable=False)
     week = db.Column(db.String(50), nullable=False)  # e.g., "Week 1", "Week 2", etc.
     term = db.Column(db.String(20), nullable=False)  # e.g., "First Term", "Second Term", "Third Term"
     session = db.Column(db.String(20), nullable=False)  # e.g., "2024/2025"
@@ -238,6 +400,7 @@ class Lesson(db.Model):
 class LessonAttachment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     lesson_id = db.Column(db.Integer, db.ForeignKey('lesson.id'), nullable=False)
+    school_id = db.Column(db.Integer, db.ForeignKey('school.id'), nullable=False)
     filename = db.Column(db.String(255), nullable=False)
     original_filename = db.Column(db.String(255), nullable=False)
     file_path = db.Column(db.String(500), nullable=False)
@@ -250,6 +413,7 @@ class LessonComment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     lesson_id = db.Column(db.Integer, db.ForeignKey('lesson.id'), nullable=False)
     admin_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    school_id = db.Column(db.Integer, db.ForeignKey('school.id'), nullable=False)
     comment = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -263,13 +427,121 @@ class LessonComment(db.Model):
 
 class SystemSetting(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    key = db.Column(db.String(100), unique=True, nullable=False)
+    key = db.Column(db.String(100), nullable=False)
     value = db.Column(db.Text, nullable=True)
+    school_id = db.Column(db.Integer, db.ForeignKey('school.id'), nullable=True)  # NULL for global settings
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Make key + school_id unique together
+    __table_args__ = (db.UniqueConstraint('key', 'school_id', name='_key_school_uc'),)
+
+# Payment and Subscription Models
+class SubscriptionPlan(db.Model):
+    """Available subscription plans"""
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)  # Free Trial, Monthly, Annual, Lifetime
+    price = db.Column(db.Float, nullable=False)  # Price in Naira
+    duration_days = db.Column(db.Integer, nullable=True)  # NULL for lifetime plans
+    is_active = db.Column(db.Boolean, default=True)
+    features = db.Column(db.Text, nullable=True)  # JSON string of features
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class SchoolSubscription(db.Model):
+    """School subscription records"""
+    id = db.Column(db.Integer, primary_key=True)
+    school_id = db.Column(db.Integer, db.ForeignKey('school.id'), nullable=False)
+    plan_id = db.Column(db.Integer, db.ForeignKey('subscription_plan.id'), nullable=False)
+    status = db.Column(db.String(20), nullable=False, default='active')  # active, expired, cancelled
+    start_date = db.Column(db.DateTime, default=datetime.utcnow)
+    end_date = db.Column(db.DateTime, nullable=True)  # NULL for lifetime plans
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class Payment(db.Model):
+    """Payment records"""
+    id = db.Column(db.Integer, primary_key=True)
+    school_id = db.Column(db.Integer, db.ForeignKey('school.id'), nullable=False)
+    plan_id = db.Column(db.Integer, db.ForeignKey('subscription_plan.id'), nullable=False)
+    amount = db.Column(db.Float, nullable=False)
+    currency = db.Column(db.String(3), default='NGN')
+    paystack_reference = db.Column(db.String(100), unique=True, nullable=True)
+    paystack_transaction_id = db.Column(db.String(100), unique=True, nullable=True)
+    status = db.Column(db.String(20), nullable=False, default='pending')  # pending, success, failed, cancelled
+    payment_method = db.Column(db.String(50), nullable=True)  # card, bank_transfer, etc.
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    return db.session.get(User, int(user_id))
+
+# Multi-tenancy helper functions
+def get_school_context():
+    """Get the current user's school context"""
+    try:
+        if current_user and current_user.is_authenticated:
+            if current_user.role == 'super_admin':
+                return None  # Super admin can see all schools
+            return current_user.school_id
+    except Exception as e:
+        print(f"Error getting school context: {e}")
+    return None
+
+def check_subscription_status():
+    """Check if the current school has an active subscription"""
+    try:
+        from payment_service import PaymentService
+        
+        # Super admin doesn't need subscription
+        if current_user.role == 'super_admin':
+            return True
+        
+        school_id = get_school_context()
+        if not school_id:
+            return False
+        
+        payment_service = PaymentService()
+        return payment_service.is_subscription_active(school_id)
+    except Exception as e:
+        print(f"Error checking subscription status: {e}")
+        return False
+
+def check_expired_subscriptions():
+    """Check and update expired subscriptions - called by scheduler"""
+    try:
+        from payment_service import PaymentService
+        payment_service = PaymentService()
+        expired_count = payment_service.check_and_update_expired_subscriptions()
+        if expired_count > 0:
+            print(f"Marked {expired_count} subscriptions as expired")
+        return expired_count
+    except Exception as e:
+        print(f"Error checking expired subscriptions: {e}")
+        return 0
+
+def require_subscription(f):
+    """Decorator to require active subscription for certain routes"""
+    from functools import wraps
+    
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not check_subscription_status():
+            flash('This feature requires an active subscription. Please upgrade your plan.', 'warning')
+            return redirect(url_for('pricing'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+def filter_by_school(query, school_id=None):
+    """Filter query by school_id if provided"""
+    if school_id is None:
+        school_id = get_school_context()
+    
+    if school_id is not None:
+        # Check if the model has school_id attribute
+        if hasattr(query.column_descriptions[0]['entity'], 'school_id'):
+            return query.filter_by(school_id=school_id)
+    
+    return query
 
 # Utility functions
 def generate_password(length=8):
@@ -294,7 +566,9 @@ def inject_globals():
 @app.route('/')
 def index():
     if current_user.is_authenticated:
-        if current_user.role == 'admin':
+        if current_user.role == 'super_admin':
+            return redirect(url_for('super_admin_dashboard'))
+        elif current_user.role == 'school_admin':
             return redirect(url_for('admin_dashboard'))
         elif current_user.role == 'teacher':
             return redirect(url_for('teacher_dashboard'))
@@ -302,22 +576,445 @@ def index():
             return redirect(url_for('parent_dashboard'))
     return render_template('index.html')
 
+# School Registration Routes
+@app.route('/register-school', methods=['GET', 'POST'])
+def register_school():
+    """Redirect to pricing page - registration now requires payment"""
+    flash('School registration now requires selecting a subscription plan. Please choose a plan to get started.', 'info')
+    return redirect(url_for('pricing'))
+
+@app.route('/test-email')
+def test_email():
+    """Test email configuration"""
+    try:
+        from email_service import test_email_configuration
+        if test_email_configuration():
+            flash('Email test successful! Check your inbox.', 'success')
+        else:
+            flash('Email test failed. Check your configuration.', 'error')
+    except Exception as e:
+        flash(f'Email test error: {str(e)}', 'error')
+    return redirect(url_for('index'))
+
+@app.route('/system-status')
+def system_status():
+    """Check system status and connectivity"""
+    status = {
+        'database': False,
+        'internet': False,
+        'email': False,
+        'overall': False
+    }
+    
+    # Check database connection
+    try:
+        status['database'] = check_database_connection()
+    except Exception as e:
+        print(f"Database check failed: {e}")
+        status['database'] = False
+    
+    # Check internet connection
+    try:
+        status['internet'] = check_internet_connection()
+    except Exception as e:
+        print(f"Internet check failed: {e}")
+        status['internet'] = False
+    
+    # Check email configuration (basic check)
+    try:
+        email_configured = (
+            app.config.get('MAIL_USERNAME') and 
+            app.config.get('MAIL_PASSWORD') and 
+            app.config.get('MAIL_SERVER')
+        )
+        status['email'] = email_configured
+    except Exception as e:
+        print(f"Email check failed: {e}")
+        status['email'] = False
+    
+    # Overall status
+    status['overall'] = status['database'] and status['internet']
+    
+    return jsonify(status)
+
+@app.route('/status')
+def status_page():
+    """System status page"""
+    return render_template('status.html')
+
+# Payment Routes
+@app.route('/pricing')
+def pricing():
+    """Pricing page"""
+    try:
+        # Get all active plans
+        plans = SubscriptionPlan.query.filter_by(is_active=True).all()
+        
+        # If no plans exist, create default plans
+        if not plans:
+            from payment_service import PaymentService
+            payment_service = PaymentService()
+            payment_service.create_default_plans()
+            plans = SubscriptionPlan.query.filter_by(is_active=True).all()
+        
+        return render_template('pricing.html', plans=plans)
+    except Exception as e:
+        print(f"Error in pricing route: {e}")
+        # Return empty plans list if there's an error
+        return render_template('pricing.html', plans=[])
+
+@app.route('/payment/initialize', methods=['POST'])
+def initialize_payment():
+    """Initialize payment for a subscription plan"""
+    try:
+        from payment_service import PaymentService
+        
+        data = request.get_json()
+        plan_id = data.get('plan_id')
+        email = data.get('email')
+        
+        if not plan_id or not email:
+            flash('❌ Missing required fields. Please provide plan ID and email.', 'error')
+            return jsonify({'success': False, 'message': 'Missing required fields'}), 400
+        
+        # Get plan details
+        plan = SubscriptionPlan.query.get(plan_id)
+        if not plan:
+            flash('❌ Invalid plan selected. Please choose a valid subscription plan.', 'error')
+            return jsonify({'success': False, 'message': 'Invalid plan selected'}), 400
+        
+        # Handle school registration for new users
+        school_id = None
+        admin_username = None
+        admin_password = None
+        
+        if not current_user.is_authenticated:
+            # New user - create school and admin user
+            school_name = data.get('school_name')
+            school_code = data.get('school_code')
+            admin_first_name = data.get('admin_first_name')
+            admin_last_name = data.get('admin_last_name')
+            admin_password = data.get('admin_password')
+            
+            if not all([school_name, school_code, admin_first_name, admin_last_name, admin_password]):
+                flash('❌ Missing school registration details. Please fill in all required fields.', 'error')
+                return jsonify({'success': False, 'message': 'Missing school registration details'}), 400
+            
+            # Check if school code already exists
+            existing_school = School.query.filter_by(code=school_code).first()
+            if existing_school:
+                flash('❌ School code already exists. Please choose a different school code.', 'error')
+                return jsonify({'success': False, 'message': 'School code already exists'}), 400
+            
+            # Create school
+            school = School(
+                name=school_name,
+                code=school_code,
+                address=""
+            )
+            db.session.add(school)
+            db.session.flush()  # Get the school ID
+            
+            # Generate username for admin
+            admin_username = f"{admin_first_name.lower()}{admin_last_name.lower()}{secrets.randbelow(1000)}"
+            
+            # Create admin user
+            admin_user = User(
+                username=admin_username,
+                first_name=admin_first_name,
+                last_name=admin_last_name,
+                email=email,
+                password_hash=generate_password_hash(admin_password),
+                role='school_admin',
+                school_id=school.id,
+                is_active=True
+            )
+            db.session.add(admin_user)
+            db.session.commit()
+            
+            school_id = school.id
+        else:
+            # Existing user - get school context
+            school_id = get_school_context()
+            if not school_id:
+                return jsonify({'success': False, 'message': 'School context not found'}), 400
+        
+        # Initialize payment directly in the route to avoid context issues
+        import requests
+        import json
+        from datetime import datetime
+        
+        # Get Paystack configuration
+        public_key = app.config.get('PAYSTACK_PUBLIC_KEY')
+        secret_key = app.config.get('PAYSTACK_SECRET_KEY')
+        base_url = "https://api.paystack.co"
+        
+        if not secret_key:
+            flash('❌ Payment configuration error. Please contact support.', 'error')
+            return jsonify({'success': False, 'message': 'Paystack configuration not found'}), 500
+        
+        # Generate reference
+        reference = f"EDU_{school_id}_{plan_id}_{int(datetime.now().timestamp())}"
+        
+        # Create payment record
+        payment = Payment(
+            school_id=school_id,
+            plan_id=plan_id,
+            amount=plan.price,
+            currency='NGN',
+            paystack_reference=reference,
+            status='pending'
+        )
+        db.session.add(payment)
+        db.session.commit()
+        
+        # Store admin credentials for later use in welcome email
+        payment_service = PaymentService()
+        if admin_username and admin_password:
+            payment_service.admin_username = admin_username
+            payment_service.admin_password = admin_password
+        
+        # Prepare Paystack request
+        headers = {
+            'Authorization': f'Bearer {secret_key}',
+            'Content-Type': 'application/json'
+        }
+        
+        # Use minimum amount for free trials (Paystack requires amount >= 100 NGN for transfer)
+        amount_kobo = max(int(plan.price * 100), 10000)  # Minimum 100 NGN (10000 kobo) for transfer support
+        
+        # Add info message for free trials about minimum charge
+        if plan.price == 0:
+            flash('ℹ️ Free trial requires a minimum charge of ₦100 for payment processing. This amount will be refunded after successful verification.', 'info')
+        
+        data = {
+            'email': email,
+            'amount': amount_kobo,
+            'reference': reference,
+            'callback_url': f"{app.config['BASE_URL']}/payment/callback",
+            'metadata': {
+                'school_id': school_id,
+                'plan_id': plan_id,
+                'school_name': School.query.get(school_id).name
+            }
+        }
+        
+        # Make request to Paystack
+        response = requests.post(
+            f"{base_url}/transaction/initialize",
+            headers=headers,
+            data=json.dumps(data)
+        )
+        
+        if response.status_code == 200:
+            result = response.json()
+            if result['status']:
+                auth_url = result['data']['authorization_url']
+                error = None
+            else:
+                auth_url = None
+                error = result['message']
+        else:
+            auth_url = None
+            error = f"Payment initialization failed: {response.status_code} - {response.text}"
+        
+        if error:
+            flash(f'❌ Payment initialization failed: {error}', 'error')
+            return jsonify({'success': False, 'message': error}), 400
+        
+        # Add success flash message
+        flash('✅ Payment initialized successfully! Redirecting to payment gateway...', 'success')
+        
+        return jsonify({
+            'success': True,
+            'authorization_url': auth_url,
+            'message': 'Payment initialized successfully'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'❌ Payment processing error: {str(e)}', 'error')
+        return jsonify({'success': False, 'message': f'Error: {str(e)}'}), 500
+
+@app.route('/payment/callback')
+def payment_callback():
+    """Handle payment callback from Paystack"""
+    try:
+        from payment_service import PaymentService
+        
+        reference = request.args.get('reference')
+        if not reference:
+            flash('Payment reference not provided', 'error')
+            return redirect(url_for('pricing'))
+        
+        # Verify payment
+        payment_service = PaymentService()
+        payment_data, error = payment_service.verify_payment(reference)
+        
+        if error:
+            flash(f'Payment verification failed: {error}', 'error')
+            return redirect(url_for('pricing'))
+        
+        # Process successful payment
+        success, message = payment_service.process_successful_payment(payment_data)
+        
+        if success:
+            # If this was a new user registration, log them in
+            if not current_user.is_authenticated:
+                # Find the admin user for this school
+                payment = Payment.query.filter_by(paystack_reference=reference).first()
+                if payment:
+                    admin_user = User.query.filter_by(
+                        school_id=payment.school_id,
+                        role='school_admin'
+                    ).first()
+                    if admin_user:
+                        login_user(admin_user)
+            
+            flash('Payment successful! Your subscription has been activated.', 'success')
+            return redirect(url_for('admin_dashboard' if current_user.role == 'school_admin' else 'teacher_dashboard'))
+        else:
+            flash(f'Payment processing failed: {message}', 'error')
+            return redirect(url_for('pricing'))
+            
+    except Exception as e:
+        flash(f'Payment callback error: {str(e)}', 'error')
+        return redirect(url_for('pricing'))
+
+@app.route('/payment/webhook', methods=['POST'])
+def payment_webhook():
+    """Handle Paystack webhook events"""
+    try:
+        from payment_service import PaymentService
+        
+        # Get webhook data
+        payload = request.get_data()
+        signature = request.headers.get('X-Paystack-Signature')
+        
+        # Verify webhook signature
+        payment_service = PaymentService()
+        if not payment_service.verify_webhook(payload, signature):
+            return jsonify({'status': 'error', 'message': 'Invalid signature'}), 400
+        
+        # Parse webhook data
+        event_data = request.get_json()
+        event_type = event_data.get('event')
+        
+        if event_type == 'charge.success':
+            # Process successful payment
+            payment_data = event_data.get('data')
+            success, message = payment_service.process_successful_payment(payment_data)
+            
+            if success:
+                return jsonify({'status': 'success', 'message': 'Payment processed'})
+            else:
+                return jsonify({'status': 'error', 'message': message}), 500
+        
+        return jsonify({'status': 'success', 'message': 'Webhook received'})
+        
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@app.route('/subscription/status')
+@login_required
+def subscription_status():
+    """Get current subscription status"""
+    try:
+        from payment_service import PaymentService
+        
+        school_id = get_school_context()
+        if not school_id:
+            return jsonify({'success': False, 'message': 'School context not found'}), 400
+        
+        payment_service = PaymentService()
+        subscription_details = payment_service.get_subscription_status_with_details(school_id)
+        
+        return jsonify({
+            'success': True,
+            'subscription': subscription_details
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Error: {str(e)}'}), 500
+
+@app.route('/super-admin')
+@login_required
+def super_admin_dashboard():
+    """Super admin dashboard for managing schools"""
+    if current_user.role != 'super_admin':
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    schools = School.query.all()
+    total_schools = len(schools)
+    total_users = User.query.count()
+    
+    # Initialize database monitor with app context
+    db_monitor.init_app(current_app)
+    
+    # Get database monitoring data (all methods handle their own app context)
+    try:
+        db_size = db_monitor.get_database_size()
+        remaining_space = db_monitor.get_remaining_database_space()
+        table_sizes = db_monitor.get_table_sizes()
+        school_usage = db_monitor.get_school_storage_usage()
+        system_resources = db_monitor.get_system_resources()
+    except Exception as e:
+        print(f"Error getting database monitoring data: {e}")
+        # Provide default values if there's an error
+        db_size = {'size_bytes': 0, 'size_mb': 0, 'size_gb': 0}
+        remaining_space = {'remaining_mb': 1024, 'remaining_gb': 1, 'usage_percentage': 0}
+        table_sizes = {}
+        school_usage = []
+        system_resources = {'cpu_percent': 0, 'memory_percent': 0, 'disk_usage': 0}
+    
+    
+    return render_template('super_admin/dashboard.html', 
+                         schools=schools, 
+                         total_schools=total_schools, 
+                         total_users=total_users,
+                         db_size=db_size,
+                         remaining_space=remaining_space,
+                         table_sizes=table_sizes,
+                         school_usage=school_usage,
+                         school_usage_data=school_usage,
+                         system_resources=system_resources)
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        user = User.query.filter_by(username=username).first()
-        
-        if user and check_password_hash(user.password_hash, password):
-            if not user.is_active:
-                flash('Your account has been deactivated. Please contact the administrator.', 'error')
+        try:
+            # Check database connection first
+            if not check_database_connection():
+                flash('🔌 Database connection issue. Please check your internet connection and try again.', 'error')
                 return render_template('auth/login.html')
-            login_user(user)
-            flash('Login successful!', 'success')
-            return redirect(url_for('index'))
-        else:
-            flash('Invalid username or password', 'error')
+            
+            username = request.form['username']
+            password = request.form['password']
+            
+            # Safely query the database
+            user = safe_database_operation(
+                lambda: User.query.filter_by(username=username).first(),
+                "Unable to verify credentials"
+            )
+            
+            if user is None:
+                flash('Invalid username or password', 'error')
+                return render_template('auth/login.html')
+            
+            if user and check_password_hash(user.password_hash, password):
+                if not user.is_active:
+                    flash('Your account has been deactivated. Please contact the administrator.', 'error')
+                    return render_template('auth/login.html')
+                login_user(user)
+                flash('Login successful!', 'success')
+                return redirect(url_for('index'))
+            else:
+                flash('Invalid username or password', 'error')
+                
+        except Exception as e:
+            print(f"Login error: {e}")
+            flash('⚠️ An unexpected error occurred during login. Please try again.', 'error')
     
     return render_template('auth/login.html')
 
@@ -331,26 +1028,43 @@ def logout():
 @app.route('/admin/dashboard')
 @login_required
 def admin_dashboard():
-    if current_user.role != 'admin':
+    if current_user.role not in ['admin', 'school_admin']:
         flash('Access denied', 'error')
         return redirect(url_for('index'))
     
-    # Get statistics
-    total_students = Student.query.count()
-    total_teachers = User.query.filter_by(role='teacher').count()
-    total_classes = Class.query.count()
-    recent_assignments = Assignment.query.order_by(Assignment.created_at.desc()).limit(5).all()
+    school_id = get_school_context()
     
-    # Get recent lesson submissions
-    recent_lessons = Lesson.query.order_by(Lesson.created_at.desc()).limit(5).all()
+    # Get statistics filtered by school
+    if school_id:
+        total_students = Student.query.filter_by(school_id=school_id).count()
+        total_teachers = User.query.filter_by(role='teacher', school_id=school_id).count()
+        total_classes = Class.query.filter_by(school_id=school_id).count()
+        recent_assignments = Assignment.query.filter_by(school_id=school_id).order_by(Assignment.created_at.desc()).limit(5).all()
+    else:
+        # Super admin can see all data
+        total_students = Student.query.count()
+        total_teachers = User.query.filter_by(role='teacher').count()
+        total_classes = Class.query.count()
+        recent_assignments = Assignment.query.order_by(Assignment.created_at.desc()).limit(5).all()
     
-    # Get teachers with their submission counts
-    teachers = User.query.filter_by(role='teacher').all()
+    # Get recent lesson submissions - FILTERED BY SCHOOL
+    if school_id:
+        recent_lessons = Lesson.query.filter_by(school_id=school_id).order_by(Lesson.created_at.desc()).limit(5).all()
+        teachers = User.query.filter_by(role='teacher', school_id=school_id).all()
+    else:
+        # Super admin can see all data
+        recent_lessons = Lesson.query.order_by(Lesson.created_at.desc()).limit(5).all()
+        teachers = User.query.filter_by(role='teacher').all()
+    
     teachers_with_submissions = []
     
     for teacher in teachers:
-        homework_count = HomeworkRecord.query.filter_by(teacher_id=teacher.id).count()
-        lesson_count = Lesson.query.filter_by(teacher_id=teacher.id).count()
+        if school_id:
+            homework_count = HomeworkRecord.query.filter_by(teacher_id=teacher.id, school_id=school_id).count()
+            lesson_count = Lesson.query.filter_by(teacher_id=teacher.id, school_id=school_id).count()
+        else:
+            homework_count = HomeworkRecord.query.filter_by(teacher_id=teacher.id).count()
+            lesson_count = Lesson.query.filter_by(teacher_id=teacher.id).count()
         
         teachers_with_submissions.append({
             'teacher': teacher,
@@ -376,19 +1090,29 @@ def admin_dashboard():
 @app.route('/api/admin/dashboard-data')
 @login_required
 def api_admin_dashboard_data():
-    if current_user.role != 'admin':
+    if current_user.role not in ['admin', 'school_admin']:
         return jsonify({'error': 'Access denied'}), 403
     
-    # Get fresh data
-    recent_assignments = Assignment.query.order_by(Assignment.created_at.desc()).limit(5).all()
+    # Get school context for filtering
+    school_id = get_school_context()
     
-    # Get teachers with their submission counts
-    teachers = User.query.filter_by(role='teacher').all()
+    # Get fresh data filtered by school
+    if school_id:
+        recent_assignments = Assignment.query.filter_by(school_id=school_id).order_by(Assignment.created_at.desc()).limit(5).all()
+        teachers = User.query.filter_by(role='teacher', school_id=school_id).all()
+    else:
+        # Super admin can see all data
+        recent_assignments = Assignment.query.order_by(Assignment.created_at.desc()).limit(5).all()
+        teachers = User.query.filter_by(role='teacher').all()
     teachers_with_submissions = []
     
     for teacher in teachers:
-        homework_count = HomeworkRecord.query.filter_by(teacher_id=teacher.id).count()
-        lesson_count = Lesson.query.filter_by(teacher_id=teacher.id).count()
+        if school_id:
+            homework_count = HomeworkRecord.query.filter_by(teacher_id=teacher.id, school_id=school_id).count()
+            lesson_count = Lesson.query.filter_by(teacher_id=teacher.id, school_id=school_id).count()
+        else:
+            homework_count = HomeworkRecord.query.filter_by(teacher_id=teacher.id).count()
+            lesson_count = Lesson.query.filter_by(teacher_id=teacher.id).count()
         
         teachers_with_submissions.append({
             'teacher': {
@@ -567,7 +1291,11 @@ def admin_lesson_submissions():
     lessons = query.order_by(Lesson.created_at.desc()).all()
     
     # Get teachers for filter dropdown
-    teachers = User.query.filter_by(role='teacher').all()
+    school_id = get_school_context()
+    if school_id:
+        teachers = User.query.filter_by(role='teacher', school_id=school_id).all()
+    else:
+        teachers = User.query.filter_by(role='teacher').all()
     
     # Get unique weeks and terms for filter dropdowns
     weeks = db.session.query(Lesson.week).distinct().all()
@@ -740,31 +1468,49 @@ def parent_dashboard():
 @app.route('/admin/teachers')
 @login_required
 def manage_teachers():
-    if current_user.role != 'admin':
+    if current_user.role not in ['admin', 'school_admin']:
         flash('Access denied', 'error')
         return redirect(url_for('index'))
     
-    teachers = User.query.filter_by(role='teacher').all()
+    school_id = get_school_context()
+    if school_id:
+        teachers = User.query.filter_by(role='teacher', school_id=school_id).all()
+    else:
+        teachers = User.query.filter_by(role='teacher').all()
     return render_template('admin/teachers.html', teachers=teachers)
 
 @app.route('/admin/classes')
 @login_required
 def manage_classes():
-    if current_user.role != 'admin':
+    if current_user.role not in ['admin', 'school_admin']:
         flash('Access denied', 'error')
         return redirect(url_for('index'))
     
-    classes = Class.query.all()
+    school_id = get_school_context()
+    if school_id:
+        classes = Class.query.filter_by(school_id=school_id).all()
+    else:
+        classes = Class.query.all()
     return render_template('admin/classes.html', classes=classes)
 
 @app.route('/admin/class/<int:class_id>')
 @login_required
 def admin_view_class(class_id):
-    if current_user.role != 'admin':
+    if current_user.role not in ['admin', 'school_admin']:
         flash('Access denied', 'error')
         return redirect(url_for('index'))
     
+    school_id = get_school_context()
+    if not school_id:
+        flash('School context required', 'error')
+        return redirect(url_for('index'))
+    
     class_obj = Class.query.get_or_404(class_id)
+    
+    # SECURITY: Check if class belongs to admin's school
+    if class_obj.school_id != school_id:
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
     
     # Get class statistics
     total_students = len(class_obj.students)
@@ -782,24 +1528,42 @@ def admin_view_class(class_id):
 @app.route('/admin/reports')
 @login_required
 def view_reports():
-    if current_user.role != 'admin':
+    if current_user.role not in ['admin', 'school_admin']:
         flash('Access denied', 'error')
         return redirect(url_for('index'))
+    
+    # Get school context
+    school_id = get_school_context()
     
     # Get filter parameters
     class_filter = request.args.get('class_filter', '')
     
     # Get all classes for filter dropdown
-    all_classes = Class.query.all()
+    if school_id:
+        all_classes = Class.query.filter_by(school_id=school_id).all()
+    else:
+        all_classes = Class.query.all()
     
     # Get statistics
-    total_students = Student.query.count()
-    total_teachers = User.query.filter_by(role='teacher').count()
-    total_classes = Class.query.count()
+    if school_id:
+        total_students = Student.query.filter_by(school_id=school_id).count()
+        total_teachers = User.query.filter_by(role='teacher', school_id=school_id).count()
+        total_classes = Class.query.filter_by(school_id=school_id).count()
+    else:
+        total_students = Student.query.count()
+        total_teachers = User.query.filter_by(role='teacher').count()
+        total_classes = Class.query.count()
     
     # Calculate assignment completion rate
-    total_assignments = Assignment.query.count()
-    completed_assignments = AssignmentRecord.query.filter_by(completed=True).count()
+    if school_id:
+        total_assignments = Assignment.query.filter_by(school_id=school_id).count()
+        completed_assignments = AssignmentRecord.query.join(Assignment).filter(
+            Assignment.school_id == school_id,
+            AssignmentRecord.completed == True
+        ).count()
+    else:
+        total_assignments = Assignment.query.count()
+        completed_assignments = AssignmentRecord.query.filter_by(completed=True).count()
     completion_rate = (completed_assignments / total_assignments * 100) if total_assignments > 0 else 0
     
     # Get class overview data
@@ -896,37 +1660,74 @@ def view_reports():
 @app.route('/admin/settings')
 @login_required
 def system_settings():
-    if current_user.role != 'admin':
+    if current_user.role not in ['admin', 'school_admin']:
         flash('Access denied', 'error')
         return redirect(url_for('index'))
     
-    # Get current settings from database
-    settings = {
-        'school_name': get_setting('school_name', 'EduTrack School'),
-        'school_code': get_setting('school_code', 'ETS001'),
-        'school_address': get_setting('school_address', '123 Education Street, Learning City, LC 12345'),
-        'school_phone': get_setting('school_phone', '+1 (555) 123-4567'),
-        'school_email': get_setting('school_email', 'info@edutrack.edu'),
-        'school_website': get_setting('school_website', ''),
-        'academic_year': get_setting('academic_year', '2024-2025'),
-        'max_students_per_class': int(get_setting('max_students_per_class', '30')),
-        'assignment_late_penalty': int(get_setting('assignment_late_penalty', '10')),
-        'notification_email': get_setting('notification_email', 'true').lower() == 'true',
-        'backup_frequency': get_setting('backup_frequency', 'daily'),
-        'auto_backup_enabled': get_setting('auto_backup_enabled', 'false').lower() == 'true',
-        'auto_backup_frequency': get_setting('auto_backup_frequency', 'daily'),
-        'auto_backup_time': get_setting('auto_backup_time', '02:00'),
-        'auto_backup_retention': int(get_setting('auto_backup_retention', '30'))
-    }
+    try:
+        # Get school context
+        school_id = get_school_context()
+        school = db.session.get(School, school_id) if school_id else None
+        
+        # Get current settings from database (school-specific)
+        settings = {
+            'school_name': get_setting('school_name', school.name if school else 'New School'),
+            'school_code': get_setting('school_code', school.code if school else 'NEW001'),
+            'school_address': get_setting('school_address', school.address if school else ''),
+            'school_phone': get_setting('school_phone', school.phone if school else ''),
+            'school_email': get_setting('school_email', school.email if school else ''),
+            'school_website': get_setting('school_website', school.website if school else ''),
+            'academic_year': get_setting('academic_year', '2024-2025'),
+            'max_students_per_class': int(get_setting('max_students_per_class', '30')),
+            'assignment_late_penalty': int(get_setting('assignment_late_penalty', '10')),
+            'notification_email': get_setting('notification_email', 'true').lower() == 'true',
+            'backup_frequency': get_setting('backup_frequency', 'daily'),
+            'auto_backup_enabled': get_setting('auto_backup_enabled', 'false').lower() == 'true',
+            'auto_backup_frequency': get_setting('auto_backup_frequency', 'daily'),
+            'auto_backup_time': get_setting('auto_backup_time', '02:00'),
+            'auto_backup_retention': int(get_setting('auto_backup_retention', '30')),
+            # Color theme settings
+            'primary_color': get_setting('primary_color', '#3B82F6'),
+            'secondary_color': get_setting('secondary_color', '#6B7280'),
+            'accent_color': get_setting('accent_color', '#10B981'),
+            'theme_mode': get_setting('theme_mode', 'light')  # light, dark, auto
+        }
+    except Exception as e:
+        print(f"Error loading settings: {e}")
+        # Fallback to default settings
+        settings = {
+            'school_name': 'New School',
+            'school_code': 'NEW001',
+            'school_address': '',
+            'school_phone': '',
+            'school_email': '',
+            'school_website': '',
+            'academic_year': '2024-2025',
+            'max_students_per_class': 30,
+            'assignment_late_penalty': 10,
+            'notification_email': True,
+            'backup_frequency': 'daily',
+            'auto_backup_enabled': False,
+            'auto_backup_frequency': 'daily',
+            'auto_backup_time': '02:00',
+            'auto_backup_retention': 30,
+            'primary_color': '#3B82F6',
+            'secondary_color': '#6B7280',
+            'accent_color': '#10B981',
+            'theme_mode': 'light'
+        }
     
     return render_template('admin/settings.html', settings=settings)
 
 @app.route('/admin/settings', methods=['POST'])
 @login_required
 def update_settings():
-    if current_user.role != 'admin':
+    if current_user.role not in ['admin', 'school_admin']:
         flash('Access denied', 'error')
         return redirect(url_for('index'))
+    
+    # Get form type to determine which validation to apply
+    form_type = request.form.get('form_type', 'school_info')
     
     # Get form data
     school_name = request.form.get('school_name', '')
@@ -947,10 +1748,24 @@ def update_settings():
     auto_backup_time = request.form.get('auto_backup_time', '02:00')
     auto_backup_retention = request.form.get('auto_backup_retention', 30)
     
-    # Validate data
-    if not school_name or not school_code:
-        flash('School name and code are required', 'error')
-        return redirect(url_for('system_settings'))
+    # Color theme settings
+    primary_color = request.form.get('primary_color', '#3B82F6')
+    secondary_color = request.form.get('secondary_color', '#6B7280')
+    accent_color = request.form.get('accent_color', '#10B981')
+    theme_mode = request.form.get('theme_mode', 'light')
+    
+    # Validate data based on form type
+    if form_type == 'school_info':
+        if not school_name or not school_code:
+            flash('School name and code are required', 'error')
+            return redirect(url_for('system_settings'))
+    elif form_type == 'color_theme':
+        # Color theme validation - check if colors are valid hex codes
+        import re
+        hex_pattern = r'^#[0-9A-Fa-f]{6}$'
+        if not re.match(hex_pattern, primary_color) or not re.match(hex_pattern, secondary_color) or not re.match(hex_pattern, accent_color):
+            flash('Please enter valid hex color codes (e.g., #FF5733)', 'error')
+            return redirect(url_for('system_settings'))
     
     try:
         # Save settings to database
@@ -972,20 +1787,83 @@ def update_settings():
         set_setting('auto_backup_time', auto_backup_time)
         set_setting('auto_backup_retention', str(auto_backup_retention))
         
-        # Reschedule auto backups if settings changed
-        schedule_auto_backup()
+        # Save color theme settings
+        set_setting('primary_color', primary_color)
+        set_setting('secondary_color', secondary_color)
+        set_setting('accent_color', accent_color)
+        set_setting('theme_mode', theme_mode)
         
-        flash('Settings updated successfully!', 'success')
+        # Reschedule auto backups if settings changed
+        try:
+            schedule_auto_backup()
+        except Exception as backup_error:
+            print(f"Warning: Could not reschedule auto backup: {backup_error}")
+        
+        if form_type == 'color_theme':
+            flash('Color theme updated successfully!', 'success')
+        else:
+            flash('Settings updated successfully!', 'success')
     except Exception as e:
         flash('Error updating settings. Please try again.', 'error')
         print(f"Error updating settings: {e}")
+        db.session.rollback()
     
-    return redirect(url_for('system_settings'))
+    if form_type == 'color_theme':
+        return redirect(url_for('system_settings') + '#color-theme')
+    else:
+        return redirect(url_for('system_settings'))
+
+@app.route('/api/theme-settings')
+@login_required
+def get_theme_settings():
+    """Get theme settings for the current school"""
+    try:
+        school_id = get_school_context()
+        
+        # Force default blue theme
+        theme_settings = {
+            'primary_color': '#3B82F6',  # Default blue
+            'secondary_color': '#6B7280',  # Default gray
+            'accent_color': '#10B981',  # Default green
+            'theme_mode': 'light'
+        }
+        
+        return jsonify(theme_settings)
+    except Exception as e:
+        print(f"Error getting theme settings: {e}")
+        # Return default theme settings on error
+        return jsonify({
+            'primary_color': '#3B82F6',
+            'secondary_color': '#6B7280',
+            'accent_color': '#10B981',
+            'theme_mode': 'light'
+        })
+
+@app.route('/admin/reset-theme', methods=['POST'])
+@login_required
+def reset_theme_to_default():
+    """Reset theme to default blue colors"""
+    try:
+        school_id = get_school_context()
+        if not school_id:
+            return jsonify({'success': False, 'message': 'School context not found'}), 400
+        
+        # Reset theme settings to default blue
+        set_setting('primary_color', '#3B82F6', school_id)
+        set_setting('secondary_color', '#6B7280', school_id)
+        set_setting('accent_color', '#10B981', school_id)
+        set_setting('theme_mode', 'light', school_id)
+        
+        flash('Theme reset to default blue colors successfully!', 'success')
+        return jsonify({'success': True, 'message': 'Theme reset successfully'})
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Error resetting theme: {str(e)}'}), 500
 
 @app.route('/admin/backup')
 @login_required
 def backup_data():
-    if current_user.role != 'admin':
+    if current_user.role not in ['admin', 'school_admin']:
         flash('Access denied', 'error')
         return redirect(url_for('index'))
     
@@ -1032,7 +1910,7 @@ def backup_data():
 @app.route('/admin/backups')
 @login_required
 def list_backups():
-    if current_user.role != 'admin':
+    if current_user.role not in ['admin', 'school_admin']:
         flash('Access denied', 'error')
         return redirect(url_for('index'))
     
@@ -1190,14 +2068,27 @@ def schedule_auto_backup():
         # Clear existing schedules
         schedule.clear()
         
-        # Check if auto backup is enabled
-        if not get_setting('auto_backup_enabled', 'false').lower() == 'true':
+        # Check if auto backup is enabled (use global settings during app init)
+        auto_backup_enabled = False
+        try:
+            auto_backup_enabled = get_setting('auto_backup_enabled', 'false', school_id=None).lower() == 'true'
+        except:
+            # If no global setting exists, check if any school has it enabled
+            with app.app_context():
+                enabled_settings = SystemSetting.query.filter_by(key='auto_backup_enabled', value='true').first()
+                auto_backup_enabled = enabled_settings is not None
+        
+        if not auto_backup_enabled:
             print("Auto backup is disabled")
             return
         
-        # Get backup settings
-        frequency = get_setting('auto_backup_frequency', 'daily')
-        backup_time = get_setting('auto_backup_time', '02:00')
+        # Get backup settings (use global defaults)
+        try:
+            frequency = get_setting('auto_backup_frequency', 'daily', school_id=None)
+            backup_time = get_setting('auto_backup_time', '02:00', school_id=None)
+        except:
+            frequency = 'daily'
+            backup_time = '02:00'
         
         # Schedule based on frequency
         if frequency == 'daily':
@@ -1209,6 +2100,10 @@ def schedule_auto_backup():
         elif frequency == 'monthly':
             schedule.every().day.at(backup_time).do(lambda: create_auto_backup() if datetime.now().day == 1 else None)
             print(f"Auto backup scheduled monthly on 1st at {backup_time}")
+            
+        # Schedule subscription expiration check (runs every hour)
+        schedule.every().hour.do(check_expired_subscriptions)
+        print("Subscription expiration check scheduled every hour")
             
     except Exception as e:
         print(f"Error scheduling auto backup: {e}")
@@ -1364,7 +2259,8 @@ def child_progress(student_id):
         return redirect(url_for('index'))
     
     student = Student.query.get_or_404(student_id)
-    if student.parent_id != current_user.id:
+    # SECURITY: Check if student belongs to parent's school and is linked to parent
+    if student.school_id != current_user.school_id or student.parent_id != current_user.id:
         flash('Access denied', 'error')
         return redirect(url_for('index'))
     
@@ -1457,7 +2353,8 @@ def register_parent():
             password_hash=generate_password_hash(password),
             role='parent',
             first_name=first_name,
-            last_name=last_name
+            last_name=last_name,
+            school_id=current_user.school_id
         )
         db.session.add(parent)
         db.session.flush()
@@ -1467,6 +2364,14 @@ def register_parent():
         if student:
             student.parent_id = parent.id
             db.session.commit()
+            
+            # Send welcome email to parent
+            try:
+                EmailService.send_welcome_email(parent, current_user.school, username, password)
+                print(f"Welcome email sent to {parent.email}")
+            except Exception as email_error:
+                print(f"Failed to send welcome email: {email_error}")
+            
             flash(f'Parent registered successfully! Username: {username}, Password: {password}', 'success')
         else:
             db.session.rollback()
@@ -1482,10 +2387,26 @@ def reset_password():
         user = User.query.filter_by(email=email).first()
         
         if user:
+            # Generate reset token
+            import secrets
+            reset_token = secrets.token_urlsafe(32)
+            
+            # Store reset token in user session or create a reset token table
+            # For now, we'll use a simple approach with a temporary field
+            # In production, you should create a proper reset token table
+            
+            # Generate new password
             new_password = generate_password()
             user.password_hash = generate_password_hash(new_password)
             db.session.commit()
-            flash(f'Password reset successfully! Your new password is: {new_password}', 'success')
+            
+            # Send password reset email
+            try:
+                EmailService.send_password_reset_email(user, reset_token, new_password)
+                flash('Password reset email sent! Please check your email for your new password.', 'success')
+            except Exception as e:
+                print(f"Failed to send password reset email: {e}")
+                flash(f'Password reset successfully! Your new password is: {new_password}', 'success')
         else:
             flash('Email not found', 'error')
     
@@ -1549,10 +2470,18 @@ def register_teacher():
             role='teacher',
             first_name=first_name,
             last_name=last_name,
-            is_active=True
+            is_active=True,
+            school_id=current_user.school_id
         )
         db.session.add(teacher)
         db.session.commit()
+        
+        # Send welcome email to teacher
+        try:
+            EmailService.send_welcome_email(teacher, current_user.school, username, password)
+            print(f"Welcome email sent to {teacher.email}")
+        except Exception as email_error:
+            print(f"Failed to send welcome email: {email_error}")
         
         flash(f'Teacher registered successfully! Username: {username}, Password: {password}', 'success')
         return redirect(url_for('manage_teachers'))
@@ -1606,8 +2535,13 @@ def admin_view_teacher(teacher_id):
 @app.route('/admin/create-class', methods=['GET', 'POST'])
 @login_required
 def admin_create_class():
-    if current_user.role != 'admin':
+    if current_user.role not in ['admin', 'school_admin']:
         flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    school_id = get_school_context()
+    if not school_id:
+        flash('School context required', 'error')
         return redirect(url_for('index'))
     
     if request.method == 'POST':
@@ -1615,17 +2549,25 @@ def admin_create_class():
         grade_level = request.form['grade_level']
         teacher_id = request.form.get('teacher_id')
         
+        # Validate teacher belongs to the same school
+        if teacher_id:
+            teacher = User.query.get(teacher_id)
+            if not teacher or teacher.school_id != school_id:
+                flash('Invalid teacher selected', 'error')
+                return redirect(url_for('admin_create_class'))
+        
         class_obj = Class(
             name=name,
             grade_level=grade_level,
-            teacher_id=teacher_id if teacher_id else None
+            teacher_id=teacher_id if teacher_id else None,
+            school_id=school_id  # SECURITY: Ensure class belongs to admin's school
         )
         db.session.add(class_obj)
         db.session.commit()
         flash('Class created successfully!', 'success')
         return redirect(url_for('manage_classes'))
     
-    teachers = User.query.filter_by(role='teacher', is_active=True).all()
+    teachers = User.query.filter_by(role='teacher', is_active=True, school_id=school_id).all()
     return render_template('admin/create_class.html', teachers=teachers)
 
 # Create student route
@@ -1643,8 +2585,14 @@ def create_student():
         date_of_birth = request.form.get('date_of_birth')
         parent_email = request.form.get('parent_email')
         
-        # Generate unique student ID
-        student_id = Student.generate_student_id()
+        # Validate that the class belongs to the teacher's school
+        class_obj = Class.query.get(class_id)
+        if not class_obj or class_obj.school_id != current_user.school_id:
+            flash('Invalid class selected', 'error')
+            return redirect(url_for('create_student'))
+        
+        # Generate unique student ID within the school
+        student_id = Student.generate_student_id(current_user.school_id)
         
         # Create student
         student = Student(
@@ -1652,6 +2600,7 @@ def create_student():
             last_name=last_name,
             student_id=student_id,
             class_id=class_id,
+            school_id=current_user.school_id,  # SECURITY: Ensure student belongs to teacher's school
             date_of_birth=datetime.strptime(date_of_birth, '%Y-%m-%d').date() if date_of_birth else None
         )
         db.session.add(student)
@@ -1687,8 +2636,8 @@ def view_student(student_id):
     
     student = Student.query.get_or_404(student_id)
     
-    # Check if student belongs to teacher's class
-    if student.class_obj.teacher_id != current_user.id:
+    # SECURITY: Check if student belongs to teacher's school and class
+    if student.school_id != current_user.school_id or student.class_obj.teacher_id != current_user.id:
         flash('Access denied', 'error')
         return redirect(url_for('manage_students'))
     
@@ -1707,8 +2656,8 @@ def edit_student(student_id):
     
     student = Student.query.get_or_404(student_id)
     
-    # Check if student belongs to teacher's class
-    if student.class_obj.teacher_id != current_user.id:
+    # SECURITY: Check if student belongs to teacher's school and class
+    if student.school_id != current_user.school_id or student.class_obj.teacher_id != current_user.id:
         flash('Access denied', 'error')
         return redirect(url_for('manage_students'))
     
@@ -2021,7 +2970,8 @@ def view_class(class_id):
         return redirect(url_for('index'))
     
     class_obj = Class.query.get_or_404(class_id)
-    if class_obj.teacher_id != current_user.id:
+    # SECURITY: Check if class belongs to teacher's school and teacher
+    if class_obj.school_id != current_user.school_id or class_obj.teacher_id != current_user.id:
         flash('Access denied', 'error')
         return redirect(url_for('index'))
     
@@ -2035,7 +2985,8 @@ def view_assignment(assignment_id):
         return redirect(url_for('index'))
     
     assignment = Assignment.query.get_or_404(assignment_id)
-    if assignment.teacher_id != current_user.id:
+    # SECURITY: Check if assignment belongs to teacher's school and teacher
+    if assignment.school_id != current_user.school_id or assignment.teacher_id != current_user.id:
         flash('Access denied', 'error')
         return redirect(url_for('index'))
     
@@ -2147,9 +3098,12 @@ def create_homework_record():
 @app.route('/admin/homework-records')
 @login_required
 def admin_homework_records():
-    if current_user.role != 'admin':
+    if current_user.role not in ['admin', 'school_admin']:
         flash('Access denied', 'error')
         return redirect(url_for('index'))
+    
+    # Get school context
+    school_id = get_school_context()
     
     # Get filter parameters
     class_filter = request.args.get('class_filter', '')
@@ -2157,7 +3111,10 @@ def admin_homework_records():
     teacher_filter = request.args.get('teacher_filter', '')
     
     # Get all classes for filter dropdown
-    all_classes = Class.query.all()
+    if school_id:
+        all_classes = Class.query.filter_by(school_id=school_id).all()
+    else:
+        all_classes = Class.query.all()
     
     # Build query
     query = HomeworkRecord.query
@@ -2290,8 +3247,12 @@ def admin_send_message():
         
         try:
             if recipient_type == 'all':
-                # Send to all teachers
-                teachers = User.query.filter_by(role='teacher').all()
+                # Send to all teachers in the same school
+                school_id = get_school_context()
+                if school_id:
+                    teachers = User.query.filter_by(role='teacher', school_id=school_id).all()
+                else:
+                    teachers = User.query.filter_by(role='teacher').all()
                 for teacher in teachers:
                     message = Message(
                         sender_id=current_user.id,
@@ -2323,7 +3284,11 @@ def admin_send_message():
             flash('Error sending message', 'error')
     
     # Get all teachers for the form
-    teachers = User.query.filter_by(role='teacher').all()
+    school_id = get_school_context()
+    if school_id:
+        teachers = User.query.filter_by(role='teacher', school_id=school_id).all()
+    else:
+        teachers = User.query.filter_by(role='teacher').all()
     return render_template('admin/send_message.html', teachers=teachers)
 
 @app.route('/teacher/messages')
@@ -2372,6 +3337,125 @@ def teacher_notifications():
             'admin_name': comment.admin.first_name + ' ' + comment.admin.last_name
         } for comment in recent_homework_comments]
     })
+
+# Database Monitoring Routes for Super Admin
+@app.route('/api/super-admin/database-monitor')
+@login_required
+def api_database_monitor():
+    """API endpoint for database monitoring data"""
+    if current_user.role != 'super_admin':
+        return jsonify({'error': 'Access denied'}), 403
+    
+    try:
+        # Initialize database monitor with app context
+        db_monitor.init_app(current_app)
+        
+        # Get comprehensive monitoring data
+        report = db_monitor.generate_storage_report()
+        # Add remaining space data
+        report['remaining_space'] = db_monitor.get_remaining_database_space()
+        return jsonify(report)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/super-admin/storage-report')
+@login_required
+def api_storage_report():
+    """Generate and download storage report"""
+    if current_user.role != 'super_admin':
+        return jsonify({'error': 'Access denied'}), 403
+    
+    try:
+        db_monitor.init_app(current_app)
+        report = db_monitor.generate_storage_report()
+        
+        # Create downloadable report
+        from flask import make_response
+        import json
+        
+        response = make_response(json.dumps(report, indent=2))
+        response.headers['Content-Type'] = 'application/json'
+        response.headers['Content-Disposition'] = f'attachment; filename=storage_report_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json'
+        
+        return response
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# School Management Routes for Super Admin
+@app.route('/api/super-admin/school/<int:school_id>')
+@login_required
+def api_get_school(school_id):
+    """Get school details"""
+    if current_user.role != 'super_admin':
+        return jsonify({'error': 'Access denied'}), 403
+    
+    try:
+        school = School.query.get_or_404(school_id)
+        return jsonify({
+            'id': school.id,
+            'name': school.name,
+            'code': school.code,
+            'email': school.email,
+            'phone': school.phone,
+            'website': school.website,
+            'address': school.address,
+            'is_active': school.is_active,
+            'created_at': school.created_at.isoformat(),
+            'users_count': User.query.filter_by(school_id=school.id).count(),
+            'students_count': Student.query.filter_by(school_id=school.id).count(),
+            'classes_count': Class.query.filter_by(school_id=school.id).count(),
+            'assignments_count': Assignment.query.filter_by(school_id=school.id).count()
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/super-admin/school/<int:school_id>/toggle-status', methods=['POST'])
+@login_required
+def api_toggle_school_status(school_id):
+    """Toggle school active status"""
+    if current_user.role != 'super_admin':
+        return jsonify({'error': 'Access denied'}), 403
+    
+    try:
+        school = School.query.get_or_404(school_id)
+        school.is_active = not school.is_active
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'is_active': school.is_active,
+            'message': f'School {"activated" if school.is_active else "deactivated"} successfully'
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/super-admin/school/<int:school_id>/edit', methods=['POST'])
+@login_required
+def api_edit_school(school_id):
+    """Edit school information"""
+    if current_user.role != 'super_admin':
+        return jsonify({'error': 'Access denied'}), 403
+    
+    try:
+        school = School.query.get_or_404(school_id)
+        
+        # Update school information
+        school.name = request.json.get('name', school.name)
+        school.email = request.json.get('email', school.email)
+        school.phone = request.json.get('phone', school.phone)
+        school.website = request.json.get('website', school.website)
+        school.address = request.json.get('address', school.address)
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'School updated successfully'
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/admin/teacher-submissions')
 @login_required
@@ -2559,6 +3643,89 @@ def admin_view_message(message_id):
 @login_required
 def profile():
     return render_template('profile.html')
+
+# Edit Profile route
+@app.route('/edit-profile', methods=['GET', 'POST'])
+@login_required
+def edit_profile():
+    if request.method == 'POST':
+        try:
+            # Get form data
+            first_name = request.form.get('first_name', '').strip()
+            last_name = request.form.get('last_name', '').strip()
+            email = request.form.get('email', '').strip()
+            username = request.form.get('username', '').strip()
+            
+            # Validate required fields
+            if not first_name or not last_name or not email or not username:
+                flash('All fields are required', 'error')
+                return redirect(url_for('edit_profile'))
+            
+            # Check if username is already taken by another user
+            existing_user = User.query.filter(User.username == username, User.id != current_user.id).first()
+            if existing_user:
+                flash('Username already taken', 'error')
+                return redirect(url_for('edit_profile'))
+            
+            # Check if email is already taken by another user
+            existing_email = User.query.filter(User.email == email, User.id != current_user.id).first()
+            if existing_email:
+                flash('Email already taken', 'error')
+                return redirect(url_for('edit_profile'))
+            
+            # Update user information
+            current_user.first_name = first_name
+            current_user.last_name = last_name
+            current_user.email = email
+            current_user.username = username
+            
+            db.session.commit()
+            flash('Profile updated successfully!', 'success')
+            return redirect(url_for('profile'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash('Error updating profile: ' + str(e), 'error')
+            return redirect(url_for('edit_profile'))
+    
+    return render_template('edit_profile.html')
+
+# Change Password route
+@app.route('/change-password', methods=['GET', 'POST'])
+@login_required
+def change_password():
+    if request.method == 'POST':
+        try:
+            current_password = request.form.get('current_password', '')
+            new_password = request.form.get('new_password', '')
+            confirm_password = request.form.get('confirm_password', '')
+            
+            # Validate current password
+            if not check_password_hash(current_user.password_hash, current_password):
+                flash('Current password is incorrect', 'error')
+                return redirect(url_for('change_password'))
+            
+            # Validate new password
+            if not new_password or len(new_password) < 6:
+                flash('New password must be at least 6 characters long', 'error')
+                return redirect(url_for('change_password'))
+            
+            if new_password != confirm_password:
+                flash('New passwords do not match', 'error')
+                return redirect(url_for('change_password'))
+            
+            # Update password
+            current_user.password_hash = generate_password_hash(new_password)
+            db.session.commit()
+            flash('Password changed successfully!', 'success')
+            return redirect(url_for('profile'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash('Error changing password: ' + str(e), 'error')
+            return redirect(url_for('change_password'))
+    
+    return render_template('change_password.html')
 
 # Lesson Plans and Notes Routes
 @app.route('/teacher/lessons')
@@ -2872,18 +4039,31 @@ def allowed_lesson_file(filename):
     ALLOWED_EXTENSIONS = {'pdf', 'doc', 'docx', 'txt', 'rtf'}
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-def get_setting(key, default=None):
-    """Get a system setting value"""
-    setting = SystemSetting.query.filter_by(key=key).first()
+def get_setting(key, default=None, school_id=None):
+    """Get a system setting value for a specific school or global"""
+    if school_id is None:
+        school_id = get_school_context()
+    
+    # First try to get school-specific setting
+    if school_id:
+        setting = SystemSetting.query.filter_by(key=key, school_id=school_id).first()
+        if setting:
+            return setting.value
+    
+    # If no school-specific setting, try global setting
+    setting = SystemSetting.query.filter_by(key=key, school_id=None).first()
     return setting.value if setting else default
 
-def set_setting(key, value):
-    """Set a system setting value"""
-    setting = SystemSetting.query.filter_by(key=key).first()
+def set_setting(key, value, school_id=None):
+    """Set a system setting value for a specific school or global"""
+    if school_id is None:
+        school_id = get_school_context()
+    
+    setting = SystemSetting.query.filter_by(key=key, school_id=school_id).first()
     if setting:
         setting.value = value
     else:
-        setting = SystemSetting(key=key, value=value)
+        setting = SystemSetting(key=key, value=value, school_id=school_id)
         db.session.add(setting)
     db.session.commit()
     return setting
@@ -2899,97 +4079,171 @@ if __name__ == '__main__':
         # Schedule initial auto backup settings
         schedule_auto_backup()
         
-        # Create admin user if it doesn't exist
-        if not User.query.filter_by(username='admin').first():
-            admin_password = os.getenv('ADMIN_PASSWORD', 'admin123')
-            admin = User(
-                username='admin',
-                email='admin@school.com',
-                password_hash=generate_password_hash(admin_password),
-                role='admin',
-                first_name='Admin',
-                last_name='User'
-            )
-            db.session.add(admin)
-            db.session.commit()
-            print("Admin user created: username=admin, password=admin123")
+        # Create super admin user if it doesn't exist
+        if not User.query.filter_by(username='superadmin').first():
+            try:
+                super_admin_password = os.getenv('SUPER_ADMIN_PASSWORD', 'superadmin123')
+                super_admin = User(
+                    username='superadmin',
+                    email='superadmin@edutrack.com',
+                    password_hash=generate_password_hash(super_admin_password),
+                    role='super_admin',
+                    first_name='Super',
+                    last_name='Admin',
+                    school_id=None  # Super admin is not tied to any school
+                )
+                db.session.add(super_admin)
+                db.session.commit()
+                print("Super admin user created: username=superadmin, password=superadmin123")
+            except Exception as e:
+                print(f"Warning: Could not create super admin user: {e}")
+                db.session.rollback()
+        
+        # Create default school and admin user if no schools exist
+        if not School.query.first():
+            try:
+                # Create default school
+                default_school = School(
+                    name='Demo School',
+                    code=School.generate_school_code(),
+                    address='123 Education Street, Learning City',
+                    phone='+1-555-0123',
+                    email='info@demoschool.com',
+                    website='https://demoschool.com'
+                )
+                db.session.add(default_school)
+                db.session.flush()
+                
+                # Create school admin
+                admin_password = os.getenv('ADMIN_PASSWORD', 'admin123')
+                admin = User(
+                    username='admin',
+                    email='admin@demoschool.com',
+                    password_hash=generate_password_hash(admin_password),
+                    role='school_admin',
+                    first_name='School',
+                    last_name='Admin',
+                    school_id=default_school.id
+                )
+                db.session.add(admin)
+                db.session.commit()
+                
+                # Send welcome email to default admin
+                try:
+                    EmailService.send_welcome_email(admin, default_school, 'admin', admin_password)
+                    print(f"Welcome email sent to {admin.email}")
+                except Exception as email_error:
+                    print(f"Failed to send welcome email: {email_error}")
+                
+                print(f"Default school created: {default_school.name} (Code: {default_school.code})")
+                print("School admin created: username=admin, password=admin123")
+            except Exception as e:
+                print(f"Warning: Could not create default school: {e}")
+                db.session.rollback()
         
         # Create teacher user if it doesn't exist
         if not User.query.filter_by(username='teacher1').first():
-            teacher_password = os.getenv('TEACHER_PASSWORD', 'teacher123')
-            teacher = User(
-                username='teacher1',
-                email='teacher1@school.com',
-                password_hash=generate_password_hash(teacher_password),
-                role='teacher',
-                first_name='John',
-                last_name='Teacher'
-            )
-            db.session.add(teacher)
-            db.session.commit()
-            print("Teacher user created: username=teacher1, password=teacher123")
+            try:
+                teacher_password = os.getenv('TEACHER_PASSWORD', 'teacher123')
+                # Get the first school for the teacher
+                school = School.query.first()
+                teacher = User(
+                    username='teacher1',
+                    email='teacher1@school.com',
+                    password_hash=generate_password_hash(teacher_password),
+                    role='teacher',
+                    first_name='John',
+                    last_name='Teacher',
+                    school_id=school.id if school else None
+                )
+                db.session.add(teacher)
+                db.session.commit()
+                print("Teacher user created: username=teacher1, password=teacher123")
+            except Exception as e:
+                print(f"Warning: Could not create teacher user: {e}")
+                db.session.rollback()
         
         # Create parent user if it doesn't exist
         if not User.query.filter_by(username='parent1').first():
-            parent_password = os.getenv('PARENT_PASSWORD', 'parent123')
-            parent = User(
-                username='parent1',
-                email='parent1@school.com',
-                password_hash=generate_password_hash(parent_password),
-                role='parent',
-                first_name='Jane',
-                last_name='Parent'
-            )
-            db.session.add(parent)
-            db.session.flush()
-            print("Parent user created: username=parent1, password=parent123")
+            try:
+                parent_password = os.getenv('PARENT_PASSWORD', 'parent123')
+                # Get the first school for the parent
+                school = School.query.first()
+                parent = User(
+                    username='parent1',
+                    email='parent1@school.com',
+                    password_hash=generate_password_hash(parent_password),
+                    role='parent',
+                    first_name='Jane',
+                    last_name='Parent',
+                    school_id=school.id if school else None
+                )
+                db.session.add(parent)
+                db.session.flush()
+                print("Parent user created: username=parent1, password=parent123")
+            except Exception as e:
+                print(f"Warning: Could not create parent user: {e}")
+                db.session.rollback()
         
         # Create sample class if it doesn't exist
         if not Class.query.first():
-            # Get the teacher we just created
-            teacher = User.query.filter_by(role='teacher').first()
-            sample_class = Class(
-                name='Basic 5A',
-                grade_level='5',
-                teacher_id=teacher.id
-            )
-            db.session.add(sample_class)
-            db.session.flush()
-            print("Sample class created: Basic 5A")
-            
-            # Create sample subjects
-            math_subject = Subject(
-                name='Mathematics',
-                class_id=sample_class.id,
-                teacher_id=teacher.id
-            )
-            english_subject = Subject(
-                name='English Language',
-                class_id=sample_class.id,
-                teacher_id=teacher.id
-            )
-            db.session.add(math_subject)
-            db.session.add(english_subject)
-            db.session.flush()
-            print("Sample subjects created")
-            
-            # Create sample students
-            student1 = Student(
-                first_name='Alice',
-                last_name='Johnson',
-                student_id=Student.generate_student_id(),
-                class_id=sample_class.id,
-                parent_id=parent.id
-            )
-            student2 = Student(
-                first_name='Bob',
-                last_name='Smith',
-                student_id=Student.generate_student_id(),
-                class_id=sample_class.id
-            )
-            db.session.add(student1)
-            db.session.add(student2)
-            db.session.commit()
-            print("Sample students created")
+            try:
+                # Get the teacher we just created
+                teacher = User.query.filter_by(role='teacher').first()
+                school = School.query.first()
+                
+                if teacher and school:
+                    sample_class = Class(
+                        name='Basic 5A',
+                        grade_level='5',
+                        teacher_id=teacher.id,
+                        school_id=school.id
+                    )
+                    db.session.add(sample_class)
+                    db.session.flush()
+                    print("Sample class created: Basic 5A")
+                    
+                    # Create sample subjects
+                    math_subject = Subject(
+                        name='Mathematics',
+                        class_id=sample_class.id,
+                        teacher_id=teacher.id,
+                        school_id=school.id
+                    )
+                    english_subject = Subject(
+                        name='English Language',
+                        class_id=sample_class.id,
+                        teacher_id=teacher.id,
+                        school_id=school.id
+                    )
+                    db.session.add(math_subject)
+                    db.session.add(english_subject)
+                    db.session.flush()
+                    print("Sample subjects created")
+                    
+                    # Create sample students
+                    parent = User.query.filter_by(role='parent').first()
+                    student1 = Student(
+                        first_name='Alice',
+                        last_name='Johnson',
+                        student_id=Student.generate_student_id(),
+                        class_id=sample_class.id,
+                        parent_id=parent.id if parent else None,
+                        school_id=school.id
+                    )
+                    student2 = Student(
+                        first_name='Bob',
+                        last_name='Smith',
+                        student_id=Student.generate_student_id(),
+                        class_id=sample_class.id,
+                        school_id=school.id
+                    )
+                    db.session.add(student1)
+                    db.session.add(student2)
+                    db.session.commit()
+                    print("Sample students created")
+            except Exception as e:
+                print(f"Warning: Could not create sample data: {e}")
+                db.session.rollback()
     
     app.run(debug=True)

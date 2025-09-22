@@ -5,7 +5,7 @@
 {% block content %}
 <div class="flex justify-between items-center mb-8">
     <h1 class="text-3xl font-bold text-gray-900 flex items-center">
-        <i class="fas fa-chalkboard-teacher mr-3"></i>{{ teacher.first_name }} {{ teacher.last_name }}
+        <i class="fas fa-chalkboard-user mr-3"></i>{{ teacher.first_name }} {{ teacher.last_name }}
     </h1>
     <div class="flex space-x-2">
         <a href="{{ url_for('manage_teachers') }}" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition duration-200">

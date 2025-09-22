@@ -1,0 +1,349 @@
+{% extends "base.html" %}
+
+{% block title %}Pricing Plans - EduTrack{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="text-center mb-12">
+            <h1 class="text-4xl font-bold text-gray-900 mb-4">Choose Your Plan</h1>
+            <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                Flexible pricing options to fit your school's needs. Start with our free trial and upgrade when you're ready.
+            </p>
+        </div>
+
+        <!-- Pricing Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+            {% for plan in plans %}
+            <div class="bg-white rounded-2xl shadow-lg p-8 border-2 {% if plan.name == 'Monthly Plan' %}border-primary{% elif plan.name == 'Lifetime Plan' %}border-purple-200{% else %}border-gray-200{% endif %} hover:shadow-xl transition-all duration-300 relative">
+                <!-- Badge -->
+                {% if plan.name == 'Monthly Plan' %}
+                <div class="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                    <span class="bg-primary text-white px-4 py-2 rounded-full text-sm font-semibold">Most Popular</span>
+                </div>
+                {% elif plan.name == 'Annual Plan' %}
+                <div class="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                    <span class="bg-warning text-white px-4 py-2 rounded-full text-sm font-semibold">Save 17%</span>
+                </div>
+                {% elif plan.name == 'Lifetime Plan' %}
+                <div class="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                    <span class="bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-4 py-2 rounded-full text-sm font-semibold">Best Value</span>
+                </div>
+                {% endif %}
+
+                <!-- Plan Icon -->
+                <div class="text-center mb-6">
+                    <div class="w-16 h-16 {% if plan.name == 'Free Trial' %}bg-green-100{% elif plan.name == 'Monthly Plan' %}bg-blue-100{% elif plan.name == 'Annual Plan' %}bg-yellow-100{% else %}bg-gradient-to-r from-purple-500 to-indigo-500{% endif %} rounded-full flex items-center justify-center mx-auto mb-4">
+                        {% if plan.name == 'Free Trial' %}
+                        <i class="fas fa-gift text-2xl text-green-600"></i>
+                        {% elif plan.name == 'Monthly Plan' %}
+                        <i class="fas fa-calendar-alt text-2xl text-blue-600"></i>
+                        {% elif plan.name == 'Annual Plan' %}
+                        <i class="fas fa-star text-2xl text-yellow-600"></i>
+                        {% else %}
+                        <i class="fas fa-crown text-2xl text-white"></i>
+                        {% endif %}
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900">{{ plan.name }}</h3>
+                </div>
+
+                <!-- Price -->
+                <div class="text-center mb-6">
+                    <div class="flex items-baseline justify-center">
+                        <span class="text-4xl font-bold text-gray-900">₦{{ "{:,.0f}".format(plan.price) }}</span>
+                        {% if plan.duration_days %}
+                        <span class="text-gray-600 ml-2">
+                            {% if plan.duration_days == 7 %}/week{% elif plan.duration_days == 30 %}/month{% elif plan.duration_days == 365 %}/year{% else %}/{{ plan.duration_days }} days{% endif %}
+                        </span>
+                        {% else %}
+                        <span class="text-gray-600 ml-2">/one-time</span>
+                        {% endif %}
+                    </div>
+                    {% if plan.name == 'Free Trial' %}
+                    <p class="text-sm text-gray-600 mt-2">Perfect for testing our platform</p>
+                    {% elif plan.name == 'Monthly Plan' %}
+                    <p class="text-sm text-gray-600 mt-2">Ideal for small to medium schools</p>
+                    {% elif plan.name == 'Annual Plan' %}
+                    <p class="text-sm text-gray-600 mt-2">Best value for growing schools</p>
+                    {% else %}
+                    <p class="text-sm text-gray-600 mt-2">Perfect for established institutions</p>
+                    {% endif %}
+                </div>
+
+                <!-- Features -->
+                <div class="mb-8">
+                    <ul class="space-y-3">
+                        {% if plan.name == 'Free Trial' %}
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-success mr-3 text-sm"></i>
+                            <span class="text-sm text-gray-700">1 week access</span>
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-success mr-3 text-sm"></i>
+                            <span class="text-sm text-gray-700">Up to 50 students</span>
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-success mr-3 text-sm"></i>
+                            <span class="text-sm text-gray-700">Basic features</span>
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-success mr-3 text-sm"></i>
+                            <span class="text-sm text-gray-700">Email support</span>
+                        </li>
+                        {% elif plan.name == 'Monthly Plan' %}
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-success mr-3 text-sm"></i>
+                            <span class="text-sm text-gray-700">Unlimited students</span>
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-success mr-3 text-sm"></i>
+                            <span class="text-sm text-gray-700">All features included</span>
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-success mr-3 text-sm"></i>
+                            <span class="text-sm text-gray-700">Priority support</span>
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-success mr-3 text-sm"></i>
+                            <span class="text-sm text-gray-700">Data backup</span>
+                        </li>
+                        {% elif plan.name == 'Annual Plan' %}
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-success mr-3 text-sm"></i>
+                            <span class="text-sm text-gray-700">Unlimited students</span>
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-success mr-3 text-sm"></i>
+                            <span class="text-sm text-gray-700">All features included</span>
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-success mr-3 text-sm"></i>
+                            <span class="text-sm text-gray-700">Priority support</span>
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-success mr-3 text-sm"></i>
+                            <span class="text-sm text-gray-700">Advanced analytics</span>
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-success mr-3 text-sm"></i>
+                            <span class="text-sm text-gray-700">Custom integrations</span>
+                        </li>
+                        {% elif plan.name == 'Lifetime Plan' %}
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-success mr-3 text-sm"></i>
+                            <span class="text-sm text-gray-700">Unlimited students</span>
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-success mr-3 text-sm"></i>
+                            <span class="text-sm text-gray-700">All features included</span>
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-success mr-3 text-sm"></i>
+                            <span class="text-sm text-gray-700">24/7 premium support</span>
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-success mr-3 text-sm"></i>
+                            <span class="text-sm text-gray-700">Custom development</span>
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-success mr-3 text-sm"></i>
+                            <span class="text-sm text-gray-700">White-label options</span>
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-success mr-3 text-sm"></i>
+                            <span class="text-sm text-gray-700">Lifetime updates</span>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </div>
+
+                <!-- Action Button -->
+                {% if not current_user.is_authenticated %}
+                <button onclick="initializePayment({{ plan.id }})" class="w-full {% if plan.name == 'Free Trial' %}bg-success hover:bg-green-600{% elif plan.name == 'Monthly Plan' %}bg-primary hover:bg-blue-600{% elif plan.name == 'Annual Plan' %}bg-warning hover:bg-yellow-500{% else %}bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600{% endif %} text-white py-3 px-6 rounded-lg font-semibold transition duration-150 ease-in-out">
+                    {% if plan.name == 'Free Trial' %}Start Free Trial{% else %}Choose {{ plan.name }}{% endif %}
+                </button>
+                {% else %}
+                <button onclick="initializePayment({{ plan.id }})" class="w-full {% if plan.name == 'Free Trial' %}bg-success hover:bg-green-600{% elif plan.name == 'Monthly Plan' %}bg-primary hover:bg-blue-600{% elif plan.name == 'Annual Plan' %}bg-warning hover:bg-yellow-500{% else %}bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600{% endif %} text-white py-3 px-6 rounded-lg font-semibold transition duration-150 ease-in-out">
+                    {% if plan.name == 'Free Trial' %}Start Free Trial{% else %}Subscribe to {{ plan.name }}{% endif %}
+                </button>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Additional Info -->
+        <div class="text-center">
+            <p class="text-gray-600 mb-6">All plans include secure data storage, regular backups, and mobile access.</p>
+            <div class="flex flex-col sm:flex-row gap-6 justify-center items-center">
+                <div class="flex items-center text-sm text-gray-600">
+                    <i class="fas fa-shield-alt text-success mr-2"></i>
+                    <span>SSL Encrypted</span>
+                </div>
+                <div class="flex items-center text-sm text-gray-600">
+                    <i class="fas fa-mobile-alt text-success mr-2"></i>
+                    <span>Mobile Responsive</span>
+                </div>
+                <div class="flex items-center text-sm text-gray-600">
+                    <i class="fas fa-headset text-success mr-2"></i>
+                    <span>24/7 Support</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Modal -->
+<div id="paymentModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-lg w-full">
+            <div class="p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Complete Your Payment</h3>
+                <form id="paymentForm">
+                    <div class="mb-4">
+                        <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+                        <input type="email" id="email" name="email" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                               placeholder="Enter your email address">
+                    </div>
+                    
+                    <!-- School Registration Fields (shown for new users) -->
+                    <div id="schoolRegistrationFields" class="hidden">
+                        <div class="mb-4">
+                            <label for="schoolName" class="block text-sm font-medium text-gray-700 mb-2">School Name</label>
+                            <input type="text" id="schoolName" name="schoolName"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                                   placeholder="Enter your school name">
+                        </div>
+                        <div class="mb-4">
+                            <label for="schoolCode" class="block text-sm font-medium text-gray-700 mb-2">School Code</label>
+                            <input type="text" id="schoolCode" name="schoolCode"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                                   placeholder="Enter a unique school code">
+                        </div>
+                        <div class="mb-4">
+                            <label for="adminFirstName" class="block text-sm font-medium text-gray-700 mb-2">Admin First Name</label>
+                            <input type="text" id="adminFirstName" name="adminFirstName"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                                   placeholder="Enter your first name">
+                        </div>
+                        <div class="mb-4">
+                            <label for="adminLastName" class="block text-sm font-medium text-gray-700 mb-2">Admin Last Name</label>
+                            <input type="text" id="adminLastName" name="adminLastName"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                                   placeholder="Enter your last name">
+                        </div>
+                        <div class="mb-4">
+                            <label for="adminPassword" class="block text-sm font-medium text-gray-700 mb-2">Admin Password</label>
+                            <input type="password" id="adminPassword" name="adminPassword"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                                   placeholder="Create a password">
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-3">
+                        <button type="button" onclick="closePaymentModal()"
+                                class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition duration-150 ease-in-out">
+                            Cancel
+                        </button>
+                        <button type="submit" id="payButton"
+                                class="px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-blue-600 rounded-md transition duration-150 ease-in-out">
+                            <span id="payButtonText">Proceed to Payment</span>
+                            <i id="payButtonSpinner" class="fas fa-spinner fa-spin ml-2 hidden"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let selectedPlanId = null;
+
+function initializePayment(planId) {
+    selectedPlanId = planId;
+    const modal = document.getElementById('paymentModal');
+    const schoolFields = document.getElementById('schoolRegistrationFields');
+    
+    // Show school registration fields for new users
+    {% if not current_user.is_authenticated %}
+    schoolFields.classList.remove('hidden');
+    {% else %}
+    schoolFields.classList.add('hidden');
+    {% endif %}
+    
+    modal.classList.remove('hidden');
+}
+
+function closePaymentModal() {
+    document.getElementById('paymentModal').classList.add('hidden');
+    selectedPlanId = null;
+    document.getElementById('paymentForm').reset();
+}
+
+document.getElementById('paymentForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const email = document.getElementById('email').value;
+    const payButton = document.getElementById('payButton');
+    const payButtonText = document.getElementById('payButtonText');
+    const payButtonSpinner = document.getElementById('payButtonSpinner');
+    
+    // Show loading state
+    payButton.disabled = true;
+    payButtonText.textContent = 'Processing...';
+    payButtonSpinner.classList.remove('hidden');
+    
+    try {
+        // Prepare payment data
+        const paymentData = {
+            plan_id: selectedPlanId,
+            email: email
+        };
+        
+        // Add school registration data for new users
+        {% if not current_user.is_authenticated %}
+        paymentData.school_name = document.getElementById('schoolName').value;
+        paymentData.school_code = document.getElementById('schoolCode').value;
+        paymentData.admin_first_name = document.getElementById('adminFirstName').value;
+        paymentData.admin_last_name = document.getElementById('adminLastName').value;
+        paymentData.admin_password = document.getElementById('adminPassword').value;
+        {% endif %}
+        
+        const response = await fetch('/payment/initialize', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(paymentData)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Redirect to Paystack
+            window.location.href = data.authorization_url;
+        } else {
+            alert('Error: ' + data.message);
+            closePaymentModal();
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+        closePaymentModal();
+    } finally {
+        // Reset button state
+        payButton.disabled = false;
+        payButtonText.textContent = 'Proceed to Payment';
+        payButtonSpinner.classList.add('hidden');
+    }
+});
+
+// Close modal when clicking outside
+document.getElementById('paymentModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closePaymentModal();
+    }
+});
+</script>
+{% endblock %}

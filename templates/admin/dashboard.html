@@ -2,14 +2,50 @@
 
 {% block title %}Admin Dashboard - EduTrack{% endblock %}
 
+
 {% block content %}
-<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8 space-y-2 sm:space-y-0">
-    <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center">
-        <i class="fas fa-tachometer-alt mr-2 sm:mr-3"></i>Admin Dashboard
-    </h1>
-    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary text-white">
-        Head Teacher
-    </span>
+<!-- Welcome Section with Profile Picture -->
+<div class="bg-white rounded-xl shadow-lg p-6 mb-6 sm:mb-8">
+    <div class="flex flex-col sm:flex-row items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-6">
+        <!-- Profile Picture -->
+        <div class="flex-shrink-0">
+            {% if current_user.profile_picture %}
+                <img src="{{ url_for('static', filename=current_user.profile_picture) }}" 
+                     alt="Profile Picture" 
+                     class="w-20 h-20 rounded-full object-cover border-4 border-primary shadow-lg">
+            {% else %}
+                <div class="w-20 h-20 bg-primary bg-opacity-10 rounded-full flex items-center justify-center border-4 border-primary shadow-lg">
+                    <i class="fas fa-user text-3xl text-primary"></i>
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Welcome Text and Info -->
+        <div class="flex-1 min-w-0">
+            <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
+                Welcome back, {{ current_user.first_name }}!
+            </h1>
+            <p class="text-gray-600 mb-3">Here's what's happening at your school today.</p>
+            <div class="flex flex-wrap items-center gap-3">
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary text-white">
+                    <i class="fas fa-user-shield mr-1"></i>
+                    Head Teacher
+                </span>
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-700">
+                    <i class="fas fa-school mr-1"></i>
+                    {{ current_user.school.name if current_user.school else 'School Admin' }}
+                </span>
+            </div>
+        </div>
+        
+        <!-- Quick Stats -->
+        <div class="flex-shrink-0 hidden sm:block">
+            <div class="text-right">
+                <div class="text-2xl font-bold text-primary">{{ total_students }}</div>
+                <div class="text-sm text-gray-500">Students</div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Statistics Cards -->
@@ -21,7 +57,7 @@
                 <p class="text-blue-100">Total Students</p>
             </div>
             <div class="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-                <i class="fas fa-user-graduate text-2xl"></i>
+                <i class="fas fa-graduation-cap text-2xl"></i>
             </div>
         </div>
     </div>
@@ -33,7 +69,7 @@
                 <p class="text-green-100">Teachers</p>
             </div>
             <div class="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-                <i class="fas fa-chalkboard-teacher text-2xl"></i>
+                <i class="fas fa-chalkboard-user text-2xl"></i>
             </div>
         </div>
     </div>
@@ -72,7 +108,7 @@
         <a href="{{ url_for('manage_teachers') }}" class="group p-4 border border-gray-200 rounded-lg hover:border-primary hover:shadow-md transition-all duration-200">
             <div class="flex items-center">
                 <div class="w-10 h-10 bg-primary bg-opacity-10 rounded-lg flex items-center justify-center mr-3 group-hover:bg-primary group-hover:text-white transition-colors duration-200">
-                    <i class="fas fa-chalkboard-teacher text-primary group-hover:text-white"></i>
+                    <i class="fas fa-chalkboard-user text-white group-hover:text-white"></i>
                 </div>
                 <span class="text-sm font-medium text-gray-700 group-hover:text-primary">Manage Teachers</span>
             </div>
@@ -81,7 +117,7 @@
         <a href="{{ url_for('manage_classes') }}" class="group p-4 border border-gray-200 rounded-lg hover:border-success hover:shadow-md transition-all duration-200">
             <div class="flex items-center">
                 <div class="w-10 h-10 bg-success bg-opacity-10 rounded-lg flex items-center justify-center mr-3 group-hover:bg-success group-hover:text-white transition-colors duration-200">
-                    <i class="fas fa-school text-success group-hover:text-white"></i>
+                    <i class="fas fa-school text-white group-hover:text-white"></i>
                 </div>
                 <span class="text-sm font-medium text-gray-700 group-hover:text-success">Manage Classes</span>
             </div>

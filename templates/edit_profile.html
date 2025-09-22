@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Profile - EduTrack{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="bg-white rounded-xl shadow-lg p-6">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold text-gray-900 flex items-center">
+                <i class="fas fa-edit mr-3"></i>Edit Profile
+            </h1>
+            <a href="{{ url_for('profile') }}" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition duration-200">
+                <i class="fas fa-arrow-left mr-2"></i>Back to Profile
+            </a>
+        </div>
+        
+        <form method="POST" class="space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="first_name" class="block text-sm font-medium text-gray-700 mb-2">First Name *</label>
+                    <input type="text" id="first_name" name="first_name" value="{{ current_user.first_name }}" 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition duration-200" 
+                           required>
+                </div>
+                
+                <div>
+                    <label for="last_name" class="block text-sm font-medium text-gray-700 mb-2">Last Name *</label>
+                    <input type="text" id="last_name" name="last_name" value="{{ current_user.last_name }}" 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition duration-200" 
+                           required>
+                </div>
+                
+                <div>
+                    <label for="username" class="block text-sm font-medium text-gray-700 mb-2">Username *</label>
+                    <input type="text" id="username" name="username" value="{{ current_user.username }}" 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition duration-200" 
+                           required>
+                </div>
+                
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+                    <input type="email" id="email" name="email" value="{{ current_user.email }}" 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition duration-200" 
+                           required>
+                </div>
+            </div>
+            
+            <!-- Role Display (Read-only) -->
+            <div class="bg-gray-50 rounded-lg p-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Role</label>
+                <div class="flex items-center">
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium 
+                        {% if current_user.role == 'super_admin' %}bg-purple-100 text-purple-800
+                        {% elif current_user.role == 'admin' %}bg-primary text-white
+                        {% elif current_user.role == 'teacher' %}bg-success text-white
+                        {% else %}bg-info text-white{% endif %}">
+                        <i class="fas fa-{% if current_user.role == 'super_admin' %}crown{% elif current_user.role == 'admin' %}user-shield{% elif current_user.role == 'teacher' %}chalkboard-teacher{% else %}user{% endif %} mr-2"></i>
+                        {{ current_user.role.replace('_', ' ').title() }}
+                    </span>
+                    <span class="ml-3 text-sm text-gray-500">(Cannot be changed)</span>
+                </div>
+            </div>
+            
+            <!-- School Display (if applicable) -->
+            {% if current_user.school_id %}
+            <div class="bg-gray-50 rounded-lg p-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">School</label>
+                <p class="text-gray-900">{{ current_user.school.name if current_user.school else 'N/A' }}</p>
+                <span class="text-sm text-gray-500">(Cannot be changed)</span>
+            </div>
+            {% endif %}
+            
+            <!-- Action Buttons -->
+            <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+                <a href="{{ url_for('profile') }}" 
+                   class="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition duration-200">
+                    Cancel
+                </a>
+                <button type="submit" 
+                        class="px-6 py-3 bg-primary text-white rounded-lg hover:bg-blue-700 transition duration-200">
+                    <i class="fas fa-save mr-2"></i>Save Changes
+                </button>
+            </div>
+        </form>
+        
+        <!-- Additional Actions -->
+        <div class="mt-8 pt-6 border-t border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Account Security</h3>
+            <div class="space-y-3">
+                <a href="{{ url_for('change_password') }}" 
+                   class="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition duration-200">
+                    <i class="fas fa-key mr-2"></i>Change Password
+                </a>
+                <a href="{{ url_for('reset_password') }}" 
+                   class="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition duration-200">
+                    <i class="fas fa-unlock mr-2"></i>Reset Password
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

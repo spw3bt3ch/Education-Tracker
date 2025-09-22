@@ -1,0 +1,49 @@
+{% extends "emails/base.html" %}
+
+{% block title %}Grade Posted{% endblock %}
+
+{% block header_title %}Grade Posted{% endblock %}
+{% block header_subtitle %}Your child's assignment has been graded{% endblock %}
+
+{% block content %}
+<h2>Grade Posted: {{ assignment.title }}</h2>
+
+<p>Hello {{ student.parent.first_name }},</p>
+
+<p>Your child <strong>{{ student.first_name }} {{ student.last_name }}</strong> has received a grade for their assignment.</p>
+
+<div class="info-box">
+    <p><strong>Assignment Details:</strong></p>
+    <ul>
+        <li><strong>Title:</strong> {{ assignment.title }}</li>
+        <li><strong>Subject:</strong> {{ assignment.subject.name if assignment.subject else 'General' }}</li>
+        <li><strong>Class:</strong> {{ assignment.subject.class.name if assignment.subject and assignment.subject.class else 'N/A' }}</li>
+        <li><strong>Teacher:</strong> {{ assignment.subject.teacher.first_name }} {{ assignment.subject.teacher.last_name }}</li>
+    </ul>
+</div>
+
+<div class="success-box">
+    <p><strong>Grade Information:</strong></p>
+    <ul>
+        <li><strong>Grade:</strong> {{ grade.grade if grade else 'N/A' }}</li>
+        <li><strong>Comments:</strong> {{ grade.comments if grade and grade.comments else 'No comments provided' }}</li>
+        <li><strong>Graded On:</strong> {{ grade.updated_at.strftime('%B %d, %Y at %I:%M %p') if grade and grade.updated_at else 'Recently' }}</li>
+    </ul>
+</div>
+
+<div class="info-box">
+    <p><strong>What you can do:</strong></p>
+    <ul>
+        <li>Log in to your parent portal to view detailed feedback</li>
+        <li>Discuss the results with your child</li>
+        <li>Contact the teacher if you have questions</li>
+        <li>Track overall academic progress</li>
+    </ul>
+</div>
+
+<p>You can view more detailed feedback and track your child's academic progress through the parent portal.</p>
+
+<p>Best regards,<br>
+{{ assignment.subject.teacher.first_name }} {{ assignment.subject.teacher.last_name }}<br>
+{{ assignment.subject.class.name if assignment.subject and assignment.subject.class else 'Teacher' }}</p>
+{% endblock %}

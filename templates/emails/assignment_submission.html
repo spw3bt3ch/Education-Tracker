@@ -1,0 +1,41 @@
+{% extends "emails/base.html" %}
+
+{% block title %}Assignment Submitted{% endblock %}
+
+{% block header_title %}Assignment Submitted{% endblock %}
+{% block header_subtitle %}A student has submitted their assignment{% endblock %}
+
+{% block content %}
+<h2>Assignment Submission: {{ assignment.title }}</h2>
+
+<p>Hello {{ teacher.first_name }},</p>
+
+<p><strong>{{ student.first_name }} {{ student.last_name }}</strong> has submitted their assignment for your review.</p>
+
+<div class="info-box">
+    <p><strong>Submission Details:</strong></p>
+    <ul>
+        <li><strong>Student:</strong> {{ student.first_name }} {{ student.last_name }}</li>
+        <li><strong>Student ID:</strong> {{ student.student_id }}</li>
+        <li><strong>Assignment:</strong> {{ assignment.title }}</li>
+        <li><strong>Subject:</strong> {{ assignment.subject.name if assignment.subject else 'General' }}</li>
+        <li><strong>Class:</strong> {{ assignment.subject.class.name if assignment.subject and assignment.subject.class else 'N/A' }}</li>
+        <li><strong>Submitted:</strong> {{ assignment.updated_at.strftime('%B %d, %Y at %I:%M %p') if assignment.updated_at else 'Recently' }}</li>
+    </ul>
+</div>
+
+<div class="success-box">
+    <p><strong>Next Steps:</strong></p>
+    <ul>
+        <li>Log in to your teacher dashboard to review the submission</li>
+        <li>Check the submitted work and provide feedback</li>
+        <li>Grade the assignment if applicable</li>
+        <li>Communicate with the student or parent if needed</li>
+    </ul>
+</div>
+
+<p>You can access the submission through your teacher portal where you can review, grade, and provide feedback to the student.</p>
+
+<p>Best regards,<br>
+The EduTrack System</p>
+{% endblock %}

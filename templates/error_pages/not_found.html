@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Page Not Found - EduTrack{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full space-y-8">
+        <div class="text-center">
+            <!-- Error Icon -->
+            <div class="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-blue-100 mb-6">
+                <i class="fas fa-search text-blue-600 text-3xl"></i>
+            </div>
+            
+            <!-- Error Title -->
+            <h1 class="text-3xl font-bold text-gray-900 mb-4">
+                Page Not Found
+            </h1>
+            
+            <!-- Error Message -->
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
+                <div class="flex items-center">
+                    <i class="fas fa-info-circle text-blue-500 mr-3"></i>
+                    <div>
+                        <h3 class="text-lg font-medium text-blue-800 mb-2">
+                            The page you're looking for doesn't exist
+                        </h3>
+                        <p class="text-blue-700">
+                            The page you requested could not be found. It may have been moved, 
+                            deleted, or you may have entered an incorrect URL.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- What to do -->
+            <div class="bg-gray-50 border border-gray-200 rounded-lg p-6 mb-6">
+                <h3 class="text-lg font-medium text-gray-800 mb-3">
+                    <i class="fas fa-lightbulb mr-2"></i>What you can do:
+                </h3>
+                <ul class="text-gray-700 space-y-2 text-left">
+                    <li class="flex items-start">
+                        <i class="fas fa-check-circle text-gray-500 mr-2 mt-1"></i>
+                        Check the URL for typos
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check-circle text-gray-500 mr-2 mt-1"></i>
+                        Go back to the previous page
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check-circle text-gray-500 mr-2 mt-1"></i>
+                        Use the navigation menu to find what you need
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check-circle text-gray-500 mr-2 mt-1"></i>
+                        Contact support if you believe this is an error
+                    </li>
+                </ul>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="space-y-4">
+                <button onclick="history.back()" 
+                        class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-200">
+                    <i class="fas fa-arrow-left mr-2"></i>
+                    Go Back
+                </button>
+                
+                <a href="{{ url_for('index') }}" 
+                   class="w-full flex justify-center py-3 px-4 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-200">
+                    <i class="fas fa-home mr-2"></i>
+                    Go to Homepage
+                </a>
+            </div>
+            
+            <!-- Technical Info (collapsible) -->
+            <details class="mt-6 text-left">
+                <summary class="cursor-pointer text-sm text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    Technical Information
+                </summary>
+                <div class="mt-2 p-4 bg-gray-100 rounded-lg text-xs text-gray-600">
+                    <p><strong>Error Type:</strong> Page Not Found</p>
+                    <p><strong>Status Code:</strong> 404 Not Found</p>
+                    <p><strong>Timestamp:</strong> {{ moment().format('YYYY-MM-DD HH:mm:ss') }}</p>
+                    <p><strong>Description:</strong> The requested resource could not be found on this server.</p>
+                </div>
+            </details>
+        </div>
+    </div>
+</div>
+{% endblock %}

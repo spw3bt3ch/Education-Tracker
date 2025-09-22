@@ -1,0 +1,48 @@
+{% extends "emails/base.html" %}
+
+{% block title %}New Assignment Notification{% endblock %}
+
+{% block header_title %}New Assignment{% endblock %}
+{% block header_subtitle %}Your child has a new assignment{% endblock %}
+
+{% block content %}
+<h2>New Assignment: {{ assignment.title }}</h2>
+
+<p>Hello {{ student.parent.first_name }},</p>
+
+<p>Your child <strong>{{ student.first_name }} {{ student.last_name }}</strong> has been assigned a new task by their teacher.</p>
+
+<div class="info-box">
+    <p><strong>Assignment Details:</strong></p>
+    <ul>
+        <li><strong>Title:</strong> {{ assignment.title }}</li>
+        <li><strong>Subject:</strong> {{ assignment.subject.name if assignment.subject else 'General' }}</li>
+        <li><strong>Class:</strong> {{ assignment.subject.class.name if assignment.subject and assignment.subject.class else 'N/A' }}</li>
+        <li><strong>Teacher:</strong> {{ teacher.first_name }} {{ teacher.last_name }}</li>
+        <li><strong>Due Date:</strong> {{ assignment.due_date.strftime('%B %d, %Y at %I:%M %p') if assignment.due_date else 'No due date set' }}</li>
+    </ul>
+</div>
+
+{% if assignment.description %}
+<div class="school-info">
+    <h3>Assignment Description</h3>
+    <p>{{ assignment.description }}</p>
+</div>
+{% endif %}
+
+<div class="success-box">
+    <p><strong>What you can do:</strong></p>
+    <ul>
+        <li>Log in to your parent portal to view full assignment details</li>
+        <li>Help your child understand the requirements</li>
+        <li>Monitor their progress and submission</li>
+        <li>Communicate with the teacher if needed</li>
+    </ul>
+</div>
+
+<p>Please encourage your child to complete this assignment on time. You can track their progress through the parent portal.</p>
+
+<p>Best regards,<br>
+{{ teacher.first_name }} {{ teacher.last_name }}<br>
+{{ assignment.subject.class.name if assignment.subject and assignment.subject.class else 'Teacher' }}</p>
+{% endblock %}

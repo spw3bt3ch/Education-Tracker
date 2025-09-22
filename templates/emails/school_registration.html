@@ -1,0 +1,48 @@
+{% extends "emails/base.html" %}
+
+{% block title %}School Registration Confirmed{% endblock %}
+
+{% block header_title %}Registration Confirmed!{% endblock %}
+{% block header_subtitle %}Your school has been successfully registered{% endblock %}
+
+{% block content %}
+<h2>Congratulations, {{ admin.first_name }}!</h2>
+
+<p>Your school <strong>{{ school.name }}</strong> has been successfully registered with EduTrack. You can now start using our comprehensive student assignment tracking system.</p>
+
+<div class="success-box">
+    <p><strong>Registration Details:</strong></p>
+    <ul>
+        <li><strong>School Name:</strong> {{ school.name }}</li>
+        <li><strong>School Code:</strong> {{ school.code }}</li>
+        <li><strong>Admin Username:</strong> {{ admin.username }}</li>
+        <li><strong>Admin Email:</strong> {{ admin.email }}</li>
+    </ul>
+</div>
+
+<div class="school-info">
+    <h3>School Information</h3>
+    <p><strong>Address:</strong> {{ school.address or 'Not provided' }}</p>
+    <p><strong>Phone:</strong> {{ school.phone or 'Not provided' }}</p>
+    <p><strong>Email:</strong> {{ school.email or 'Not provided' }}</p>
+    <p><strong>Website:</strong> {{ school.website or 'Not provided' }}</p>
+</div>
+
+<div class="info-box">
+    <p><strong>What's Next?</strong></p>
+    <ul>
+        <li>Log in to your admin dashboard</li>
+        <li>Set up your school's classes and subjects</li>
+        <li>Invite teachers to join your school</li>
+        <li>Configure your school's settings</li>
+        <li>Start creating assignments and managing students</li>
+    </ul>
+</div>
+
+<p>Your school code <strong>{{ school.code }}</strong> can be used by teachers and parents to join your school. Make sure to share this code with your staff.</p>
+
+<p>If you need any assistance getting started, please don't hesitate to contact our support team.</p>
+
+<p>Welcome to EduTrack!<br>
+The EduTrack Team</p>
+{% endblock %}

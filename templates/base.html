@@ -12,18 +12,90 @@
     <!-- Custom CSS -->
     <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
     
+    <!-- Dynamic Theme CSS -->
+    <style>
+        :root {
+            --primary-color: #3B82F6;
+            --secondary-color: #6B7280;
+            --accent-color: #10B981;
+        }
+        
+        .bg-primary { background-color: var(--primary-color) !important; }
+        .text-primary { color: var(--primary-color) !important; }
+        .border-primary { border-color: var(--primary-color) !important; }
+        .ring-primary { --tw-ring-color: var(--primary-color) !important; }
+        
+        .bg-secondary { background-color: var(--secondary-color) !important; }
+        .text-secondary { color: var(--secondary-color) !important; }
+        
+        .bg-success { background-color: var(--accent-color) !important; }
+        .text-success { color: var(--accent-color) !important; }
+        .border-success { border-color: var(--accent-color) !important; }
+    </style>
+    
     <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#3B82F6',
-                        secondary: '#6B7280',
-                        success: '#10B981',
-                        warning: '#F59E0B',
-                        danger: '#EF4444',
-                        info: '#06B6D4'
+        // Load theme settings dynamically
+        let themeSettings = {
+            primary: '#3B82F6',
+            secondary: '#6B7280',
+            accent: '#10B981',
+            mode: 'light'
+        };
+        
+        // Load theme settings from server
+        {% if current_user.is_authenticated %}
+        fetch('/api/theme-settings')
+            .then(response => response.json())
+            .then(data => {
+                // Force default blue theme
+                themeSettings = {
+                    primary: '#3B82F6',
+                    secondary: '#6B7280',
+                    accent: '#10B981',
+                    mode: 'light'
+                };
+                applyTheme();
+            })
+            .catch(error => {
+                console.log('Using default theme settings');
+                applyTheme();
+            });
+        {% else %}
+        applyTheme();
+        {% endif %}
+        
+        function applyTheme() {
+            tailwind.config = {
+                theme: {
+                    extend: {
+                        colors: {
+                            primary: themeSettings.primary_color || '#3B82F6',
+                            secondary: themeSettings.secondary_color || '#6B7280',
+                            success: themeSettings.accent_color || '#10B981',
+                            warning: '#F59E0B',
+                            danger: '#EF4444',
+                            info: '#06B6D4'
+                        }
                     }
+                }
+            };
+            
+            // Update CSS custom properties
+            document.documentElement.style.setProperty('--primary-color', themeSettings.primary_color || '#3B82F6');
+            document.documentElement.style.setProperty('--secondary-color', themeSettings.secondary_color || '#6B7280');
+            document.documentElement.style.setProperty('--accent-color', themeSettings.accent_color || '#10B981');
+            
+            // Apply theme mode
+            if (themeSettings.theme_mode === 'dark') {
+                document.documentElement.classList.add('dark');
+            } else if (themeSettings.theme_mode === 'light') {
+                document.documentElement.classList.remove('dark');
+            } else if (themeSettings.theme_mode === 'auto') {
+                // Auto mode - use system preference
+                if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                    document.documentElement.classList.add('dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
                 }
             }
         }
@@ -32,6 +104,23 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body class="bg-gray-50 min-h-screen">
+    <!-- Subscription Warning Banner -->
+    <div id="subscription-warning" class="hidden bg-yellow-100 border-l-4 border-yellow-500 p-4">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <i class="fas fa-exclamation-triangle text-yellow-500"></i>
+            </div>
+            <div class="ml-3">
+                <p class="text-sm text-yellow-700">
+                    <span id="subscription-warning-text">Your subscription is expiring soon!</span>
+                    <a href="{{ url_for('pricing') }}" class="font-medium underline text-yellow-700 hover:text-yellow-600 ml-2">
+                        Renew now
+                    </a>
+                </p>
+            </div>
+        </div>
+    </div>
+
     <!-- Navigation -->
     <nav class="bg-primary shadow-lg">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -46,10 +135,10 @@
                         {% if current_user.is_authenticated %}
                             {% if current_user.role == 'admin' %}
                                 <a href="{{ url_for('admin_dashboard') }}" class="text-white hover:text-gray-300 px-3 py-2 rounded-md text-sm font-medium flex items-center">
-                                    <i class="fas fa-tachometer-alt mr-1"></i>Dashboard
+                                    <i class="fas fa-gauge mr-1"></i>Dashboard
                                 </a>
                                 <a href="{{ url_for('manage_teachers') }}" class="text-white hover:text-gray-300 px-3 py-2 rounded-md text-sm font-medium flex items-center">
-                                    <i class="fas fa-chalkboard-teacher mr-1"></i>Teachers
+                                    <i class="fas fa-chalkboard-user mr-1"></i>Teachers
                                 </a>
                                 <a href="{{ url_for('manage_classes') }}" class="text-white hover:text-gray-300 px-3 py-2 rounded-md text-sm font-medium flex items-center">
                                     <i class="fas fa-school mr-1"></i>Classes
@@ -60,10 +149,10 @@
                                 </a>
                             {% elif current_user.role == 'teacher' %}
                                 <a href="{{ url_for('teacher_dashboard') }}" class="text-white hover:text-gray-300 px-3 py-2 rounded-md text-sm font-medium flex items-center">
-                                    <i class="fas fa-tachometer-alt mr-1"></i>Dashboard
+                                    <i class="fas fa-gauge mr-1"></i>Dashboard
                                 </a>
                                 <a href="{{ url_for('manage_students') }}" class="text-white hover:text-gray-300 px-3 py-2 rounded-md text-sm font-medium flex items-center">
-                                    <i class="fas fa-user-graduate mr-1"></i>Students
+                                    <i class="fas fa-graduation-cap mr-1"></i>Students
                                 </a>
                                 <a href="{{ url_for('manage_subjects') }}" class="text-white hover:text-gray-300 px-3 py-2 rounded-md text-sm font-medium flex items-center">
                                     <i class="fas fa-book mr-1"></i>Subjects
@@ -73,9 +162,13 @@
                                 </a>
                             {% elif current_user.role == 'parent' %}
                                 <a href="{{ url_for('parent_dashboard') }}" class="text-white hover:text-gray-300 px-3 py-2 rounded-md text-sm font-medium flex items-center">
-                                    <i class="fas fa-tachometer-alt mr-1"></i>Dashboard
+                                    <i class="fas fa-gauge mr-1"></i>Dashboard
                                 </a>
                             {% endif %}
+                        {% else %}
+                            <a href="{{ url_for('pricing') }}" class="text-white hover:text-gray-300 px-3 py-2 rounded-md text-sm font-medium flex items-center">
+                                <i class="fas fa-tags mr-1"></i>Pricing
+                            </a>
                         {% endif %}
                     </div>
                 </div>
@@ -84,17 +177,24 @@
                         <div class="ml-3 relative">
                             <div class="flex items-center space-x-4">
                                 <span class="text-white text-sm">{{ current_user.first_name }} {{ current_user.last_name }}</span>
+                                <!-- Subscription Status Indicator -->
+                                <div id="subscription-status" class="hidden">
+                                    <a href="{{ url_for('pricing') }}" class="text-yellow-300 hover:text-yellow-200 px-3 py-2 rounded-md text-sm font-medium flex items-center">
+                                        <i class="fas fa-exclamation-triangle mr-1"></i>
+                                        <span id="subscription-text">Subscription Required</span>
+                                    </a>
+                                </div>
                                 <a href="{{ url_for('profile') }}" class="text-white hover:text-gray-300 px-3 py-2 rounded-md text-sm font-medium">
-                                    <i class="fas fa-user-cog mr-1"></i>Profile
+                                    <i class="fas fa-user-gear mr-1"></i>Profile
                                 </a>
                                 <a href="{{ url_for('logout') }}" class="text-white hover:text-gray-300 px-3 py-2 rounded-md text-sm font-medium">
-                                    <i class="fas fa-sign-out-alt mr-1"></i>Logout
+                                    <i class="fas fa-right-from-bracket mr-1"></i>Logout
                                 </a>
                             </div>
                         </div>
                     {% else %}
                         <a href="{{ url_for('login') }}" class="text-white hover:text-gray-300 px-3 py-2 rounded-md text-sm font-medium">
-                            <i class="fas fa-sign-in-alt mr-1"></i>Login
+                            <i class="fas fa-right-to-bracket mr-1"></i>Login
                         </a>
                     {% endif %}
                 </div>
@@ -113,20 +213,20 @@
                 {% if current_user.is_authenticated %}
                     {% if current_user.role == 'admin' %}
                         <a href="{{ url_for('admin_dashboard') }}" class="text-white hover:text-gray-300 block px-3 py-2 text-base font-medium">
-                            <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
+                            <i class="fas fa-gauge mr-2"></i>Dashboard
                         </a>
                         <a href="{{ url_for('manage_teachers') }}" class="text-white hover:text-gray-300 block px-3 py-2 text-base font-medium">
-                            <i class="fas fa-chalkboard-teacher mr-2"></i>Teachers
+                            <i class="fas fa-chalkboard-user mr-2"></i>Teachers
                         </a>
                         <a href="{{ url_for('manage_classes') }}" class="text-white hover:text-gray-300 block px-3 py-2 text-base font-medium">
                             <i class="fas fa-school mr-2"></i>Classes
                         </a>
                     {% elif current_user.role == 'teacher' %}
                         <a href="{{ url_for('teacher_dashboard') }}" class="text-white hover:text-gray-300 block px-3 py-2 text-base font-medium">
-                            <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
+                            <i class="fas fa-gauge mr-2"></i>Dashboard
                         </a>
                         <a href="{{ url_for('manage_students') }}" class="text-white hover:text-gray-300 block px-3 py-2 text-base font-medium">
-                            <i class="fas fa-user-graduate mr-2"></i>Students
+                            <i class="fas fa-graduation-cap mr-2"></i>Students
                         </a>
                         <a href="{{ url_for('manage_subjects') }}" class="text-white hover:text-gray-300 block px-3 py-2 text-base font-medium">
                             <i class="fas fa-book mr-2"></i>Subjects
@@ -136,20 +236,20 @@
                         </a>
                     {% elif current_user.role == 'parent' %}
                         <a href="{{ url_for('parent_dashboard') }}" class="text-white hover:text-gray-300 block px-3 py-2 text-base font-medium">
-                            <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
+                            <i class="fas fa-gauge mr-2"></i>Dashboard
                         </a>
                     {% endif %}
                     <div class="border-t border-gray-700 pt-4">
                         <a href="{{ url_for('profile') }}" class="text-white hover:text-gray-300 block px-3 py-2 text-base font-medium">
-                            <i class="fas fa-user-cog mr-2"></i>Profile
+                            <i class="fas fa-user-gear mr-2"></i>Profile
                         </a>
                         <a href="{{ url_for('logout') }}" class="text-white hover:text-gray-300 block px-3 py-2 text-base font-medium">
-                            <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                            <i class="fas fa-right-from-bracket mr-2"></i>Logout
                         </a>
                     </div>
                 {% else %}
                     <a href="{{ url_for('login') }}" class="text-white hover:text-gray-300 block px-3 py-2 text-base font-medium">
-                        <i class="fas fa-sign-in-alt mr-2"></i>Login
+                        <i class="fas fa-right-to-bracket mr-2"></i>Login
                     </a>
                 {% endif %}
             </div>
@@ -232,9 +332,61 @@
             {% endif %}
         }
 
+        // Check subscription status
+        function checkSubscriptionStatus() {
+            {% if current_user.is_authenticated and current_user.role != 'super_admin' %}
+            fetch('/subscription/status')
+                .then(response => response.json())
+                .then(data => {
+                    const statusElement = document.getElementById('subscription-status');
+                    const textElement = document.getElementById('subscription-text');
+                    
+                    if (data.success && data.subscription) {
+                        const subscription = data.subscription;
+                        
+                        if (!subscription.is_active) {
+                            statusElement.classList.remove('hidden');
+                            if (subscription.status === 'no_subscription') {
+                                textElement.textContent = 'Subscription Required';
+                            } else if (subscription.status === 'expired') {
+                                textElement.textContent = 'Subscription Expired';
+                            } else {
+                                textElement.textContent = 'Subscription ' + subscription.status;
+                            }
+                        } else if (subscription.days_remaining <= 7 && subscription.days_remaining > 0) {
+                            // Show warning for expiring subscription
+                            statusElement.classList.remove('hidden');
+                            textElement.textContent = `${subscription.days_remaining} days left`;
+                            statusElement.querySelector('a').classList.add('text-yellow-600', 'hover:text-yellow-500');
+                            statusElement.querySelector('a').classList.remove('text-yellow-300', 'hover:text-yellow-200');
+                            
+                            // Show warning banner
+                            const warningBanner = document.getElementById('subscription-warning');
+                            const warningText = document.getElementById('subscription-warning-text');
+                            if (warningBanner && warningText) {
+                                warningBanner.classList.remove('hidden');
+                                warningText.textContent = `Your ${subscription.plan_name} subscription expires in ${subscription.days_remaining} days!`;
+                            }
+                        } else {
+                            statusElement.classList.add('hidden');
+                            // Hide warning banner
+                            const warningBanner = document.getElementById('subscription-warning');
+                            if (warningBanner) {
+                                warningBanner.classList.add('hidden');
+                            }
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking subscription status:', error);
+                });
+            {% endif %}
+        }
+
         // Load notification count when page loads
         document.addEventListener('DOMContentLoaded', function() {
             loadNotificationCount();
+            checkSubscriptionStatus();
             
             // Refresh notification count every 30 seconds
             setInterval(loadNotificationCount, 30000);

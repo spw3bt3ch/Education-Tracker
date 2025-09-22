@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subscription Expired - Home Task Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            border-radius: 10px 10px 0 0;
+        }
+        .content {
+            background: #ffffff;
+            padding: 30px;
+            border: 1px solid #e5e7eb;
+            border-top: none;
+        }
+        .footer {
+            background: #f9fafb;
+            padding: 20px;
+            text-align: center;
+            border-radius: 0 0 10px 10px;
+            border: 1px solid #e5e7eb;
+            border-top: none;
+        }
+        .expired-box {
+            background: #fef2f2;
+            border: 2px solid #ef4444;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .plan-card {
+            background: #f8fafc;
+            border: 2px solid #6b7280;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .button {
+            display: inline-block;
+            background: #3B82F6;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+        .data-preservation {
+            background: #f0f9ff;
+            border: 1px solid #0ea5e9;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>❌ Subscription Expired</h1>
+        <p>Service access has been suspended</p>
+    </div>
+    
+    <div class="content">
+        <h2>Hello {{ admin_name }},</h2>
+        
+        <div class="expired-box">
+            <h3>⚠️ Service Suspended</h3>
+            <p>Your <strong>{{ plan_name }}</strong> subscription for <strong>{{ school_name }}</strong> has expired on <strong>{{ expiry_date }}</strong>.</p>
+            <p>Access to your dashboard and all features has been suspended.</p>
+        </div>
+        
+        <div class="plan-card">
+            <h3>📋 Expired Subscription Details</h3>
+            <ul>
+                <li><strong>Plan:</strong> {{ plan_name }}</li>
+                <li><strong>School:</strong> {{ school_name }}</li>
+                <li><strong>School Code:</strong> {{ school_code }}</li>
+                <li><strong>Expired On:</strong> {{ expiry_date }}</li>
+            </ul>
+        </div>
+        
+        <h3>🔄 Reactivate Your Subscription</h3>
+        <p>Don't worry! You can reactivate your subscription anytime to restore full access to your school's data and features.</p>
+        
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="{{ pricing_url }}" class="button">Reactivate Now</a>
+        </div>
+        
+        <div class="data-preservation">
+            <h4>💾 Data Preservation</h4>
+            <p>Your data is safe! We will preserve your school's data for <strong>30 days</strong> after expiration. This includes:</p>
+            <ul>
+                <li>All student records and assignments</li>
+                <li>Teacher accounts and class information</li>
+                <li>Assignment submissions and grades</li>
+                <li>School settings and configurations</li>
+            </ul>
+            <p><strong>Important:</strong> After 30 days, data may be permanently deleted. Please reactivate your subscription before this period ends.</p>
+        </div>
+        
+        <h3>📞 Need Help?</h3>
+        <p>If you have any questions about reactivation or need assistance, please contact us:</p>
+        <ul>
+            <li>Email: support@hometasktracker.com</li>
+            <li>Phone: +234 (0) 123 456 7890</li>
+            <li>Live Chat: Available on our website</li>
+        </ul>
+        
+        <p>We hope to see you back soon!</p>
+        
+        <p>Best regards,<br>
+        The Home Task Tracker Team</p>
+    </div>
+    
+    <div class="footer">
+        <p>&copy; 2024 Home Task Tracker. All rights reserved.</p>
+        <p>This email was sent to {{ admin_email }} for {{ school_name }}</p>
+    </div>
+</body>
+</html>

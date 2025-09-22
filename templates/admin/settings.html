@@ -3,6 +3,24 @@
 {% block title %}Settings - EduTrack{% endblock %}
 
 {% block content %}
+<style>
+.nav-link {
+    position: relative;
+}
+.nav-link.active {
+    background-color: var(--primary-color, #3B82F6) !important;
+    color: white !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+.nav-link.active:hover {
+    background-color: var(--primary-color, #3B82F6) !important;
+    color: white !important;
+}
+.settings-section {
+    min-height: 500px;
+}
+</style>
+
 <div class="flex justify-between items-center mb-8">
     <h1 class="text-3xl font-bold text-gray-900 flex items-center">
         <i class="fas fa-cog mr-3"></i>System Settings
@@ -13,21 +31,24 @@
     <!-- Settings Navigation -->
     <div class="bg-white rounded-xl shadow-lg p-6">
         <h2 class="text-lg font-semibold text-gray-900 mb-4">Settings Categories</h2>
-        <nav class="space-y-2">
-            <a href="#school-info" onclick="showSection('school-info')" class="block px-3 py-2 text-sm font-medium text-primary bg-primary bg-opacity-10 rounded-lg">
-                <i class="fas fa-school mr-2"></i>School Information
+        <nav class="space-y-1">
+            <a href="#school-info" onclick="showSection('school-info')" class="nav-link block px-4 py-3 text-sm font-medium text-primary bg-primary bg-opacity-10 rounded-lg transition-all duration-200 hover:bg-opacity-20">
+                <i class="fas fa-school mr-3"></i>School Information
             </a>
-            <a href="#user-management" onclick="showSection('user-management')" class="block px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">
-                <i class="fas fa-users mr-2"></i>User Management
+            <a href="#color-theme" onclick="showSection('color-theme')" class="nav-link block px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-primary rounded-lg transition-all duration-200">
+                <i class="fas fa-palette mr-3"></i>Color Theme
             </a>
-            <a href="#notifications" onclick="showSection('notifications')" class="block px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">
-                <i class="fas fa-bell mr-2"></i>Notifications
+            <a href="#user-management" onclick="showSection('user-management')" class="nav-link block px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-primary rounded-lg transition-all duration-200">
+                <i class="fas fa-users mr-3"></i>User Management
             </a>
-            <a href="#security" onclick="showSection('security')" class="block px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">
-                <i class="fas fa-shield-alt mr-2"></i>Security
+            <a href="#notifications" onclick="showSection('notifications')" class="nav-link block px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-primary rounded-lg transition-all duration-200">
+                <i class="fas fa-bell mr-3"></i>Notifications
             </a>
-            <a href="#backup" onclick="showSection('backup')" class="block px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">
-                <i class="fas fa-database mr-2"></i>Backup & Restore
+            <a href="#security" onclick="showSection('security')" class="nav-link block px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-primary rounded-lg transition-all duration-200">
+                <i class="fas fa-shield-alt mr-3"></i>Security
+            </a>
+            <a href="#backup" onclick="showSection('backup')" class="nav-link block px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-primary rounded-lg transition-all duration-200">
+                <i class="fas fa-database mr-3"></i>Backup & Restore
             </a>
         </nav>
     </div>
@@ -35,10 +56,11 @@
     <!-- Settings Content -->
     <div class="lg:col-span-2">
         <!-- School Information Section -->
-        <div id="school-info" class="bg-white rounded-xl shadow-lg p-6">
+        <div id="school-info" class="settings-section bg-white rounded-xl shadow-lg p-6">
             <h2 class="text-xl font-semibold text-gray-900 mb-6">School Information</h2>
             
-            <form method="POST" class="space-y-6">
+            <form method="POST" class="space-y-6" id="school-info-form">
+                <input type="hidden" name="form_type" value="school_info">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label for="school_name" class="block text-sm font-medium text-gray-700 mb-2">School Name</label>
@@ -126,7 +148,7 @@
         </div>
 
         <!-- User Management Section -->
-        <div id="user-management" class="bg-white rounded-xl shadow-lg p-6 hidden">
+        <div id="user-management" class="settings-section bg-white rounded-xl shadow-lg p-6 hidden">
             <h2 class="text-xl font-semibold text-gray-900 mb-6">User Management</h2>
             <div class="space-y-4">
                 <div class="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
@@ -151,7 +173,7 @@
         </div>
 
         <!-- Notifications Section -->
-        <div id="notifications" class="bg-white rounded-xl shadow-lg p-6 hidden">
+        <div id="notifications" class="settings-section bg-white rounded-xl shadow-lg p-6 hidden">
             <h2 class="text-xl font-semibold text-gray-900 mb-6">Notification Settings</h2>
             <form class="space-y-4">
                 <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
@@ -172,8 +194,86 @@
             </form>
         </div>
 
+        <!-- Color Theme Section -->
+        <div id="color-theme" class="settings-section bg-white rounded-xl shadow-lg p-6 hidden">
+            <h2 class="text-xl font-semibold text-gray-900 mb-6">Color Theme Settings</h2>
+            <p class="text-gray-600 mb-6">Customize the color scheme for your school. These settings will apply to all dashboards (Admin, Teachers, and Parents).</p>
+            
+            <form method="POST" action="{{ url_for('update_settings') }}" class="space-y-6" id="color-theme-form">
+                <input type="hidden" name="form_type" value="color_theme">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label for="primary_color" class="block text-sm font-medium text-gray-700 mb-2">Primary Color</label>
+                        <div class="flex items-center space-x-3">
+                            <input type="color" id="primary_color" name="primary_color" value="{{ settings.primary_color }}" class="w-12 h-10 border border-gray-300 rounded-lg cursor-pointer">
+                            <input type="text" id="primary_color_text" value="{{ settings.primary_color }}" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="#3B82F6">
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">Main brand color for buttons, links, and highlights</p>
+                    </div>
+                    
+                    <div>
+                        <label for="secondary_color" class="block text-sm font-medium text-gray-700 mb-2">Secondary Color</label>
+                        <div class="flex items-center space-x-3">
+                            <input type="color" id="secondary_color" name="secondary_color" value="{{ settings.secondary_color }}" class="w-12 h-10 border border-gray-300 rounded-lg cursor-pointer">
+                            <input type="text" id="secondary_color_text" value="{{ settings.secondary_color }}" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="#6B7280">
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">Secondary elements and text</p>
+                    </div>
+                    
+                    <div>
+                        <label for="accent_color" class="block text-sm font-medium text-gray-700 mb-2">Accent Color</label>
+                        <div class="flex items-center space-x-3">
+                            <input type="color" id="accent_color" name="accent_color" value="{{ settings.accent_color }}" class="w-12 h-10 border border-gray-300 rounded-lg cursor-pointer">
+                            <input type="text" id="accent_color_text" value="{{ settings.accent_color }}" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="#10B981">
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">Success states and positive actions</p>
+                    </div>
+                </div>
+
+                <div>
+                    <label for="theme_mode" class="block text-sm font-medium text-gray-700 mb-2">Theme Mode</label>
+                    <select id="theme_mode" name="theme_mode" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                        <option value="light" {% if settings.theme_mode == 'light' %}selected{% endif %}>Light Mode</option>
+                        <option value="dark" {% if settings.theme_mode == 'dark' %}selected{% endif %}>Dark Mode</option>
+                        <option value="auto" {% if settings.theme_mode == 'auto' %}selected{% endif %}>Auto (System Preference)</option>
+                    </select>
+                    <p class="text-xs text-gray-500 mt-1">Choose the overall appearance theme</p>
+                </div>
+
+                <!-- Theme Preview -->
+                <div class="border-t pt-6">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Theme Preview</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="p-4 border rounded-lg">
+                            <div class="flex items-center space-x-2 mb-2">
+                                <div class="w-3 h-3 rounded-full" style="background-color: {{ settings.primary_color }}"></div>
+                                <span class="text-sm font-medium">Primary Color</span>
+                            </div>
+                            <button class="px-4 py-2 text-white rounded-lg text-sm" style="background-color: {{ settings.primary_color }}">Sample Button</button>
+                        </div>
+                        <div class="p-4 border rounded-lg">
+                            <div class="flex items-center space-x-2 mb-2">
+                                <div class="w-3 h-3 rounded-full" style="background-color: {{ settings.accent_color }}"></div>
+                                <span class="text-sm font-medium">Accent Color</span>
+                            </div>
+                            <button class="px-4 py-2 text-white rounded-lg text-sm" style="background-color: {{ settings.accent_color }}">Success Button</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-between">
+                    <button type="button" onclick="event.preventDefault(); applyThemeNow(event);" class="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition duration-200">
+                        <i class="fas fa-eye mr-2"></i>Preview Theme
+                    </button>
+                    <button type="submit" class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-blue-700 transition duration-200">
+                        <i class="fas fa-save mr-2"></i>Save Theme Settings
+                    </button>
+                </div>
+            </form>
+        </div>
+
         <!-- Security Section -->
-        <div id="security" class="bg-white rounded-xl shadow-lg p-6 hidden">
+        <div id="security" class="settings-section bg-white rounded-xl shadow-lg p-6 hidden">
             <h2 class="text-xl font-semibold text-gray-900 mb-6">Security Settings</h2>
             <div class="space-y-4">
                 <div class="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
@@ -193,7 +293,7 @@
         </div>
 
         <!-- Backup & Restore Section -->
-        <div id="backup" class="bg-white rounded-xl shadow-lg p-6 hidden">
+        <div id="backup" class="settings-section bg-white rounded-xl shadow-lg p-6 hidden">
             <h2 class="text-xl font-semibold text-gray-900 mb-6">Backup & Restore</h2>
             <div class="space-y-6">
                 <!-- Create New Backup -->
@@ -250,7 +350,7 @@
 // Navigation functionality
 function showSection(sectionId) {
     // Hide all sections
-    const sections = ['school-info', 'user-management', 'notifications', 'security', 'backup'];
+    const sections = ['school-info', 'color-theme', 'user-management', 'notifications', 'security', 'backup'];
     sections.forEach(id => {
         const section = document.getElementById(id);
         if (section) {
@@ -265,16 +365,16 @@ function showSection(sectionId) {
     }
     
     // Update navigation active state
-    const navLinks = document.querySelectorAll('nav a');
+    const navLinks = document.querySelectorAll('.nav-link');
     navLinks.forEach(link => {
-        link.classList.remove('text-primary', 'bg-primary', 'bg-opacity-10');
-        link.classList.add('text-gray-700', 'hover:bg-gray-100');
+        link.classList.remove('active', 'text-primary', 'bg-primary', 'bg-opacity-10', 'bg-opacity-20');
+        link.classList.add('text-gray-700', 'hover:bg-gray-100', 'hover:text-primary');
     });
     
     const activeLink = document.querySelector(`a[href="#${sectionId}"]`);
     if (activeLink) {
-        activeLink.classList.remove('text-gray-700', 'hover:bg-gray-100');
-        activeLink.classList.add('text-primary', 'bg-primary', 'bg-opacity-10');
+        activeLink.classList.remove('text-gray-700', 'hover:bg-gray-100', 'hover:text-primary');
+        activeLink.classList.add('active');
     }
 }
 
@@ -287,9 +387,9 @@ function resetForm() {
         const originalValues = {
             'school_name': '{{ settings.school_name }}',
             'school_code': '{{ settings.school_code }}',
-            'address': '{{ settings.address }}',
-            'phone': '{{ settings.phone }}',
-            'email': '{{ settings.email }}',
+            'school_address': '{{ settings.school_address }}',
+            'school_phone': '{{ settings.school_phone }}',
+            'school_email': '{{ settings.school_email }}',
             'academic_year': '{{ settings.academic_year }}',
             'max_students_per_class': '{{ settings.max_students_per_class }}'
         };
@@ -484,6 +584,196 @@ document.addEventListener('DOMContentLoaded', function() {
                 loadAutoBackupStatus();
             }, 100); // Small delay to ensure section is visible
         });
+    }
+    
+    // Handle initial page load with hash
+    window.addEventListener('load', function() {
+        const hash = window.location.hash.substring(1);
+        if (hash && ['school-info', 'color-theme', 'user-management', 'notifications', 'security', 'backup'].includes(hash)) {
+            showSection(hash);
+        }
+    });
+    
+    // Color picker synchronization and live preview
+    const colorPickers = ['primary_color', 'secondary_color', 'accent_color'];
+    colorPickers.forEach(colorName => {
+        const colorPicker = document.getElementById(colorName);
+        const textInput = document.getElementById(colorName + '_text');
+        
+        if (colorPicker && textInput) {
+            // Sync color picker to text input
+            colorPicker.addEventListener('input', function() {
+                textInput.value = this.value;
+                updateThemePreview();
+            });
+            
+            // Sync text input to color picker
+            textInput.addEventListener('input', function() {
+                if (this.value.match(/^#[0-9A-Fa-f]{6}$/)) {
+                    colorPicker.value = this.value;
+                    updateThemePreview();
+                }
+            });
+        }
+    });
+    
+    // Update theme preview in real-time
+    function updateThemePreview() {
+        const primaryColor = document.getElementById('primary_color').value;
+        const accentColor = document.getElementById('accent_color').value;
+        
+        // Update preview elements
+        const primaryPreview = document.querySelector('[style*="background-color: {{ settings.primary_color }}"]');
+        const accentPreview = document.querySelector('[style*="background-color: {{ settings.accent_color }}"]');
+        
+        if (primaryPreview) {
+            primaryPreview.style.backgroundColor = primaryColor;
+        }
+        if (accentPreview) {
+            accentPreview.style.backgroundColor = accentColor;
+        }
+        
+        // Update color dots
+        const primaryDot = document.querySelector('.w-3.h-3.rounded-full[style*="background-color: {{ settings.primary_color }}"]');
+        const accentDot = document.querySelector('.w-3.h-3.rounded-full[style*="background-color: {{ settings.accent_color }}"]');
+        
+        if (primaryDot) {
+            primaryDot.style.backgroundColor = primaryColor;
+        }
+        if (accentDot) {
+            accentDot.style.backgroundColor = accentColor;
+        }
+    }
+    
+    // Global function to apply theme (can be called from anywhere)
+    window.applyThemeNow = function(event) {
+        const primaryColor = document.getElementById('primary_color').value;
+        const secondaryColor = document.getElementById('secondary_color').value;
+        const accentColor = document.getElementById('accent_color').value;
+        const themeMode = document.getElementById('theme_mode').value;
+        
+        console.log('Applying theme:', { primaryColor, secondaryColor, accentColor, themeMode });
+        
+        // Update Tailwind config
+        if (window.tailwind) {
+            tailwind.config = {
+                theme: {
+                    extend: {
+                        colors: {
+                            primary: primaryColor,
+                            secondary: secondaryColor,
+                            success: accentColor,
+                            warning: '#F59E0B',
+                            danger: '#EF4444',
+                            info: '#06B6D4'
+                        }
+                    }
+                }
+            };
+            
+            // Force Tailwind to re-render
+            if (window.tailwind.refresh) {
+                window.tailwind.refresh();
+            }
+        }
+        
+        // Alternative approach: Create a style element with the new colors
+        let styleElement = document.getElementById('dynamic-theme-styles');
+        if (!styleElement) {
+            styleElement = document.createElement('style');
+            styleElement.id = 'dynamic-theme-styles';
+            document.head.appendChild(styleElement);
+        }
+        
+        styleElement.textContent = `
+            .bg-primary { background-color: ${primaryColor} !important; }
+            .text-primary { color: ${primaryColor} !important; }
+            .border-primary { border-color: ${primaryColor} !important; }
+            .ring-primary { --tw-ring-color: ${primaryColor} !important; }
+            .bg-secondary { background-color: ${secondaryColor} !important; }
+            .text-secondary { color: ${secondaryColor} !important; }
+            .bg-success { background-color: ${accentColor} !important; }
+            .text-success { color: ${accentColor} !important; }
+            .border-success { border-color: ${accentColor} !important; }
+        `;
+        
+        // Apply theme mode
+        if (themeMode === 'dark') {
+            document.documentElement.classList.add('dark');
+        } else if (themeMode === 'light') {
+            document.documentElement.classList.remove('dark');
+        } else if (themeMode === 'auto') {
+            // Auto mode - use system preference
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        }
+        
+        // Update CSS custom properties for immediate effect
+        document.documentElement.style.setProperty('--primary-color', primaryColor);
+        document.documentElement.style.setProperty('--secondary-color', secondaryColor);
+        document.documentElement.style.setProperty('--accent-color', accentColor);
+        
+        // Force re-render of elements with primary color
+        const primaryElements = document.querySelectorAll('.bg-primary, .text-primary, .border-primary, .ring-primary');
+        primaryElements.forEach(el => {
+            if (el.classList.contains('bg-primary')) {
+                el.style.setProperty('background-color', primaryColor, 'important');
+            }
+            if (el.classList.contains('text-primary')) {
+                el.style.setProperty('color', primaryColor, 'important');
+            }
+            if (el.classList.contains('border-primary')) {
+                el.style.setProperty('border-color', primaryColor, 'important');
+            }
+            if (el.classList.contains('ring-primary')) {
+                el.style.setProperty('--tw-ring-color', primaryColor, 'important');
+            }
+        });
+        
+        // Update success/accent color elements
+        const successElements = document.querySelectorAll('.bg-success, .text-success, .border-success');
+        successElements.forEach(el => {
+            if (el.classList.contains('bg-success')) {
+                el.style.setProperty('background-color', accentColor, 'important');
+            }
+            if (el.classList.contains('text-success')) {
+                el.style.setProperty('color', accentColor, 'important');
+            }
+            if (el.classList.contains('border-success')) {
+                el.style.setProperty('border-color', accentColor, 'important');
+            }
+        });
+        
+        // Update secondary color elements
+        const secondaryElements = document.querySelectorAll('.bg-secondary, .text-secondary');
+        secondaryElements.forEach(el => {
+            if (el.classList.contains('bg-secondary')) {
+                el.style.setProperty('background-color', secondaryColor, 'important');
+            }
+            if (el.classList.contains('text-secondary')) {
+                el.style.setProperty('color', secondaryColor, 'important');
+            }
+        });
+        
+        // Show success message
+        const button = event ? event.target : document.querySelector('button[onclick="applyThemeNow()"]');
+        if (button) {
+            const originalText = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-check mr-2"></i>Theme Applied!';
+            button.classList.remove('bg-gray-500', 'hover:bg-gray-600');
+            button.classList.add('bg-green-500', 'hover:bg-green-600');
+            
+            setTimeout(() => {
+                button.innerHTML = originalText;
+                button.classList.remove('bg-green-500', 'hover:bg-green-600');
+                button.classList.add('bg-gray-500', 'hover:bg-gray-600');
+            }, 2000);
+        }
+        
+        console.log('Theme applied successfully');
     }
 });
 </script>

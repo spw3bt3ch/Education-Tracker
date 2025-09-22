@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}Access Denied - EduTrack{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full space-y-8">
+        <div class="text-center">
+            <!-- Error Icon -->
+            <div class="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-yellow-100 mb-6">
+                <i class="fas fa-lock text-yellow-600 text-3xl"></i>
+            </div>
+            
+            <!-- Error Title -->
+            <h1 class="text-3xl font-bold text-gray-900 mb-4">
+                Access Denied
+            </h1>
+            
+            <!-- Error Message -->
+            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-6">
+                <div class="flex items-center">
+                    <i class="fas fa-exclamation-triangle text-yellow-500 mr-3"></i>
+                    <div>
+                        <h3 class="text-lg font-medium text-yellow-800 mb-2">
+                            You don't have permission to access this resource
+                        </h3>
+                        <p class="text-yellow-700">
+                            This page or resource requires specific permissions that your account 
+                            doesn't have. Please contact your administrator if you believe this is an error.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- What to do -->
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
+                <h3 class="text-lg font-medium text-blue-800 mb-3">
+                    <i class="fas fa-lightbulb mr-2"></i>What you can do:
+                </h3>
+                <ul class="text-blue-700 space-y-2 text-left">
+                    <li class="flex items-start">
+                        <i class="fas fa-check-circle text-blue-500 mr-2 mt-1"></i>
+                        Check if you're logged in with the correct account
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check-circle text-blue-500 mr-2 mt-1"></i>
+                        Contact your school administrator for access
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check-circle text-blue-500 mr-2 mt-1"></i>
+                        Go back to your dashboard
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check-circle text-blue-500 mr-2 mt-1"></i>
+                        Log out and log back in if needed
+                    </li>
+                </ul>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="space-y-4">
+                <a href="{{ url_for('index') }}" 
+                   class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-200">
+                    <i class="fas fa-home mr-2"></i>
+                    Go to Homepage
+                </a>
+                
+                {% if current_user.is_authenticated %}
+                <a href="{{ url_for('profile') }}" 
+                   class="w-full flex justify-center py-3 px-4 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-200">
+                    <i class="fas fa-user mr-2"></i>
+                    My Profile
+                </a>
+                {% else %}
+                <a href="{{ url_for('login') }}" 
+                   class="w-full flex justify-center py-3 px-4 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-200">
+                    <i class="fas fa-sign-in-alt mr-2"></i>
+                    Login
+                </a>
+                {% endif %}
+            </div>
+            
+            <!-- Technical Info (collapsible) -->
+            <details class="mt-6 text-left">
+                <summary class="cursor-pointer text-sm text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    Technical Information
+                </summary>
+                <div class="mt-2 p-4 bg-gray-100 rounded-lg text-xs text-gray-600">
+                    <p><strong>Error Type:</strong> Access Denied</p>
+                    <p><strong>Status Code:</strong> 403 Forbidden</p>
+                    <p><strong>Timestamp:</strong> {{ moment().format('YYYY-MM-DD HH:mm:ss') }}</p>
+                    <p><strong>Description:</strong> The server understood the request but refuses to authorize it.</p>
+                </div>
+            </details>
+        </div>
+    </div>
+</div>
+{% endblock %}

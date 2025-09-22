@@ -3,6 +3,50 @@
 {% block title %}Academic Report - EduTrack{% endblock %}
 
 {% block content %}
+<!-- Welcome Section with Profile Picture -->
+<div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+    <div class="flex flex-col sm:flex-row items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-6">
+        <!-- Profile Picture -->
+        <div class="flex-shrink-0">
+            {% if current_user.profile_picture %}
+                <img src="{{ url_for('static', filename=current_user.profile_picture) }}" 
+                     alt="Profile Picture" 
+                     class="w-20 h-20 rounded-full object-cover border-4 border-info shadow-lg">
+            {% else %}
+                <div class="w-20 h-20 bg-info bg-opacity-10 rounded-full flex items-center justify-center border-4 border-info shadow-lg">
+                    <i class="fas fa-user text-3xl text-info"></i>
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Welcome Text and Info -->
+        <div class="flex-1 min-w-0">
+            <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
+                Welcome, {{ current_user.first_name }}!
+            </h1>
+            <p class="text-gray-600 mb-3">Stay updated with your child's academic progress and school activities.</p>
+            <div class="flex flex-wrap items-center gap-3">
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-info text-white">
+                    <i class="fas fa-user mr-1"></i>
+                    Parent
+                </span>
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-700">
+                    <i class="fas fa-school mr-1"></i>
+                    {{ school_name }}
+                </span>
+            </div>
+        </div>
+        
+        <!-- Quick Stats -->
+        <div class="flex-shrink-0 hidden sm:block">
+            <div class="text-right">
+                <div class="text-2xl font-bold text-info">{{ children|length }}</div>
+                <div class="text-sm text-gray-500">Children</div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- School Information Header -->
 <div class="bg-gradient-to-r from-primary to-blue-600 rounded-xl shadow-lg p-6 mb-8 text-white">
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center">

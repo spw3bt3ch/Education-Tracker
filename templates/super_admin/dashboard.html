@@ -1,0 +1,831 @@
+{% extends "base.html" %}
+
+{% block title %}Super Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-6">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Welcome Section with Profile Picture -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-6">
+                <!-- Profile Picture -->
+                <div class="flex-shrink-0">
+                    {% if current_user.profile_picture %}
+                        <img src="{{ url_for('static', filename=current_user.profile_picture) }}" 
+                             alt="Profile Picture" 
+                             class="w-20 h-20 rounded-full object-cover border-4 border-purple-500 shadow-lg">
+                    {% else %}
+                        <div class="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center border-4 border-purple-500 shadow-lg">
+                            <i class="fas fa-crown text-3xl text-purple-600"></i>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Welcome Text and Info -->
+                <div class="flex-1 min-w-0">
+                    <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-2 flex items-center">
+                        <i class="fas fa-crown mr-3 text-yellow-500"></i>
+                        Super Admin Dashboard
+                    </h1>
+                    <p class="text-gray-600 mb-3">Welcome back, {{ current_user.first_name }}! Monitor all schools and system resources.</p>
+                    <div class="flex flex-wrap items-center gap-3">
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800">
+                            <i class="fas fa-crown mr-1"></i>
+                            Super Admin
+                        </span>
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-700">
+                            <i class="fas fa-globe mr-1"></i>
+                            System Administrator
+                        </span>
+                    </div>
+                </div>
+                
+                <!-- Quick Stats -->
+                <div class="flex-shrink-0 hidden sm:block">
+                    <div class="text-right space-y-2">
+                        <div>
+                            <div class="text-2xl font-bold text-purple-600">{{ total_schools }}</div>
+                            <div class="text-sm text-gray-500">Schools</div>
+                        </div>
+                        <div>
+                            <div class="text-2xl font-bold text-green-600">{{ total_users }}</div>
+                            <div class="text-sm text-gray-500">Users</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- System Overview -->
+            <div class="mt-6 pt-6 border-t border-gray-200">
+                <div class="flex flex-wrap items-center space-x-6">
+                    <div class="flex items-center text-sm text-gray-500">
+                        <i class="fas fa-database mr-2 text-purple-500"></i>
+                        <span>Remaining Space: <span class="font-semibold text-gray-700 header-db-size">{{ remaining_space.remaining_mb }} MB</span></span>
+                    </div>
+                    <div class="flex items-center text-sm text-gray-500">
+                        <i class="fas fa-server mr-2 text-blue-500"></i>
+                        <span>Schools: <span class="font-semibold text-gray-700">{{ total_schools }}</span></span>
+                    </div>
+                    <div class="flex items-center text-sm text-gray-500">
+                        <i class="fas fa-users mr-2 text-green-500"></i>
+                        <span>Users: <span class="font-semibold text-gray-700">{{ total_users }}</span></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Action Button -->
+        <div class="mb-8">
+            <div class="flex justify-end">
+                <a href="{{ url_for('register_school') }}" 
+                   class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-primary hover:bg-blue-700 transition duration-150 ease-in-out shadow-lg">
+                    <i class="fas fa-plus mr-2"></i>
+                    Register New School
+                </a>
+            </div>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <!-- Total Schools -->
+            <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-6 text-white shadow-lg">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h3 class="text-3xl font-bold">{{ total_schools }}</h3>
+                        <p class="text-blue-100">Total Schools</p>
+                    </div>
+                    <div class="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                        <i class="fas fa-school text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Total Users -->
+            <div class="bg-gradient-to-r from-green-500 to-green-600 rounded-xl p-6 text-white shadow-lg">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h3 class="text-3xl font-bold">{{ total_users }}</h3>
+                        <p class="text-green-100">Total Users</p>
+                    </div>
+                    <div class="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                        <i class="fas fa-users text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Schools -->
+            <div class="bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-xl p-6 text-white shadow-lg">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h3 class="text-3xl font-bold">{{ schools|selectattr('is_active')|list|length }}</h3>
+                        <p class="text-emerald-100">Active Schools</p>
+                    </div>
+                    <div class="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                        <i class="fas fa-check-circle text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Inactive Schools -->
+            <div class="bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl p-6 text-white shadow-lg">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h3 class="text-3xl font-bold">{{ schools|rejectattr('is_active')|list|length }}</h3>
+                        <p class="text-orange-100">Inactive Schools</p>
+                    </div>
+                    <div class="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                        <i class="fas fa-pause-circle text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- System Monitoring Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <!-- Remaining Database Space -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mr-4">
+                        <i class="fas fa-database text-purple-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-bold text-gray-900" data-db-size>{{ remaining_space.remaining_mb }} MB</h3>
+                        <p class="text-gray-600">Remaining Space</p>
+                        <p class="text-sm text-gray-500">{{ remaining_space.usage_percentage }}% Used</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CPU Usage -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
+                        <i class="fas fa-microchip text-blue-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-bold text-gray-900" data-cpu>{{ system_resources.cpu_percent }}%</h3>
+                        <p class="text-gray-600">CPU Usage</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Memory Usage -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mr-4">
+                        <i class="fas fa-memory text-green-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-bold text-gray-900" data-memory>{{ system_resources.memory_percent }}%</h3>
+                        <p class="text-gray-600">Memory Usage</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Disk Usage -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center mr-4">
+                        <i class="fas fa-hdd text-yellow-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-bold text-gray-900" data-disk>{{ system_resources.disk_usage }}%</h3>
+                        <p class="text-gray-600">Disk Usage</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Storage Usage by School -->
+        <div class="bg-white rounded-xl shadow-lg mb-8">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                    <h2 class="text-xl font-semibold text-gray-900 flex items-center">
+                        <i class="fas fa-chart-bar mr-2 text-primary"></i>
+                        Storage Usage by School
+                    </h2>
+                    <div class="mt-4 sm:mt-0 flex space-x-3">
+                        <button onclick="refreshStorageData()" 
+                                class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition duration-150 ease-in-out">
+                            <i class="fas fa-sync-alt mr-2"></i>
+                            Refresh
+                        </button>
+                        <button onclick="downloadStorageReport()" 
+                                class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-green-600 hover:bg-green-700 transition duration-150 ease-in-out">
+                            <i class="fas fa-download mr-2"></i>
+                            Download Report
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table id="schoolStorageTable" class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">School</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Code</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Users</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Students</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Classes</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assignments</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Storage Used</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for school in school_usage %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="w-10 h-10 bg-primary bg-opacity-10 rounded-lg flex items-center justify-center mr-3">
+                                        <i class="fas fa-school text-primary"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-sm font-medium text-gray-900">{{ school.school_name }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                    {{ school.school_code }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ school.users_count }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ school.students_count }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ school.classes_count }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ school.assignments_count }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="flex-1 mr-3">
+                                        <div class="w-full bg-gray-200 rounded-full h-2">
+                                            <div class="bg-primary h-2 rounded-full" 
+                                                 style="width: {{ (school.estimated_storage_mb / 100) * 100 }}%"></div>
+                                        </div>
+                                    </div>
+                                    <span class="text-sm text-gray-600">{{ school.estimated_storage_mb }} MB</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                {% if school.is_active %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                        <i class="fas fa-check-circle mr-1"></i>
+                                        Active
+                                    </span>
+                                {% else %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                        <i class="fas fa-pause-circle mr-1"></i>
+                                        Inactive
+                                    </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Schools Management -->
+        <div class="bg-white rounded-xl shadow-lg">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-xl font-semibold text-gray-900 flex items-center">
+                    <i class="fas fa-building mr-2 text-primary"></i>
+                    Registered Schools
+                </h2>
+            </div>
+            <div class="overflow-x-auto">
+                <table id="schoolStorageTable" class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">School Name</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Code</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data Size</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for school in schools %}
+                        <tr class="hover:bg-gray-50" data-school-id="{{ school.id }}">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="w-10 h-10 bg-primary bg-opacity-10 rounded-lg flex items-center justify-center mr-3">
+                                        <i class="fas fa-school text-primary"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-sm font-medium text-gray-900">{{ school.name }}</div>
+                                        {% if school.website %}
+                                        <div class="text-sm text-gray-500">
+                                            <a href="{{ school.website }}" target="_blank" class="text-primary hover:text-blue-700">
+                                                {{ school.website }}
+                                            </a>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                    {{ school.code }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ school.email or 'N/A' }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ school.phone or 'N/A' }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {% set school_usage = school_usage_data | selectattr('school_id', 'equalto', school.id) | first %}
+                                {% if school_usage %}
+                                    <div class="flex items-center">
+                                        <div class="flex-1 mr-3">
+                                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                                <div class="bg-primary h-2 rounded-full" 
+                                                     style="width: {{ (school_usage.estimated_storage_mb / 100) * 100 }}%"></div>
+                                            </div>
+                                        </div>
+                                        <span class="text-sm text-gray-600 font-medium">{{ school_usage.estimated_storage_mb }} MB</span>
+                                    </div>
+                                {% else %}
+                                    <span class="text-gray-400">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                {% if school.is_active %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                        <i class="fas fa-check-circle mr-1"></i>
+                                        Active
+                                    </span>
+                                {% else %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                        <i class="fas fa-pause-circle mr-1"></i>
+                                        Inactive
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ school.created_at.strftime('%Y-%m-%d') }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <div class="flex space-x-2">
+                                    <button onclick="viewSchool({{ school.id }})" 
+                                            class="text-primary hover:text-blue-700 transition duration-150 ease-in-out">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button onclick="editSchool({{ school.id }})" 
+                                            class="text-yellow-600 hover:text-yellow-700 transition duration-150 ease-in-out">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    {% if school.is_active %}
+                                    <button onclick="toggleSchoolStatus({{ school.id }}, false)" 
+                                            class="text-red-600 hover:text-red-700 transition duration-150 ease-in-out">
+                                        <i class="fas fa-pause"></i>
+                                    </button>
+                                    {% else %}
+                                    <button onclick="toggleSchoolStatus({{ school.id }}, true)" 
+                                            class="text-green-600 hover:text-green-700 transition duration-150 ease-in-out">
+                                        <i class="fas fa-play"></i>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function viewSchool(schoolId) {
+    // Fetch and display school details
+    fetch(`/api/super-admin/school/${schoolId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert('Error: ' + data.error);
+                return;
+            }
+            
+            // Create modal content
+            const modalContent = `
+                <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" id="schoolModal">
+                    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+                        <div class="mt-3">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-lg font-medium text-gray-900">School Details</h3>
+                                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="text-sm font-medium text-gray-500">School Name</label>
+                                    <p class="text-gray-900">${data.name}</p>
+                                </div>
+                                <div>
+                                    <label class="text-sm font-medium text-gray-500">School Code</label>
+                                    <p class="text-gray-900">${data.code}</p>
+                                </div>
+                                <div>
+                                    <label class="text-sm font-medium text-gray-500">Email</label>
+                                    <p class="text-gray-900">${data.email || 'N/A'}</p>
+                                </div>
+                                <div>
+                                    <label class="text-sm font-medium text-gray-500">Phone</label>
+                                    <p class="text-gray-900">${data.phone || 'N/A'}</p>
+                                </div>
+                                <div>
+                                    <label class="text-sm font-medium text-gray-500">Website</label>
+                                    <p class="text-gray-900">${data.website || 'N/A'}</p>
+                                </div>
+                                <div>
+                                    <label class="text-sm font-medium text-gray-500">Address</label>
+                                    <p class="text-gray-900">${data.address || 'N/A'}</p>
+                                </div>
+                                <div>
+                                    <label class="text-sm font-medium text-gray-500">Status</label>
+                                    <p class="text-gray-900">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${data.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                            <i class="fas fa-${data.is_active ? 'check' : 'pause'}-circle mr-1"></i>
+                                            ${data.is_active ? 'Active' : 'Inactive'}
+                                        </span>
+                                    </p>
+                                </div>
+                                <div>
+                                    <label class="text-sm font-medium text-gray-500">Statistics</label>
+                                    <div class="grid grid-cols-2 gap-4 mt-2">
+                                        <div class="text-center p-2 bg-gray-50 rounded">
+                                            <div class="text-lg font-bold text-primary">${data.users_count}</div>
+                                            <div class="text-xs text-gray-500">Users</div>
+                                        </div>
+                                        <div class="text-center p-2 bg-gray-50 rounded">
+                                            <div class="text-lg font-bold text-primary">${data.students_count}</div>
+                                            <div class="text-xs text-gray-500">Students</div>
+                                        </div>
+                                        <div class="text-center p-2 bg-gray-50 rounded">
+                                            <div class="text-lg font-bold text-primary">${data.classes_count}</div>
+                                            <div class="text-xs text-gray-500">Classes</div>
+                                        </div>
+                                        <div class="text-center p-2 bg-gray-50 rounded">
+                                            <div class="text-lg font-bold text-primary">${data.assignments_count}</div>
+                                            <div class="text-xs text-gray-500">Assignments</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="text-sm font-medium text-gray-500">Created</label>
+                                    <p class="text-gray-900">${new Date(data.created_at).toLocaleDateString()}</p>
+                                </div>
+                            </div>
+                            <div class="flex justify-end mt-6">
+                                <button onclick="closeModal()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition duration-150 ease-in-out">
+                                    Close
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Add modal to page
+            document.body.insertAdjacentHTML('beforeend', modalContent);
+        })
+        .catch(error => {
+            console.error('Error fetching school details:', error);
+            alert('Error fetching school details');
+        });
+}
+
+function editSchool(schoolId) {
+    // Fetch school details first
+    fetch(`/api/super-admin/school/${schoolId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert('Error: ' + data.error);
+                return;
+            }
+            
+            // Create edit modal
+            const modalContent = `
+                <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" id="editModal">
+                    <div class="relative top-10 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+                        <div class="mt-3">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-lg font-medium text-gray-900">Edit School</h3>
+                                <button onclick="closeEditModal()" class="text-gray-400 hover:text-gray-600">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <form id="editSchoolForm" class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">School Name</label>
+                                    <input type="text" id="editName" value="${data.name}" class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-primary focus:border-primary">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Email</label>
+                                    <input type="email" id="editEmail" value="${data.email || ''}" class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-primary focus:border-primary">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Phone</label>
+                                    <input type="tel" id="editPhone" value="${data.phone || ''}" class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-primary focus:border-primary">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Website</label>
+                                    <input type="url" id="editWebsite" value="${data.website || ''}" class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-primary focus:border-primary">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Address</label>
+                                    <textarea id="editAddress" rows="3" class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-primary focus:border-primary">${data.address || ''}</textarea>
+                                </div>
+                                <div class="flex justify-end space-x-3 mt-6">
+                                    <button type="button" onclick="closeEditModal()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition duration-150 ease-in-out">
+                                        Cancel
+                                    </button>
+                                    <button type="submit" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-700 transition duration-150 ease-in-out">
+                                        Save Changes
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Add modal to page
+            document.body.insertAdjacentHTML('beforeend', modalContent);
+            
+            // Handle form submission
+            document.getElementById('editSchoolForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                saveSchoolChanges(schoolId);
+            });
+        })
+        .catch(error => {
+            console.error('Error fetching school details:', error);
+            alert('Error fetching school details');
+        });
+}
+
+function saveSchoolChanges(schoolId) {
+    const formData = {
+        name: document.getElementById('editName').value,
+        email: document.getElementById('editEmail').value,
+        phone: document.getElementById('editPhone').value,
+        website: document.getElementById('editWebsite').value,
+        address: document.getElementById('editAddress').value
+    };
+    
+    fetch(`/api/super-admin/school/${schoolId}/edit`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('School updated successfully!');
+            closeEditModal();
+            location.reload(); // Refresh the page to show updated data
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error updating school:', error);
+        alert('Error updating school');
+    });
+}
+
+function toggleSchoolStatus(schoolId, status) {
+    const action = status ? 'activate' : 'deactivate';
+    if (confirm(`Are you sure you want to ${action} this school?`)) {
+        fetch(`/api/super-admin/school/${schoolId}/toggle-status`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload(); // Refresh the page to show updated status
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error toggling school status:', error);
+            alert('Error toggling school status');
+        });
+    }
+}
+
+function closeModal() {
+    const modal = document.getElementById('schoolModal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+function closeEditModal() {
+    const modal = document.getElementById('editModal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+function refreshStorageData() {
+    // Show loading state
+    const refreshButton = document.querySelector('button[onclick="refreshStorageData()"]');
+    const originalText = refreshButton.innerHTML;
+    refreshButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Refreshing...';
+    refreshButton.disabled = true;
+    
+    // Refresh storage monitoring data
+    fetch('/api/super-admin/database-monitor')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Storage data refreshed:', data);
+            
+            // Update remaining database space
+            if (data.remaining_space) {
+                const dbSizeElement = document.querySelector('[data-db-size]');
+                
+                if (dbSizeElement) {
+                    dbSizeElement.textContent = `${data.remaining_space.remaining_mb} MB`;
+                }
+                
+                // Update header database size
+                const headerDbSizeElements = document.querySelectorAll('.header-db-size');
+                headerDbSizeElements.forEach(element => {
+                    element.textContent = `${data.remaining_space.remaining_mb} MB`;
+                });
+            }
+            
+            // Update system resources
+            if (data.system_resources) {
+                const cpuElement = document.querySelector('[data-cpu]');
+                const memoryElement = document.querySelector('[data-memory]');
+                const diskElement = document.querySelector('[data-disk]');
+                
+                if (cpuElement) cpuElement.textContent = `${data.system_resources.cpu_percent}%`;
+                if (memoryElement) memoryElement.textContent = `${data.system_resources.memory_percent}%`;
+                if (diskElement) diskElement.textContent = `${data.system_resources.disk_usage}%`;
+            }
+            
+            // Update school storage usage
+            if (data.school_storage_usage) {
+                updateSchoolStorageTable(data.school_storage_usage);
+                updateRegisteredSchoolsTable(data.school_storage_usage);
+            }
+            
+            // Show success message
+            showNotification('Storage data refreshed successfully!', 'success');
+        })
+        .catch(error => {
+            console.error('Error refreshing storage data:', error);
+            showNotification('Error refreshing storage data: ' + error.message, 'error');
+        })
+        .finally(() => {
+            // Reset button state
+            refreshButton.innerHTML = originalText;
+            refreshButton.disabled = false;
+        });
+}
+
+function updateSchoolStorageTable(schoolData) {
+    const tbody = document.querySelector('#schoolStorageTable tbody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    schoolData.forEach(school => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                ${school.school_name}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                ${school.school_code}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                ${school.users_count}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                ${school.students_count}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                ${school.estimated_storage_mb} MB
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                    <div class="bg-primary h-2 rounded-full" style="width: ${Math.min((school.estimated_storage_mb / 100) * 100, 100)}%"></div>
+                </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${school.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                    <i class="fas fa-${school.is_active ? 'check' : 'pause'}-circle mr-1"></i>
+                    ${school.is_active ? 'Active' : 'Inactive'}
+                </span>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function updateRegisteredSchoolsTable(schoolData) {
+    // Find all school rows in the registered schools table
+    const schoolRows = document.querySelectorAll('tbody tr[data-school-id]');
+    
+    schoolRows.forEach(row => {
+        const schoolId = parseInt(row.getAttribute('data-school-id'));
+        const schoolUsage = schoolData.find(s => s.school_id === schoolId);
+        
+        if (schoolUsage) {
+            // Find the data size cell (5th column, index 4)
+            const dataSizeCell = row.children[4];
+            if (dataSizeCell) {
+                dataSizeCell.innerHTML = `
+                    <div class="flex items-center">
+                        <div class="flex-1 mr-3">
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-primary h-2 rounded-full" 
+                                     style="width: ${Math.min((schoolUsage.estimated_storage_mb / 100) * 100, 100)}%"></div>
+                            </div>
+                        </div>
+                        <span class="text-sm text-gray-600 font-medium">${schoolUsage.estimated_storage_mb} MB</span>
+                    </div>
+                `;
+            }
+        }
+    });
+}
+
+function showNotification(message, type = 'info') {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg max-w-sm ${
+        type === 'success' ? 'bg-green-500 text-white' : 
+        type === 'error' ? 'bg-red-500 text-white' : 
+        'bg-blue-500 text-white'
+    }`;
+    notification.innerHTML = `
+        <div class="flex items-center">
+            <i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'exclamation' : 'info'}-circle mr-2"></i>
+            <span>${message}</span>
+            <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.remove();
+        }
+    }, 5000);
+}
+
+function downloadStorageReport() {
+    // Show loading state
+    const downloadButton = document.querySelector('button[onclick="downloadStorageReport()"]');
+    const originalText = downloadButton.innerHTML;
+    downloadButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Generating...';
+    downloadButton.disabled = true;
+    
+    // Create a temporary link to trigger download
+    const link = document.createElement('a');
+    link.href = '/api/super-admin/storage-report';
+    link.download = `storage_report_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`;
+    
+    // Add to DOM, click, and remove
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Reset button state
+    setTimeout(() => {
+        downloadButton.innerHTML = originalText;
+        downloadButton.disabled = false;
+        showNotification('Storage report download started!', 'success');
+    }, 1000);
+}
+
+// Auto-refresh storage data every 5 minutes
+setInterval(refreshStorageData, 300000);
+</script>
+{% endblock %}
