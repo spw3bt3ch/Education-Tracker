@@ -1271,7 +1271,7 @@ def api_parent_dashboard_data():
 @app.route('/admin/lesson-submissions')
 @login_required
 def admin_lesson_submissions():
-    if current_user.role != 'admin':
+    if current_user.role not in ['admin', 'school_admin']:
         flash('Access denied', 'error')
         return redirect(url_for('index'))
     
@@ -1322,7 +1322,7 @@ def admin_lesson_submissions():
 @app.route('/admin/lesson/<int:lesson_id>')
 @login_required
 def admin_view_lesson(lesson_id):
-    if current_user.role != 'admin':
+    if current_user.role not in ['admin', 'school_admin']:
         flash('Access denied', 'error')
         return redirect(url_for('index'))
     
@@ -1332,7 +1332,7 @@ def admin_view_lesson(lesson_id):
 @app.route('/admin/lesson/<int:lesson_id>/comment', methods=['POST'])
 @login_required
 def admin_add_lesson_comment(lesson_id):
-    if current_user.role != 'admin':
+    if current_user.role not in ['admin', 'school_admin']:
         flash('Access denied', 'error')
         return redirect(url_for('index'))
     
@@ -1363,7 +1363,7 @@ def admin_add_lesson_comment(lesson_id):
 @app.route('/admin/lesson/<int:lesson_id>/comment/<int:comment_id>/edit', methods=['POST'])
 @login_required
 def admin_edit_lesson_comment(lesson_id, comment_id):
-    if current_user.role != 'admin':
+    if current_user.role not in ['admin', 'school_admin']:
         flash('Access denied', 'error')
         return redirect(url_for('index'))
     
@@ -1391,7 +1391,7 @@ def admin_edit_lesson_comment(lesson_id, comment_id):
 @app.route('/admin/lesson/<int:lesson_id>/comment/<int:comment_id>/delete', methods=['POST'])
 @login_required
 def admin_delete_lesson_comment(lesson_id, comment_id):
-    if current_user.role != 'admin':
+    if current_user.role not in ['admin', 'school_admin']:
         flash('Access denied', 'error')
         return redirect(url_for('index'))
     
@@ -1954,7 +1954,7 @@ def list_backups():
 @app.route('/admin/backup/<filename>')
 @login_required
 def download_backup(filename):
-    if current_user.role != 'admin':
+    if current_user.role not in ['admin', 'school_admin']:
         flash('Access denied', 'error')
         return redirect(url_for('index'))
     
@@ -2122,7 +2122,7 @@ def run_scheduler():
 @app.route('/admin/auto-backup/trigger', methods=['POST'])
 @login_required
 def trigger_auto_backup():
-    if current_user.role != 'admin':
+    if current_user.role not in ['admin', 'school_admin']:
         return jsonify({'error': 'Access denied'}), 403
     
     try:
@@ -2137,7 +2137,7 @@ def trigger_auto_backup():
 @app.route('/admin/auto-backup/status')
 @login_required
 def auto_backup_status():
-    if current_user.role != 'admin':
+    if current_user.role not in ['admin', 'school_admin']:
         return jsonify({'error': 'Access denied'}), 403
     
     try:
@@ -2169,7 +2169,7 @@ def auto_backup_status():
 @app.route('/admin/restore', methods=['POST'])
 @login_required
 def restore_data():
-    if current_user.role != 'admin':
+    if current_user.role not in ['admin', 'school_admin']:
         flash('Access denied', 'error')
         return redirect(url_for('index'))
     
@@ -2449,7 +2449,7 @@ def upload_profile_picture():
 @app.route('/admin/register-teacher', methods=['GET', 'POST'])
 @login_required
 def register_teacher():
-    if current_user.role != 'admin':
+    if current_user.role not in ['admin', 'school_admin']:
         flash('Access denied', 'error')
         return redirect(url_for('index'))
     
@@ -2497,7 +2497,7 @@ def register_teacher():
 @app.route('/admin/teacher/<int:teacher_id>/toggle-status', methods=['POST'])
 @login_required
 def toggle_teacher_status(teacher_id):
-    if current_user.role != 'admin':
+    if current_user.role not in ['admin', 'school_admin']:
         flash('Access denied', 'error')
         return redirect(url_for('index'))
     
@@ -2516,7 +2516,7 @@ def toggle_teacher_status(teacher_id):
 @app.route('/admin/teacher/<int:teacher_id>')
 @login_required
 def admin_view_teacher(teacher_id):
-    if current_user.role != 'admin':
+    if current_user.role not in ['admin', 'school_admin']:
         flash('Access denied', 'error')
         return redirect(url_for('index'))
     
@@ -2933,7 +2933,7 @@ def process_mark_assignment(assignment_id):
 @app.route('/admin/reset-password/<int:user_id>')
 @login_required
 def admin_reset_password(user_id):
-    if current_user.role != 'admin':
+    if current_user.role not in ['admin', 'school_admin']:
         flash('Access denied', 'error')
         return redirect(url_for('index'))
     
@@ -2943,7 +2943,7 @@ def admin_reset_password(user_id):
 @app.route('/admin/reset-password/<int:user_id>', methods=['POST'])
 @login_required
 def process_admin_reset_password(user_id):
-    if current_user.role != 'admin':
+    if current_user.role not in ['admin', 'school_admin']:
         flash('Access denied', 'error')
         return redirect(url_for('index'))
     
@@ -3144,7 +3144,7 @@ def admin_homework_records():
 @app.route('/admin/homework-record/<int:record_id>')
 @login_required
 def admin_view_homework_record(record_id):
-    if current_user.role != 'admin':
+    if current_user.role not in ['admin', 'school_admin']:
         flash('Access denied', 'error')
         return redirect(url_for('index'))
     
@@ -3156,7 +3156,7 @@ def admin_view_homework_record(record_id):
 @app.route('/admin/homework-record/<int:record_id>/comment', methods=['POST'])
 @login_required
 def admin_comment_homework_record(record_id):
-    if current_user.role != 'admin':
+    if current_user.role not in ['admin', 'school_admin']:
         flash('Access denied', 'error')
         return redirect(url_for('index'))
     
@@ -3236,7 +3236,7 @@ def teacher_edit_homework_record(record_id):
 @app.route('/admin/send-message', methods=['GET', 'POST'])
 @login_required
 def admin_send_message():
-    if current_user.role != 'admin':
+    if current_user.role not in ['admin', 'school_admin']:
         flash('Access denied', 'error')
         return redirect(url_for('index'))
     
@@ -3465,7 +3465,7 @@ def api_edit_school(school_id):
 @app.route('/admin/teacher-submissions')
 @login_required
 def admin_teacher_submissions():
-    if current_user.role != 'admin':
+    if current_user.role not in ['admin', 'school_admin']:
         flash('Access denied', 'error')
         return redirect(url_for('index'))
     
@@ -3575,7 +3575,7 @@ def teacher_reply_message(message_id):
 @app.route('/admin/notifications')
 @login_required
 def admin_notifications():
-    if current_user.role != 'admin':
+    if current_user.role not in ['admin', 'school_admin']:
         flash('Access denied', 'error')
         return redirect(url_for('index'))
     
@@ -3590,7 +3590,7 @@ def admin_notifications():
 @app.route('/admin/notification/<int:notification_id>/read', methods=['POST'])
 @login_required
 def mark_notification_read(notification_id):
-    if current_user.role != 'admin':
+    if current_user.role not in ['admin', 'school_admin']:
         return jsonify({'error': 'Access denied'}), 403
     
     notification = Notification.query.filter_by(id=notification_id, user_id=current_user.id).first()
@@ -3608,7 +3608,7 @@ def mark_notification_read(notification_id):
 @app.route('/admin/notifications/mark-all-read', methods=['POST'])
 @login_required
 def mark_all_notifications_read():
-    if current_user.role != 'admin':
+    if current_user.role not in ['admin', 'school_admin']:
         return jsonify({'error': 'Access denied'}), 403
     
     try:
@@ -3622,7 +3622,7 @@ def mark_all_notifications_read():
 @app.route('/admin/notifications/count')
 @login_required
 def admin_notification_count():
-    if current_user.role != 'admin':
+    if current_user.role not in ['admin', 'school_admin']:
         return jsonify({'error': 'Access denied'}), 403
     
     try:
@@ -3634,7 +3634,7 @@ def admin_notification_count():
 @app.route('/admin/message/<int:message_id>')
 @login_required
 def admin_view_message(message_id):
-    if current_user.role != 'admin':
+    if current_user.role not in ['admin', 'school_admin']:
         flash('Access denied', 'error')
         return redirect(url_for('index'))
     
