@@ -500,6 +500,11 @@ def check_subscription_status():
         if not school_id:
             return False
         
+        # Check if this is the demo school - demo school doesn't need subscription
+        school = School.query.get(school_id)
+        if school and school.name == 'Demo School':
+            return True
+        
         payment_service = PaymentService()
         return payment_service.is_subscription_active(school_id)
     except Exception as e:

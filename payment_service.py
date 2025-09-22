@@ -255,6 +255,12 @@ class PaymentService:
         """
         # Get database models within proper Flask context
         db, SubscriptionPlan, School, Payment, SchoolSubscription, User = self._get_db_models()
+        
+        # Check if this is the demo school - demo school doesn't need subscription
+        school = School.query.get(school_id)
+        if school and school.name == 'Demo School':
+            return True
+        
         subscription = self.get_school_subscription(school_id)
         if not subscription:
             return False
