@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Quick Setup Script for Student Assignment Tracking App with Aiven Database
+Quick Setup Script for SMIED with Aiven Database
 Configures the application with your specific Aiven database details
 """
 
@@ -12,29 +12,85 @@ from dotenv import load_dotenv
 def print_banner():
     """Print setup banner"""
     print("=" * 70)
-    print("🎓 Student Assignment Tracking App - Aiven Setup")
+    print("🎓 SMIED - Student Management Information Education Database")
     print("=" * 70)
     print("Setting up with your Aiven PostgreSQL database...")
     print()
+
+def get_database_config():
+    """Get database configuration from environment variables"""
+    # Load environment variables
+    load_dotenv()
+    
+    config = {
+        'host': os.getenv('AIVEN_DB_HOST'),
+        'port': os.getenv('AIVEN_DB_PORT'),
+        'database': os.getenv('AIVEN_DB_NAME'),
+        'user': os.getenv('AIVEN_DB_USER'),
+        'password': os.getenv('AIVEN_DB_PASSWORD'),
+        'ssl_mode': os.getenv('AIVEN_DB_SSL_MODE', 'require'),
+        'database_url': os.getenv('DATABASE_URL')
+    }
+    
+    # Validate required configuration
+    missing_config = []
+    for key, value in config.items():
+        if not value and key != 'ssl_mode':  # ssl_mode has a default
+            missing_config.append(key.upper())
+    
+    if missing_config:
+        print(f"❌ Missing required configuration: {', '.join(missing_config)}")
+        print("   Please ensure your environment file contains all required database settings.")
+        return None
+    
+    return config
 
 def create_env_file():
     """Create .env file with Aiven configuration"""
     print("🔧 Creating .env configuration file...")
     
-    env_content = """# Aiven Database Configuration
-DATABASE_URL=postgres://avnadmin:AVNS_QtoIA0l1WvEV4I565Kj@pg-6e8de0c-smiwebsolutions08-5612.c.aivencloud.com:27725/defaultdb?sslmode=require
+    # Get database configuration
+    config = get_database_config()
+    if not config:
+        return False
+    
+    env_content = f"""# SMIED Environment Configuration
+# Database Configuration
+DATABASE_URL={config['database_url']}
 
 # Flask Configuration
-SECRET_KEY=your-secret-key-here
+SECRET_KEY=your-secret-key-here-change-this-in-production
 FLASK_ENV=production
 
+# Default User Passwords (change these for production)
+SUPER_ADMIN_PASSWORD=superadmin123
+ADMIN_PASSWORD=admin123
+TEACHER_PASSWORD=teacher123
+PARENT_PASSWORD=parent123
+
+# Email Configuration
+MAIL_SERVER=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USE_TLS=True
+MAIL_USE_SSL=False
+MAIL_USERNAME=your-email@gmail.com
+MAIL_PASSWORD=your-app-password
+MAIL_DEFAULT_SENDER=your-email@gmail.com
+MAIL_MAX_EMAILS=100
+MAIL_SUPPRESS_SEND=False
+
+# Paystack Payment Configuration
+PAYSTACK_PUBLIC_KEY=pk_live_your_public_key
+PAYSTACK_SECRET_KEY=sk_live_your_secret_key
+PAYSTACK_WEBHOOK_SECRET=your_webhook_secret
+
 # Aiven Database Details (for reference)
-AIVEN_DB_HOST=pg-6e8de0c-smiwebsolutions08-5612.c.aivencloud.com
-AIVEN_DB_PORT=27725
-AIVEN_DB_NAME=defaultdb
-AIVEN_DB_USER=avnadmin
-AIVEN_DB_PASSWORD=AVNS_QtoIA0l1WvEV4I565Kj
-AIVEN_DB_SSL_MODE=require
+AIVEN_DB_HOST={config['host']}
+AIVEN_DB_PORT={config['port']}
+AIVEN_DB_NAME={config['database']}
+AIVEN_DB_USER={config['user']}
+AIVEN_DB_PASSWORD={config['password']}
+AIVEN_DB_SSL_MODE={config['ssl_mode']}
 """
     
     try:
@@ -163,11 +219,18 @@ def main():
     """Main setup function"""
     print_banner()
     
+    # Get database configuration
+    config = get_database_config()
+    if not config:
+        print("💥 Setup failed: Missing database configuration")
+        print("   Please ensure your environment file contains all required database settings.")
+        sys.exit(1)
+    
     print("🚀 Starting setup with your Aiven database...")
-    print("   Host: pg-6e8de0c-smiwebsolutions08-5612.c.aivencloud.com")
-    print("   Port: 27725")
-    print("   Database: defaultdb")
-    print("   User: avnadmin")
+    print(f"   Host: {config['host']}")
+    print(f"   Port: {config['port']}")
+    print(f"   Database: {config['database']}")
+    print(f"   User: {config['user']}")
     print()
     
     # Step 1: Create .env file
@@ -204,22 +267,21 @@ def main():
     print("🎉 Setup completed successfully!")
     print("="*70)
     print()
-    print("✅ Your Student Assignment Tracking App is now configured with Aiven!")
+    print("✅ SMIED is now configured with Aiven!")
     print()
     print("🚀 Next steps:")
     print("   1. Start your application: python app.py")
     print("   2. Open your browser to: http://localhost:5000")
-    print("   3. Login with admin credentials:")
-    print("      Username: admin")
-    print("      Password: admin123")
+    print("   3. Login with your configured credentials")
+    print("      Contact your administrator for login details")
     print()
     print("🔧 Configuration details:")
-    print("   • Database: Aiven PostgreSQL")
-    print("   • Host: pg-6e8de0c-smiwebsolutions08-5612.c.aivencloud.com")
-    print("   • Port: 27725")
-    print("   • Database: defaultdb")
+    print(f"   • Database: Aiven PostgreSQL")
+    print(f"   • Host: {config['host']}")
+    print(f"   • Port: {config['port']}")
+    print(f"   • Database: {config['database']}")
     print()
-    print("📚 For more information, see AIVEN_MIGRATION_GUIDE.md")
+    print("📚 For more information, see SETUP.md")
 
 if __name__ == '__main__':
     main()
