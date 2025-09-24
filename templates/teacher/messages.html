@@ -3,91 +3,240 @@
 {% block title %}Messages - Teacher Dashboard{% endblock %}
 
 {% block content %}
-<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8 space-y-2 sm:space-y-0">
-    <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center">
-        <i class="fas fa-envelope mr-2 sm:mr-3"></i>Messages
-    </h1>
-    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-success text-white">
-        Class Teacher
-    </span>
-</div>
+<div class="min-h-screen bg-gray-50 py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900 mb-2">Messages</h1>
+                    <p class="text-gray-600">Communicate with parents and school administration</p>
+                </div>
+                <div class="mt-4 sm:mt-0">
+                    <a href="{{ url_for('teacher_dashboard') }}" class="inline-flex items-center px-4 py-2 bg-success text-white rounded-lg hover:bg-green-600 transition duration-200">
+                        <i class="fas fa-arrow-left mr-2"></i>
+                        Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
 
-<!-- Messages List -->
-<div class="bg-white rounded-xl shadow-lg overflow-hidden">
-    <div class="px-6 py-4 border-b border-gray-200">
-        <h2 class="text-lg font-semibold text-gray-900 flex items-center">
-            <i class="fas fa-inbox mr-2 text-primary"></i>Received Messages
-        </h2>
-    </div>
-    
-    <div class="divide-y divide-gray-200">
-        {% if messages %}
-            {% for message in messages %}
-            <div class="p-6 hover:bg-gray-50 transition-colors duration-200 {% if not message.is_read %}bg-blue-50 border-l-4 border-blue-400{% endif %}">
-                <div class="flex justify-between items-start mb-4">
-                    <div class="flex-1">
-                        <div class="flex items-center mb-2">
-                            <h3 class="text-lg font-semibold text-gray-900 mr-3">{{ message.subject }}</h3>
-                            {% if not message.is_read %}
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                    New
-                                </span>
-                            {% endif %}
-                        </div>
-                        <div class="flex items-center text-sm text-gray-500 mb-2">
-                            <i class="fas fa-user mr-2"></i>
-                            <span>From: {{ message.sender.first_name }} {{ message.sender.last_name }}</span>
-                            <span class="mx-2">•</span>
-                            <i class="fas fa-clock mr-1"></i>
-                            <span>{{ message.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
-                        </div>
-                    </div>
-                    <div class="flex space-x-2">
-                        {% if not message.is_read %}
-                        <button onclick="markAsRead({{ message.id }})" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
-                            <i class="fas fa-check mr-1"></i>Mark as Read
-                        </button>
+        <!-- Messages Tabs -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+            <div class="border-b border-gray-200">
+                <nav class="-mb-px flex space-x-8 px-6">
+                    <button onclick="showTab('received')" id="received-tab" class="py-4 px-1 border-b-2 border-success font-medium text-sm text-success">
+                        <i class="fas fa-inbox mr-2"></i>Received Messages
+                    </button>
+                    <button onclick="showTab('sent')" id="sent-tab" class="py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                        <i class="fas fa-paper-plane mr-2"></i>Sent Messages
+                    </button>
+                    <button onclick="showTab('notifications')" id="notifications-tab" class="py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                        <i class="fas fa-bell mr-2"></i>Notifications
+                        {% if notifications %}
+                        <span class="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-warning text-white">
+                            {{ notifications|length }}
+                        </span>
                         {% endif %}
-                        <button onclick="toggleMessage({{ message.id }})" class="text-primary hover:text-blue-700 text-sm font-medium mr-2">
-                            <i class="fas fa-eye mr-1"></i>View Details
-                        </button>
-                        <a href="{{ url_for('teacher_reply_message', message_id=message.id) }}" class="text-success hover:text-green-700 text-sm font-medium">
-                            <i class="fas fa-reply mr-1"></i>Reply
-                        </a>
-                    </div>
-                </div>
-                
-                <div id="messageContent{{ message.id }}" class="hidden">
-                    <div class="bg-gray-50 rounded-lg p-4">
-                        <p class="text-gray-900 whitespace-pre-wrap">{{ message.content }}</p>
-                    </div>
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Received Messages Tab -->
+            <div id="received-messages" class="tab-content">
+                <div class="p-6">
+                    {% if received_messages %}
+                        <div class="space-y-4">
+                            {% for message in received_messages %}
+                            <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition duration-200 {% if not message.is_read %}bg-blue-50 border-l-4 border-blue-400{% endif %}">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div class="flex-1">
+                                        <h3 class="text-lg font-semibold text-gray-900">{{ message.subject }}</h3>
+                                        <p class="text-sm text-gray-600">
+                                            From: {{ message.sender.first_name }} {{ message.sender.last_name }}
+                                            {% if message.sender.role == 'parent' %}
+                                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-info text-white ml-2">
+                                                    <i class="fas fa-user mr-1"></i>Parent
+                                                </span>
+                                            {% else %}
+                                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary text-white ml-2">
+                                                    <i class="fas fa-user-shield mr-1"></i>Admin
+                                                </span>
+                                            {% endif %}
+                                        </p>
+                                        <p class="text-xs text-gray-500 mt-1">{{ message.created_at.strftime('%m/%d/%Y %H:%M') }}</p>
+                                    </div>
+                                    <div class="text-right">
+                                        {% if not message.is_read %}
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-warning text-white mb-2">
+                                            New
+                                        </span>
+                                        {% endif %}
+                                        <div class="flex space-x-2">
+                                            <button onclick="toggleMessage({{ message.id }})" class="text-primary hover:text-blue-700 text-sm font-medium">
+                                                <i class="fas fa-eye mr-1"></i>View
+                                            </button>
+                                            <a href="{{ url_for('teacher_reply_message', message_id=message.id) }}" class="text-success hover:text-green-700 text-sm font-medium">
+                                                <i class="fas fa-reply mr-1"></i>Reply
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div id="messageContent{{ message.id }}" class="hidden mt-3">
+                                    <div class="bg-gray-50 rounded-lg p-4">
+                                        <p class="text-gray-900 whitespace-pre-wrap">{{ message.content }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-12">
+                            <i class="fas fa-inbox text-4xl text-gray-400 mb-4"></i>
+                            <h3 class="text-lg font-medium text-gray-900 mb-2">No messages received yet</h3>
+                            <p class="text-gray-600">Messages from parents and administrators will appear here</p>
+                        </div>
+                    {% endif %}
                 </div>
             </div>
-            {% endfor %}
-        {% else %}
-            <div class="p-12 text-center">
-                <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <i class="fas fa-inbox text-2xl text-gray-400"></i>
+
+            <!-- Sent Messages Tab -->
+            <div id="sent-messages" class="tab-content hidden">
+                <div class="p-6">
+                    {% if sent_messages %}
+                        <div class="space-y-4">
+                            {% for message in sent_messages %}
+                            <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition duration-200">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div class="flex-1">
+                                        <h3 class="text-lg font-semibold text-gray-900">{{ message.subject }}</h3>
+                                        <p class="text-sm text-gray-600">
+                                            To: {{ message.recipient.first_name }} {{ message.recipient.last_name }}
+                                            {% if message.recipient.role == 'parent' %}
+                                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-info text-white ml-2">
+                                                    <i class="fas fa-user mr-1"></i>Parent
+                                                </span>
+                                            {% else %}
+                                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary text-white ml-2">
+                                                    <i class="fas fa-user-shield mr-1"></i>Admin
+                                                </span>
+                                            {% endif %}
+                                        </p>
+                                        <p class="text-xs text-gray-500 mt-1">{{ message.created_at.strftime('%m/%d/%Y %H:%M') }}</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <button onclick="toggleMessage({{ message.id }})" class="text-primary hover:text-blue-700 text-sm font-medium">
+                                            <i class="fas fa-eye mr-1"></i>View
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div id="messageContent{{ message.id }}" class="hidden mt-3">
+                                    <div class="bg-gray-50 rounded-lg p-4">
+                                        <p class="text-gray-900 whitespace-pre-wrap">{{ message.content }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-12">
+                            <i class="fas fa-paper-plane text-4xl text-gray-400 mb-4"></i>
+                            <h3 class="text-lg font-medium text-gray-900 mb-2">No messages sent yet</h3>
+                            <p class="text-gray-600">Your replies to messages will appear here</p>
+                        </div>
+                    {% endif %}
                 </div>
-                <p class="text-gray-500 mb-4">No messages received yet.</p>
-                <p class="text-sm text-gray-400">Messages from the head teacher will appear here.</p>
             </div>
-        {% endif %}
+
+            <!-- Notifications Tab -->
+            <div id="notifications" class="tab-content hidden">
+                <div class="p-6">
+                    {% if notifications %}
+                        <div class="space-y-4">
+                            {% for notification in notifications %}
+                            <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition duration-200 {% if not notification.is_read %}bg-blue-50 border-l-4 border-blue-400{% endif %}">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div class="flex-1">
+                                        <h3 class="text-lg font-semibold text-gray-900">{{ notification.title }}</h3>
+                                        <p class="text-sm text-gray-600 mt-1">{{ notification.content }}</p>
+                                        <p class="text-xs text-gray-500 mt-1">{{ notification.created_at.strftime('%m/%d/%Y %H:%M') }}</p>
+                                        <div class="mt-2">
+                                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium 
+                                                {% if notification.type == 'lesson_comment' %}bg-purple-100 text-purple-800
+                                                {% elif notification.type == 'message_received' %}bg-blue-100 text-blue-800
+                                                {% elif notification.type == 'assignment_created' %}bg-green-100 text-green-800
+                                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                                <i class="fas 
+                                                    {% if notification.type == 'lesson_comment' %}fa-comment
+                                                    {% elif notification.type == 'message_received' %}fa-envelope
+                                                    {% elif notification.type == 'assignment_created' %}fa-tasks
+                                                    {% else %}fa-bell{% endif %} mr-1"></i>
+                                                {{ notification.type.replace('_', ' ').title() }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        {% if not notification.is_read %}
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-warning text-white mb-2">
+                                            New
+                                        </span>
+                                        {% endif %}
+                                        <div class="flex space-x-2">
+                                            <button onclick="markNotificationRead({{ notification.id }})" class="text-primary hover:text-blue-700 text-sm font-medium">
+                                                <i class="fas fa-check mr-1"></i>Mark as Read
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-12">
+                            <i class="fas fa-bell-slash text-4xl text-gray-400 mb-4"></i>
+                            <h3 class="text-lg font-medium text-gray-900 mb-2">No notifications yet</h3>
+                            <p class="text-gray-600">System notifications and updates will appear here</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
     </div>
 </div>
-
-<!-- Notification Sound -->
-<audio id="notificationSound" preload="auto">
-    <source src="{{ url_for('static', filename='sounds/notification.mp3') }}" type="audio/mpeg">
-    <source src="{{ url_for('static', filename='sounds/notification.wav') }}" type="audio/wav">
-</audio>
 
 <script>
+function showTab(tabName) {
+    // Hide all tab contents
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.add('hidden');
+    });
+    
+    // Remove active class from all tabs
+    document.querySelectorAll('[id$="-tab"]').forEach(tab => {
+        tab.classList.remove('border-success', 'text-success');
+        tab.classList.add('border-transparent', 'text-gray-500');
+    });
+    
+    // Show selected tab content
+    const tabContentId = tabName === 'notifications' ? tabName : tabName + '-messages';
+    document.getElementById(tabContentId).classList.remove('hidden');
+    
+    // Add active class to selected tab
+    const activeTab = document.getElementById(tabName + '-tab');
+    activeTab.classList.remove('border-transparent', 'text-gray-500');
+    activeTab.classList.add('border-success', 'text-success');
+}
+
 function toggleMessage(messageId) {
     const content = document.getElementById(`messageContent${messageId}`);
     if (content.classList.contains('hidden')) {
         content.classList.remove('hidden');
-        markAsRead(messageId);
+        // Mark as read if it's a received message
+        if (content.closest('#received-messages')) {
+            markAsRead(messageId);
+        }
     } else {
         content.classList.add('hidden');
     }
@@ -104,50 +253,63 @@ function markAsRead(messageId) {
     .then(data => {
         if (data.success) {
             // Remove the "New" badge and blue background
-            const messageElement = document.querySelector(`[onclick*="markAsRead(${messageId})"]`).closest('.p-6');
-            messageElement.classList.remove('bg-blue-50', 'border-l-4', 'border-blue-400');
-            
-            // Hide the mark as read button
-            const markAsReadButton = document.querySelector(`[onclick="markAsRead(${messageId})"]`);
-            if (markAsReadButton) {
-                markAsReadButton.style.display = 'none';
-            }
-            
-            // Remove the "New" badge
-            const newBadge = messageElement.querySelector('.bg-blue-100');
-            if (newBadge) {
-                newBadge.remove();
+            const messageElement = document.querySelector(`[onclick*="toggleMessage(${messageId})"]`).closest('.border');
+            if (messageElement) {
+                messageElement.classList.remove('bg-blue-50', 'border-l-4', 'border-blue-400');
+                
+                // Remove the "New" badge
+                const newBadge = messageElement.querySelector('.bg-warning');
+                if (newBadge) {
+                    newBadge.remove();
+                }
             }
         }
     })
-    .catch(error => console.error('Error:', error));
+    .catch(error => {
+        console.error('Error marking message as read:', error);
+    });
 }
 
-// Check for new messages every 30 seconds
+// Auto-refresh messages every 30 seconds
 setInterval(function() {
-    fetch('/api/teacher/notifications')
-        .then(response => response.json())
-        .then(data => {
-            if (data.unread_messages > 0) {
-                // Play notification sound
-                const audio = document.getElementById('notificationSound');
-                audio.play().catch(e => console.log('Could not play notification sound:', e));
-                
-                // Show browser notification if permission granted
-                if (Notification.permission === 'granted') {
-                    new Notification('New Message Received', {
-                        body: 'You have received a new message from the head teacher.',
-                        icon: '/static/images/notification-icon.png'
-                    });
-                }
-            }
-        })
-        .catch(error => console.error('Error checking notifications:', error));
+    // Only refresh if we're on the received messages tab
+    if (!document.getElementById('received-messages').classList.contains('hidden')) {                                                                           
+        location.reload();
+    }
 }, 30000);
 
-// Request notification permission on page load
-if ('Notification' in window && Notification.permission === 'default') {
-    Notification.requestPermission();
+function markNotificationRead(notificationId) {
+    fetch(`/teacher/notification/${notificationId}/read`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Remove the "New" badge and blue background
+            const notificationElement = document.querySelector(`[onclick*="markNotificationRead(${notificationId})"]`).closest('.border');
+            if (notificationElement) {
+                notificationElement.classList.remove('bg-blue-50', 'border-l-4', 'border-blue-400');
+                
+                // Remove the "New" badge
+                const newBadge = notificationElement.querySelector('.bg-warning');
+                if (newBadge) {
+                    newBadge.remove();
+                }
+                
+                // Hide the "Mark as Read" button
+                const markReadButton = notificationElement.querySelector(`[onclick*="markNotificationRead(${notificationId})"]`);
+                if (markReadButton) {
+                    markReadButton.style.display = 'none';
+                }
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error marking notification as read:', error);
+    });
 }
 </script>
 {% endblock %}

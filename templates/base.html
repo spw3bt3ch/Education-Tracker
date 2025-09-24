@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>{% block title %}Home Task Tracker - Student Assignment Tracking{% endblock %}</title>
+    <title>{% block title %}SMIED - Student Management Information Education Database{% endblock %}</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -128,7 +128,7 @@
                 <div class="flex">
                     <div class="flex-shrink-0 flex items-center">
                         <a href="{{ url_for('index') }}" class="text-white text-xl font-bold flex items-center">
-                            <i class="fas fa-graduation-cap mr-2"></i>Home Task Tracker
+                            <i class="fas fa-graduation-cap mr-2"></i>SMIED
                         </a>
                     </div>
                     <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
@@ -160,9 +160,17 @@
                                 <a href="{{ url_for('manage_assignments') }}" class="text-white hover:text-gray-300 px-3 py-2 rounded-md text-sm font-medium flex items-center">
                                     <i class="fas fa-tasks mr-1"></i>Assignments
                                 </a>
+                                <a href="{{ url_for('teacher_messages') }}" class="text-white hover:text-gray-300 px-3 py-2 rounded-md text-sm font-medium flex items-center relative">
+                                    <i class="fas fa-envelope mr-1"></i>Messages
+                                    <span id="teacher-message-count" class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-500 text-white hidden">0</span>
+                                </a>
                             {% elif current_user.role == 'parent' %}
                                 <a href="{{ url_for('parent_dashboard') }}" class="text-white hover:text-gray-300 px-3 py-2 rounded-md text-sm font-medium flex items-center">
                                     <i class="fas fa-gauge mr-1"></i>Dashboard
+                                </a>
+                                <a href="{{ url_for('parent_messages') }}" class="text-white hover:text-gray-300 px-3 py-2 rounded-md text-sm font-medium flex items-center relative">
+                                    <i class="fas fa-envelope mr-1"></i>Messages
+                                    <span id="parent-message-count" class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-500 text-white hidden">0</span>
                                 </a>
                             {% endif %}
                         {% else %}
@@ -299,7 +307,7 @@
     <!-- Footer -->
     <footer class="bg-white border-t border-gray-200 mt-12">
         <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-            <p class="text-center text-gray-500 text-sm">&copy; 2025 Home Task Tracker Developed by SMI Solutions | All rights reserved.</p>
+            <p class="text-center text-gray-500 text-sm">&copy; 2025 SMIED - Student Management Information Education Database | Developed by SMI Solutions | All rights reserved.</p>
         </div>
     </footer>
 
@@ -332,9 +340,50 @@
             {% endif %}
         }
 
+        // Load message counts for teachers and parents
+        function loadMessageCounts() {
+            {% if current_user.is_authenticated %}
+            // Load for teachers
+            {% if current_user.role == 'teacher' %}
+            fetch('/api/teacher/message-count')
+                .then(response => response.json())
+                .then(data => {
+                    const countElement = document.getElementById('teacher-message-count');
+                    if (data.count > 0) {
+                        countElement.textContent = data.count;
+                        countElement.classList.remove('hidden');
+                    } else {
+                        countElement.classList.add('hidden');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading teacher message count:', error);
+                });
+            {% endif %}
+            
+            // Load for parents
+            {% if current_user.role == 'parent' %}
+            fetch('/api/parent/message-count')
+                .then(response => response.json())
+                .then(data => {
+                    const countElement = document.getElementById('parent-message-count');
+                    if (data.count > 0) {
+                        countElement.textContent = data.count;
+                        countElement.classList.remove('hidden');
+                    } else {
+                        countElement.classList.add('hidden');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading parent message count:', error);
+                });
+            {% endif %}
+            {% endif %}
+        }
+
         // Check subscription status
         function checkSubscriptionStatus() {
-            {% if current_user.is_authenticated and current_user.role != 'super_admin' %}
+            {% if current_user.is_authenticated and current_user.role not in ['super_admin'] %}
             fetch('/subscription/status')
                 .then(response => response.json())
                 .then(data => {
@@ -386,10 +435,13 @@
         // Load notification count when page loads
         document.addEventListener('DOMContentLoaded', function() {
             loadNotificationCount();
+            loadMessageCounts();
             checkSubscriptionStatus();
             
             // Refresh notification count every 30 seconds
             setInterval(loadNotificationCount, 30000);
+            // Refresh message counts every 30 seconds
+            setInterval(loadMessageCounts, 30000);
         });
     </script>
     

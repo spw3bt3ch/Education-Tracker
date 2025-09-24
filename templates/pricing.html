@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Pricing Plans - EduTrack{% endblock %}
+{% block title %}Pricing Plans - SMIED{% endblock %}
 
 {% block content %}
 <div class="min-h-screen bg-gray-50 py-8">
@@ -265,6 +265,18 @@ function initializePayment(planId) {
     selectedPlanId = planId;
     const modal = document.getElementById('paymentModal');
     const schoolFields = document.getElementById('schoolRegistrationFields');
+    const payButtonText = document.getElementById('payButtonText');
+    
+    // Set button text based on plan
+    {% for plan in plans %}
+    if (planId == {{ plan.id }}) {
+        if ('{{ plan.name }}' === 'Free Trial') {
+            payButtonText.textContent = 'Start Trial';
+        } else {
+            payButtonText.textContent = 'Proceed to Payment';
+        }
+    }
+    {% endfor %}
     
     // Show school registration fields for new users
     {% if not current_user.is_authenticated %}
@@ -322,19 +334,73 @@ document.getElementById('paymentForm').addEventListener('submit', async function
         const data = await response.json();
         
         if (data.success) {
-            // Redirect to Paystack
-            window.location.href = data.authorization_url;
+            if (data.redirect_url) {
+                // Free trial - redirect to dashboard
+                window.location.href = data.redirect_url;
+            } else {
+                // Paid plan - redirect to Paystack
+                window.location.href = data.authorization_url;
+            }
         } else {
-            alert('Error: ' + data.message);
+            // Show error message in a user-friendly way
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-4 rounded-lg shadow-lg z-50 max-w-md';
+            errorDiv.innerHTML = `
+                <div class="flex items-center">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                    <span>${data.message}</span>
+                    <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+            document.body.appendChild(errorDiv);
+            
+            // Auto-remove after 10 seconds
+            setTimeout(() => {
+                if (errorDiv.parentElement) {
+                    errorDiv.remove();
+                }
+            }, 10000);
+            
             closePaymentModal();
         }
     } catch (error) {
-        alert('Error: ' + error.message);
+        // Show error message in a user-friendly way
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-4 rounded-lg shadow-lg z-50 max-w-md';
+        errorDiv.innerHTML = `
+            <div class="flex items-center">
+                <i class="fas fa-exclamation-triangle mr-2"></i>
+                <span>Network Error: ${error.message}</span>
+                <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `;
+        document.body.appendChild(errorDiv);
+        
+        // Auto-remove after 10 seconds
+        setTimeout(() => {
+            if (errorDiv.parentElement) {
+                errorDiv.remove();
+            }
+        }, 10000);
+        
         closePaymentModal();
     } finally {
         // Reset button state
         payButton.disabled = false;
-        payButtonText.textContent = 'Proceed to Payment';
+        // Reset to appropriate text based on plan
+        {% for plan in plans %}
+        if (selectedPlanId == {{ plan.id }}) {
+            if ('{{ plan.name }}' === 'Free Trial') {
+                payButtonText.textContent = 'Start Trial';
+            } else {
+                payButtonText.textContent = 'Proceed to Payment';
+            }
+        }
+        {% endfor %}
         payButtonSpinner.classList.add('hidden');
     }
 });

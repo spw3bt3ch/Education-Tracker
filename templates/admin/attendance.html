@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block title %}Attendance - Admin{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900 mb-2">School Attendance</h1>
+                    <p class="text-gray-600">Monitor and manage student attendance across all classes</p>
+                </div>
+                <div class="mt-4 sm:mt-0 flex space-x-3">
+                    <a href="{{ url_for('admin_daily_attendance') }}" class="inline-flex items-center px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition duration-200">
+                        <i class="fas fa-calendar-day mr-2"></i>
+                        Daily View
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Attendance Overview -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-users text-blue-500 text-2xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-lg font-medium text-gray-900">Total Students</h3>
+                        <p class="text-2xl font-bold text-blue-600">
+                            {% set total_students = attendance_summaries | length %}
+                            {{ total_students }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-check-circle text-green-500 text-2xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-lg font-medium text-gray-900">Good Attendance</h3>
+                        <p class="text-2xl font-bold text-green-600">
+                            {% set good_attendance = attendance_summaries | selectattr('attendance_percentage', '>=', 75) | list | length %}
+                            {{ good_attendance }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-exclamation-triangle text-yellow-500 text-2xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-lg font-medium text-gray-900">Poor Attendance</h3>
+                        <p class="text-2xl font-bold text-yellow-600">
+                            {% set poor_attendance = attendance_summaries | selectattr('attendance_percentage', '<', 75) | list | length %}
+                            {{ poor_attendance }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-percentage text-purple-500 text-2xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-lg font-medium text-gray-900">Avg Attendance</h3>
+                        <p class="text-2xl font-bold text-purple-600">
+                            {% set avg_attendance = attendance_summaries | map(attribute='attendance_percentage') | list | sum / attendance_summaries | length if attendance_summaries | length > 0 else 0 %}
+                            {{ "%.1f"|format(avg_attendance) }}%
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Classes Overview -->
+        <div class="space-y-6">
+            {% for class_obj in classes %}
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-lg font-semibold text-gray-900">{{ class_obj.name }}</h3>
+                        <div class="flex space-x-2">
+                            <a href="{{ url_for('admin_class_attendance', class_id=class_obj.id) }}" 
+                               class="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                                View Class
+                            </a>
+                            <a href="{{ url_for('admin_class_daily_attendance', class_id=class_obj.id) }}" 
+                               class="text-orange-600 hover:text-orange-700 text-sm font-medium">
+                                Daily View
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Class Statistics -->
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <h4 class="text-sm font-medium text-gray-700 mb-2">Class Statistics</h4>
+                            <div class="space-y-2">
+                                <div class="flex justify-between">
+                                    <span class="text-sm text-gray-600">Total Students:</span>
+                                    <span class="text-sm font-medium">{{ class_obj.students | length }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-sm text-gray-600">Present Today:</span>
+                                    <span class="text-sm font-medium text-green-600">
+                                        {% set present_today = class_obj.students | selectattr('attendance_records') | list | length %}
+                                        {{ present_today }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Attendance Summary -->
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <h4 class="text-sm font-medium text-gray-700 mb-2">This Month</h4>
+                            <div class="space-y-2">
+                                {% set class_summaries = attendance_summaries | selectattr('class_id', 'equalto', class_obj.id) | list %}
+                                {% if class_summaries %}
+                                    {% set class_avg = class_summaries | map(attribute='attendance_percentage') | list | sum / class_summaries | length %}
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-gray-600">Avg Attendance:</span>
+                                        <span class="text-sm font-medium">{{ "%.1f"|format(class_avg) }}%</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-gray-600">Good Attendance:</span>
+                                        <span class="text-sm font-medium text-green-600">
+                                            {{ class_summaries | selectattr('attendance_percentage', '>=', 75) | list | length }}
+                                        </span>
+                                    </div>
+                                {% else %}
+                                    <div class="text-sm text-gray-500">No data available</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Quick Actions -->
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <h4 class="text-sm font-medium text-gray-700 mb-2">Quick Actions</h4>
+                            <div class="space-y-2">
+                                <a href="{{ url_for('admin_daily_attendance', class_id=class_obj.id) }}" 
+                                   class="block text-sm text-orange-600 hover:text-orange-700">
+                                    <i class="fas fa-calendar-day mr-1"></i>
+                                    View Daily Attendance
+                                </a>
+                                <a href="#" onclick="viewClassStudents({{ class_obj.id }})" 
+                                   class="block text-sm text-blue-600 hover:text-blue-700">
+                                    <i class="fas fa-users mr-1"></i>
+                                    View Students
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="mt-8 bg-white rounded-lg shadow-sm border border-gray-200">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900">Recent Attendance Activity</h3>
+            </div>
+            <div class="p-6">
+                <div class="text-center py-8 text-gray-500">
+                    <i class="fas fa-calendar-check text-4xl mb-4"></i>
+                    <p>Recent attendance activity will appear here</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function viewClassStudents(classId) {
+    // This would open a modal or navigate to a detailed view
+    console.log('View students for class:', classId);
+    // Implementation would depend on specific requirements
+}
+</script>
+{% endblock %}

@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}Send Message to Parent - Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-8">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900 mb-2">Send Message to Parent</h1>
+                    <p class="text-gray-600">Communicate directly with parents</p>
+                </div>
+                <div class="mt-4 sm:mt-0">
+                    <a href="{{ url_for('admin_messages') }}" class="inline-flex items-center px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition duration-200">
+                        <i class="fas fa-arrow-left mr-2"></i>
+                        Back to Messages
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Message Form -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+            <div class="p-6">
+                <form method="POST" class="space-y-6">
+                    <div>
+                        <label for="parent_id" class="block text-sm font-medium text-gray-700 mb-2">Select Parent</label>
+                        <select id="parent_id" name="parent_id" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                            <option value="">Choose a parent...</option>
+                            {% for parent in parents %}
+                            <option value="{{ parent.id }}">
+                                {{ parent.first_name }} {{ parent.last_name }} 
+                                {% if parent.email %} - {{ parent.email }}{% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        {% if not parents %}
+                        <p class="text-sm text-gray-500 mt-2">No parents found in your school.</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        <label for="subject" class="block text-sm font-medium text-gray-700 mb-2">Subject</label>
+                        <input type="text" id="subject" name="subject" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                               placeholder="Enter message subject">
+                    </div>
+                    
+                    <div>
+                        <label for="content" class="block text-sm font-medium text-gray-700 mb-2">Message</label>
+                        <textarea id="content" name="content" rows="8" required
+                                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                                  placeholder="Type your message here..."></textarea>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-3">
+                        <a href="{{ url_for('admin_messages') }}" 
+                           class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition duration-150 ease-in-out">
+                            Cancel
+                        </a>
+                        <button type="submit" 
+                                class="px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-blue-600 rounded-md transition duration-150 ease-in-out">
+                            <i class="fas fa-paper-plane mr-2"></i>Send Message
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+                <div class="space-y-3">
+                    <a href="{{ url_for('admin_send_message') }}" class="block w-full text-center px-4 py-2 bg-success text-white rounded-lg hover:bg-green-600 transition duration-200">
+                        <i class="fas fa-chalkboard-teacher mr-2"></i>
+                        Send to Teachers
+                    </a>
+                    <a href="{{ url_for('admin_messages') }}" class="block w-full text-center px-4 py-2 bg-info text-white rounded-lg hover:bg-cyan-600 transition duration-200">
+                        <i class="fas fa-inbox mr-2"></i>
+                        View All Messages
+                    </a>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Message Tips</h3>
+                <ul class="text-sm text-gray-600 space-y-2">
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-success mr-2 mt-1"></i>
+                        Be clear and concise in your message
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-success mr-2 mt-1"></i>
+                        Use a descriptive subject line
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-success mr-2 mt-1"></i>
+                        Include relevant details and context
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-success mr-2 mt-1"></i>
+                        Be professional and respectful
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

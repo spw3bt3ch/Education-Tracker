@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+
+{% block title %}Messages - SMIED{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900 mb-2">Messages</h1>
+                    <p class="text-gray-600">Communicate with your child's teachers</p>
+                </div>
+                <div class="mt-4 sm:mt-0 flex items-center space-x-3">
+                    <div id="refresh-indicator" class="hidden text-sm text-gray-500">
+                        <i class="fas fa-sync-alt fa-spin mr-1"></i>Refreshing messages...
+                    </div>
+                    <a href="{{ url_for('parent_dashboard') }}" class="inline-flex items-center px-4 py-2 bg-info text-white rounded-lg hover:bg-cyan-600 transition duration-200">
+                        <i class="fas fa-arrow-left mr-2"></i>
+                        Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Messages Tabs -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+            <div class="border-b border-gray-200">
+                <nav class="-mb-px flex space-x-8 px-6">
+                    <button onclick="showTab('sent')" id="sent-tab" class="py-4 px-1 border-b-2 border-info font-medium text-sm text-info">
+                        <i class="fas fa-paper-plane mr-2"></i>Sent Messages
+                    </button>
+                    <button onclick="showTab('received')" id="received-tab" class="py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                        <i class="fas fa-inbox mr-2"></i>Received Messages
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Sent Messages Tab -->
+            <div id="sent-messages" class="tab-content">
+                <div class="p-6">
+                    {% if sent_messages %}
+                        <div class="space-y-4">
+                            {% for message in sent_messages %}
+                            <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition duration-200">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div class="flex-1">
+                                        <h3 class="text-lg font-semibold text-gray-900">{{ message.subject }}</h3>
+                                        <p class="text-sm text-gray-600">
+                                            To: {{ message.recipient.first_name }} {{ message.recipient.last_name }}
+                                        </p>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="text-sm text-gray-500">{{ message.created_at.strftime('%m/%d/%Y %H:%M') }}</span>
+                                        {% if message.replies %}
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-success text-white ml-2">
+                                            <i class="fas fa-reply mr-1"></i>Replied
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <p class="text-gray-700 mb-3">{{ message.content }}</p>
+                                
+                                <!-- Show replies if any -->
+                                {% if message.replies %}
+                                <div class="ml-4 border-l-2 border-info pl-4 mt-3">
+                                    <h4 class="text-sm font-medium text-gray-900 mb-2">Replies:</h4>
+                                    {% for reply in message.replies %}
+                                    <div class="bg-blue-50 rounded-lg p-3 mb-2">
+                                        <div class="flex justify-between items-start mb-1">
+                                            <span class="text-sm font-medium text-blue-900">{{ reply.sender.first_name }} {{ reply.sender.last_name }}</span>
+                                            <span class="text-xs text-blue-600">{{ reply.created_at.strftime('%m/%d/%Y %H:%M') }}</span>
+                                        </div>
+                                        <p class="text-sm text-blue-800">{{ reply.content }}</p>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-12">
+                            <i class="fas fa-paper-plane text-4xl text-gray-400 mb-4"></i>
+                            <h3 class="text-lg font-medium text-gray-900 mb-2">No messages sent yet</h3>
+                            <p class="text-gray-600">Start a conversation with your child's teacher</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Received Messages Tab -->
+            <div id="received-messages" class="tab-content hidden">
+                <div class="p-6">
+                    {% if received_messages %}
+                        <div class="space-y-4">
+                            {% for message in received_messages %}
+                            <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition duration-200">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div class="flex-1">
+                                        <h3 class="text-lg font-semibold text-gray-900">{{ message.subject }}</h3>
+                                        <p class="text-sm text-gray-600">
+                                            From: {{ message.sender.first_name }} {{ message.sender.last_name }}
+                                        </p>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="text-sm text-gray-500">{{ message.created_at.strftime('%m/%d/%Y %H:%M') }}</span>
+                                        {% if not message.is_read %}
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-warning text-white ml-2">
+                                            New
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <p class="text-gray-700">{{ message.content }}</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-12">
+                            <i class="fas fa-inbox text-4xl text-gray-400 mb-4"></i>
+                            <h3 class="text-lg font-medium text-gray-900 mb-2">No messages received</h3>
+                            <p class="text-gray-600">Messages from teachers will appear here</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showTab(tabName) {
+    // Hide all tab contents
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.add('hidden');
+    });
+    
+    // Remove active class from all tabs
+    document.querySelectorAll('[id$="-tab"]').forEach(tab => {
+        tab.classList.remove('border-info', 'text-info');
+        tab.classList.add('border-transparent', 'text-gray-500');
+    });
+    
+    // Show selected tab content
+    document.getElementById(tabName + '-messages').classList.remove('hidden');
+    
+    // Add active class to selected tab
+    const activeTab = document.getElementById(tabName + '-tab');
+    activeTab.classList.remove('border-transparent', 'text-gray-500');
+    activeTab.classList.add('border-info', 'text-info');
+}
+
+// Manual refresh functionality instead of auto-refresh
+function refreshMessages() {
+    const refreshIndicator = document.getElementById('refresh-indicator');
+    if (refreshIndicator) {
+        refreshIndicator.style.display = 'inline-block';
+    }
+    
+    // Reload the page after a short delay
+    setTimeout(() => {
+        location.reload();
+    }, 500);
+}
+
+// Add refresh button functionality
+document.addEventListener('DOMContentLoaded', function() {
+    // Add a refresh button to the header
+    const header = document.querySelector('.flex.justify-between.items-start');
+    if (header) {
+        const refreshButton = document.createElement('button');
+        refreshButton.innerHTML = '<i class="fas fa-sync-alt mr-1"></i>Refresh Messages';
+        refreshButton.className = 'inline-flex items-center px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition duration-200';
+        refreshButton.onclick = refreshMessages;
+        
+        const backButton = header.querySelector('a[href*="parent_dashboard"]');
+        if (backButton) {
+            backButton.parentNode.insertBefore(refreshButton, backButton);
+        }
+    }
+});
+</script>
+{% endblock %}

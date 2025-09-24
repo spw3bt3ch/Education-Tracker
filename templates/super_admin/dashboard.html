@@ -74,9 +74,24 @@
             </div>
         </div>
         
-        <!-- Action Button -->
+        <!-- Action Buttons -->
         <div class="mb-8">
-            <div class="flex justify-end">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <!-- Danger Zone -->
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <button onclick="console.log('Delete All Users clicked'); showDeleteAllUsersModal()" 
+                            class="inline-flex items-center px-4 py-2 border border-red-300 text-sm font-medium rounded-lg text-red-700 bg-red-50 hover:bg-red-100 transition duration-150 ease-in-out">
+                        <i class="fas fa-trash-alt mr-2"></i>
+                        Delete All Users
+                    </button>
+                    <button onclick="console.log('Delete All Schools clicked'); showDeleteAllSchoolsModal()" 
+                            class="inline-flex items-center px-4 py-2 border border-red-300 text-sm font-medium rounded-lg text-red-700 bg-red-50 hover:bg-red-100 transition duration-150 ease-in-out">
+                        <i class="fas fa-school mr-2"></i>
+                        Delete All Schools
+                    </button>
+                </div>
+                
+                <!-- Add School Button -->
                 <a href="{{ url_for('register_school') }}" 
                    class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-primary hover:bg-blue-700 transition duration-150 ease-in-out shadow-lg">
                     <i class="fas fa-plus mr-2"></i>
@@ -300,6 +315,9 @@
                         <tr>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">School Name</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Code</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Plan</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Admin Username</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Admin Password</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data Size</th>
@@ -309,7 +327,10 @@
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
-                        {% for school in schools %}
+                        {% for school_detail in school_details %}
+                        {% set school = school_detail.school %}
+                        {% set admin = school_detail.admin %}
+                        {% set plan_name = school_detail.plan_name %}
                         <tr class="hover:bg-gray-50" data-school-id="{{ school.id }}">
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="flex items-center">
@@ -332,6 +353,41 @@
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
                                     {{ school.code }}
                                 </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                    {% if plan_name == 'No Plan' %}bg-red-100 text-red-800
+                                    {% elif 'Free' in plan_name %}bg-yellow-100 text-yellow-800
+                                    {% elif 'Monthly' in plan_name %}bg-blue-100 text-blue-800
+                                    {% elif 'Annual' in plan_name %}bg-green-100 text-green-800
+                                    {% elif 'Lifetime' in plan_name %}bg-purple-100 text-purple-800
+                                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                    {{ plan_name }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {% if admin %}
+                                    <div class="flex items-center">
+                                        <i class="fas fa-user mr-2 text-gray-400"></i>
+                                        <span class="font-mono text-sm">{{ admin.username }}</span>
+                                    </div>
+                                {% else %}
+                                    <span class="text-gray-400">No Admin</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {% if admin %}
+                                    <div class="flex items-center">
+                                        <i class="fas fa-key mr-2 text-gray-400"></i>
+                                        <span class="font-mono text-sm" id="password-{{ school.id }}">••••••••</span>
+                                        <button onclick="togglePassword({{ school.id }})" 
+                                                class="ml-2 text-blue-600 hover:text-blue-800 text-xs">
+                                            <i class="fas fa-eye" id="eye-{{ school.id }}"></i>
+                                        </button>
+                                    </div>
+                                {% else %}
+                                    <span class="text-gray-400">No Admin</span>
+                                {% endif %}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ school.email or 'N/A' }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ school.phone or 'N/A' }}</td>
@@ -368,21 +424,32 @@
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 <div class="flex space-x-2">
                                     <button onclick="viewSchool({{ school.id }})" 
-                                            class="text-primary hover:text-blue-700 transition duration-150 ease-in-out">
+                                            class="text-primary hover:text-blue-700 transition duration-150 ease-in-out"
+                                            title="View School Details">
                                         <i class="fas fa-eye"></i>
                                     </button>
                                     <button onclick="editSchool({{ school.id }})" 
-                                            class="text-yellow-600 hover:text-yellow-700 transition duration-150 ease-in-out">
+                                            class="text-yellow-600 hover:text-yellow-700 transition duration-150 ease-in-out"
+                                            title="Edit School">
                                         <i class="fas fa-edit"></i>
                                     </button>
+                                    {% if admin %}
+                                    <button onclick="resetAdminPassword({{ school.id }})" 
+                                            class="text-purple-600 hover:text-purple-700 transition duration-150 ease-in-out"
+                                            title="Reset Admin Password">
+                                        <i class="fas fa-key"></i>
+                                    </button>
+                                    {% endif %}
                                     {% if school.is_active %}
                                     <button onclick="toggleSchoolStatus({{ school.id }}, false)" 
-                                            class="text-red-600 hover:text-red-700 transition duration-150 ease-in-out">
+                                            class="text-red-600 hover:text-red-700 transition duration-150 ease-in-out"
+                                            title="Deactivate School">
                                         <i class="fas fa-pause"></i>
                                     </button>
                                     {% else %}
                                     <button onclick="toggleSchoolStatus({{ school.id }}, true)" 
-                                            class="text-green-600 hover:text-green-700 transition duration-150 ease-in-out">
+                                            class="text-green-600 hover:text-green-700 transition duration-150 ease-in-out"
+                                            title="Activate School">
                                         <i class="fas fa-play"></i>
                                     </button>
                                     {% endif %}
@@ -827,5 +894,343 @@ function downloadStorageReport() {
 
 // Auto-refresh storage data every 5 minutes
 setInterval(refreshStorageData, 300000);
+
+// Delete All Users Modal
+function showDeleteAllUsersModal() {
+    try {
+        // Get current user count
+        const userCount = {{ total_users|default(0) }};
+        
+        console.log('Opening delete all users modal, user count:', userCount);
+        
+        const modalContent = `
+        <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" id="deleteUsersModal">
+            <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+                <div class="mt-3">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-medium text-red-900 flex items-center">
+                            <i class="fas fa-exclamation-triangle mr-2 text-red-500"></i>
+                            Delete All Users
+                        </h3>
+                        <button onclick="closeDeleteUsersModal()" class="text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                            <div class="flex">
+                                <div class="flex-shrink-0">
+                                    <i class="fas fa-exclamation-triangle text-red-400"></i>
+                                </div>
+                                <div class="ml-3">
+                                    <h3 class="text-sm font-medium text-red-800">Warning!</h3>
+                                    <div class="mt-2 text-sm text-red-700">
+                                        <p>This action will permanently delete <strong>${userCount} users</strong> and all their associated data including:</p>
+                                        <ul class="list-disc list-inside mt-2 space-y-1">
+                                            <li>All assignments and submissions</li>
+                                            <li>All classes and students</li>
+                                            <li>All comments and messages</li>
+                                            <li>All profile data</li>
+                                        </ul>
+                                        <p class="mt-2 font-semibold">This action cannot be undone!</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                            <div class="flex">
+                                <div class="flex-shrink-0">
+                                    <i class="fas fa-info-circle text-yellow-400"></i>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm text-yellow-700">
+                                        <strong>Note:</strong> The superadmin account will not be deleted.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Type "DELETE ALL USERS" to confirm:
+                            </label>
+                            <input type="text" id="deleteUsersConfirm" 
+                                   class="block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-red-500 focus:border-red-500"
+                                   placeholder="DELETE ALL USERS">
+                        </div>
+                    </div>
+                    <div class="flex justify-end space-x-3 mt-6">
+                        <button onclick="closeDeleteUsersModal()" 
+                                class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition duration-150 ease-in-out">
+                            Cancel
+                        </button>
+                        <button onclick="confirmDeleteAllUsers()" 
+                                class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition duration-150 ease-in-out disabled:opacity-50"
+                                id="deleteUsersBtn" disabled>
+                            <i class="fas fa-trash-alt mr-2"></i>
+                            Delete All Users
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalContent);
+    
+        // Enable/disable delete button based on confirmation text
+        document.getElementById('deleteUsersConfirm').addEventListener('input', function(e) {
+            const deleteBtn = document.getElementById('deleteUsersBtn');
+            if (e.target.value === 'DELETE ALL USERS') {
+                deleteBtn.disabled = false;
+            } else {
+                deleteBtn.disabled = true;
+            }
+        });
+    } catch (error) {
+        console.error('Error opening delete all users modal:', error);
+        alert('Error opening delete modal: ' + error.message);
+    }
+}
+
+// Delete All Schools Modal
+function showDeleteAllSchoolsModal() {
+    try {
+        // Get current school count
+        const schoolCount = {{ total_schools|default(0) }};
+        
+        console.log('Opening delete all schools modal, school count:', schoolCount);
+        
+        const modalContent = `
+        <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" id="deleteSchoolsModal">
+            <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+                <div class="mt-3">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-medium text-red-900 flex items-center">
+                            <i class="fas fa-exclamation-triangle mr-2 text-red-500"></i>
+                            Delete All Schools
+                        </h3>
+                        <button onclick="closeDeleteSchoolsModal()" class="text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                            <div class="flex">
+                                <div class="flex-shrink-0">
+                                    <i class="fas fa-exclamation-triangle text-red-400"></i>
+                                </div>
+                                <div class="ml-3">
+                                    <h3 class="text-sm font-medium text-red-800">Warning!</h3>
+                                    <div class="mt-2 text-sm text-red-700">
+                                        <p>This action will permanently delete <strong>${schoolCount} schools</strong> and ALL associated data including:</p>
+                                        <ul class="list-disc list-inside mt-2 space-y-1">
+                                            <li>All users (except superadmin)</li>
+                                            <li>All students and classes</li>
+                                            <li>All assignments and submissions</li>
+                                            <li>All messages and notifications</li>
+                                            <li>All lessons and homework records</li>
+                                            <li>All school data and settings</li>
+                                        </ul>
+                                        <p class="mt-2 font-semibold">This action cannot be undone!</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Type "DELETE ALL SCHOOLS" to confirm:
+                            </label>
+                            <input type="text" id="deleteSchoolsConfirm" 
+                                   class="block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-red-500 focus:border-red-500"
+                                   placeholder="DELETE ALL SCHOOLS">
+                        </div>
+                    </div>
+                    <div class="flex justify-end space-x-3 mt-6">
+                        <button onclick="closeDeleteSchoolsModal()" 
+                                class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition duration-150 ease-in-out">
+                            Cancel
+                        </button>
+                        <button onclick="confirmDeleteAllSchools()" 
+                                class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition duration-150 ease-in-out disabled:opacity-50"
+                                id="deleteSchoolsBtn" disabled>
+                            <i class="fas fa-school mr-2"></i>
+                            Delete All Schools
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalContent);
+    
+        // Enable/disable delete button based on confirmation text
+        document.getElementById('deleteSchoolsConfirm').addEventListener('input', function(e) {
+            const deleteBtn = document.getElementById('deleteSchoolsBtn');
+            if (e.target.value === 'DELETE ALL SCHOOLS') {
+                deleteBtn.disabled = false;
+            } else {
+                deleteBtn.disabled = true;
+            }
+        });
+    } catch (error) {
+        console.error('Error opening delete all schools modal:', error);
+        alert('Error opening delete modal: ' + error.message);
+    }
+}
+
+// Confirm Delete All Users
+function confirmDeleteAllUsers() {
+    const deleteBtn = document.getElementById('deleteUsersBtn');
+    const originalText = deleteBtn.innerHTML;
+    
+    // Show loading state
+    deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Deleting...';
+    deleteBtn.disabled = true;
+    
+    fetch('/api/super-admin/delete-all-users', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ confirmed: true })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(data.message, 'success');
+            closeDeleteUsersModal();
+            // Refresh the page to show updated data
+            setTimeout(() => {
+                location.reload();
+            }, 2000);
+        } else {
+            showNotification('Error: ' + data.error, 'error');
+            deleteBtn.innerHTML = originalText;
+            deleteBtn.disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('Error deleting users:', error);
+        showNotification('Error deleting users: ' + error.message, 'error');
+        deleteBtn.innerHTML = originalText;
+        deleteBtn.disabled = false;
+    });
+}
+
+// Confirm Delete All Schools
+function confirmDeleteAllSchools() {
+    const deleteBtn = document.getElementById('deleteSchoolsBtn');
+    const originalText = deleteBtn.innerHTML;
+    
+    // Show loading state
+    deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Deleting...';
+    deleteBtn.disabled = true;
+    
+    fetch('/api/super-admin/delete-all-schools', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ confirmed: true })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(data.message, 'success');
+            closeDeleteSchoolsModal();
+            // Refresh the page to show updated data
+            setTimeout(() => {
+                location.reload();
+            }, 2000);
+        } else {
+            showNotification('Error: ' + data.error, 'error');
+            deleteBtn.innerHTML = originalText;
+            deleteBtn.disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('Error deleting schools:', error);
+        showNotification('Error deleting schools: ' + error.message, 'error');
+        deleteBtn.innerHTML = originalText;
+        deleteBtn.disabled = false;
+    });
+}
+
+// Close Modals
+function closeDeleteUsersModal() {
+    const modal = document.getElementById('deleteUsersModal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+function closeDeleteSchoolsModal() {
+    const modal = document.getElementById('deleteSchoolsModal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+// Toggle password visibility
+function togglePassword(schoolId) {
+    const passwordElement = document.getElementById(`password-${schoolId}`);
+    const eyeElement = document.getElementById(`eye-${schoolId}`);
+    
+    if (passwordElement.textContent === '••••••••') {
+        // Show message that password is hidden for security
+        passwordElement.textContent = 'Hidden for security';
+        eyeElement.className = 'fas fa-eye-slash';
+        showNotification('Password is hidden for security. Use reset button to generate new password.', 'info');
+    } else {
+        // Hide password
+        passwordElement.textContent = '••••••••';
+        eyeElement.className = 'fas fa-eye';
+    }
+}
+
+// Reset admin password
+function resetAdminPassword(schoolId) {
+    if (confirm('Are you sure you want to reset the admin password for this school? This action cannot be undone.')) {
+        // Show loading state
+        const button = event.target.closest('button');
+        const originalHTML = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        button.disabled = true;
+        
+        fetch(`/api/super-admin/school/${schoolId}/reset-admin-password`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification(`Password reset successfully! New password: ${data.new_password}`, 'success');
+                // Update the password display
+                const passwordElement = document.getElementById(`password-${schoolId}`);
+                if (passwordElement) {
+                    passwordElement.textContent = data.new_password;
+                    const eyeElement = document.getElementById(`eye-${schoolId}`);
+                    if (eyeElement) {
+                        eyeElement.className = 'fas fa-eye-slash';
+                    }
+                }
+            } else {
+                showNotification('Error: ' + data.error, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error resetting password:', error);
+            showNotification('Error resetting password: ' + error.message, 'error');
+        })
+        .finally(() => {
+            // Restore button state
+            button.innerHTML = originalHTML;
+            button.disabled = false;
+        });
+    }
+}
 </script>
 {% endblock %}

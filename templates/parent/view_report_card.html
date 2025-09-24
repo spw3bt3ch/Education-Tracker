@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+
+{% block title %}Report Card - {{ report_card.student.first_name }} {{ report_card.student.last_name }}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-8">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900 mb-2">Report Card</h1>
+                    <p class="text-gray-600">
+                        {{ report_card.student.first_name }} {{ report_card.student.last_name }} - 
+                        {{ report_card.academic_term.name }} {{ report_card.academic_term.academic_year }}
+                    </p>
+                </div>
+                <div class="mt-4 sm:mt-0">
+                    <a href="{{ url_for('parent_report_cards') }}" class="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition duration-200">
+                        <i class="fas fa-arrow-left mr-2"></i>
+                        Back to Report Cards
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Report Card -->
+        <div class="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
+            <!-- School Header -->
+            <div class="bg-gradient-to-r from-blue-600 to-blue-800 text-white p-6">
+                <div class="text-center">
+                    <h2 class="text-2xl font-bold mb-2">EDUTRACK SCHOOL</h2>
+                    <p class="text-blue-100">Student Academic Report</p>
+                    <p class="text-blue-200 text-sm">{{ report_card.academic_term.name }} {{ report_card.academic_term.academic_year }}</p>
+                </div>
+            </div>
+
+            <!-- Student Information -->
+            <div class="p-6 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Student Information</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Student Name</label>
+                        <p class="mt-1 text-sm text-gray-900 font-medium">{{ report_card.student.first_name }} {{ report_card.student.last_name }}</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Student ID</label>
+                        <p class="mt-1 text-sm text-gray-900">{{ report_card.student.student_id }}</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Class</label>
+                        <p class="mt-1 text-sm text-gray-900">{{ report_card.class_obj.name }}</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Term</label>
+                        <p class="mt-1 text-sm text-gray-900">{{ report_card.academic_term.name }} {{ report_card.academic_term.academic_year }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Academic Performance Summary -->
+            <div class="p-6 border-b border-gray-200 bg-gray-50">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Academic Performance Summary</h3>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div class="text-center p-4 bg-white rounded-lg border border-gray-200">
+                        <div class="text-3xl font-bold text-gray-900">{{ "%.1f"|format(report_card.percentage) }}%</div>
+                        <div class="text-sm text-gray-600 mt-1">Overall Percentage</div>
+                        <div class="mt-2">
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+                                {% if report_card.percentage >= 75 %}bg-green-100 text-green-800
+                                {% elif report_card.percentage >= 60 %}bg-blue-100 text-blue-800
+                                {% elif report_card.percentage >= 50 %}bg-yellow-100 text-yellow-800
+                                {% elif report_card.percentage >= 40 %}bg-orange-100 text-orange-800
+                                {% else %}bg-red-100 text-red-800{% endif %}">
+                                Grade: {{ report_card.percentage|round|int >= 75 and 'A' or report_card.percentage|round|int >= 60 and 'B' or report_card.percentage|round|int >= 50 and 'C' or report_card.percentage|round|int >= 40 and 'D' or 'F' }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="text-center p-4 bg-white rounded-lg border border-gray-200">
+                        <div class="text-3xl font-bold text-gray-900">
+                            {% if report_card.position_in_class %}
+                                {{ report_card.position_in_class }}{{ 'st' if report_card.position_in_class == 1 else 'nd' if report_card.position_in_class == 2 else 'rd' if report_card.position_in_class == 3 else 'th' }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </div>
+                        <div class="text-sm text-gray-600 mt-1">Position in Class</div>
+                        <div class="text-xs text-gray-500 mt-1">of {{ report_card.total_students }} students</div>
+                    </div>
+                    <div class="text-center p-4 bg-white rounded-lg border border-gray-200">
+                        <div class="text-3xl font-bold text-gray-900">{{ "%.1f"|format(report_card.attendance_percentage) }}%</div>
+                        <div class="text-sm text-gray-600 mt-1">Attendance</div>
+                        <div class="text-xs text-gray-500 mt-1">{{ report_card.days_present }} of {{ report_card.total_days }} days</div>
+                    </div>
+                    <div class="text-center p-4 bg-white rounded-lg border border-gray-200">
+                        <div class="text-3xl font-bold text-gray-900">{{ "%.1f"|format(report_card.total_score) }}</div>
+                        <div class="text-sm text-gray-600 mt-1">Total Score</div>
+                        <div class="text-xs text-gray-500 mt-1">out of {{ "%.1f"|format(report_card.total_possible) }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Subject Performance -->
+            <div class="p-6 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Subject Performance</h3>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subject</th>
+                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">CA (40%)</th>
+                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Exam (60%)</th>
+                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Total (100%)</th>
+                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Grade</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Comment</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for subject_grade in report_card.subject_grades %}
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                    {{ subject_grade.subject.name }}
+                                </td>
+                                <td class="px-4 py-4 whitespace-nowrap text-center text-sm text-gray-900">
+                                    {{ "%.1f"|format(subject_grade.ca_score) }}
+                                </td>
+                                <td class="px-4 py-4 whitespace-nowrap text-center text-sm text-gray-900">
+                                    {{ "%.1f"|format(subject_grade.exam_score) }}
+                                </td>
+                                <td class="px-4 py-4 whitespace-nowrap text-center text-sm text-gray-900 font-medium">
+                                    {{ "%.1f"|format(subject_grade.total_score) }}
+                                </td>
+                                <td class="px-4 py-4 whitespace-nowrap text-center">
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
+                                        {% if subject_grade.grade == 'A' %}bg-green-100 text-green-800
+                                        {% elif subject_grade.grade == 'B' %}bg-blue-100 text-blue-800
+                                        {% elif subject_grade.grade == 'C' %}bg-yellow-100 text-yellow-800
+                                        {% elif subject_grade.grade == 'D' %}bg-orange-100 text-orange-800
+                                        {% else %}bg-red-100 text-red-800{% endif %}">
+                                        {{ subject_grade.grade or '-' }}
+                                    </span>
+                                </td>
+                                <td class="px-4 py-4 text-sm text-gray-900">
+                                    {{ subject_grade.teacher_comment or '-' }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Conduct and Behavior -->
+            <div class="p-6 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Conduct and Behavior</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="text-center p-4 bg-gray-50 rounded-lg">
+                        <div class="text-sm font-medium text-gray-700 mb-2">Conduct</div>
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+                            {% if report_card.conduct_grade == 'A' %}bg-green-100 text-green-800
+                            {% elif report_card.conduct_grade == 'B' %}bg-blue-100 text-blue-800
+                            {% elif report_card.conduct_grade == 'C' %}bg-yellow-100 text-yellow-800
+                            {% elif report_card.conduct_grade == 'D' %}bg-orange-100 text-orange-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ report_card.conduct_grade or 'Not Rated' }}
+                        </span>
+                    </div>
+                    <div class="text-center p-4 bg-gray-50 rounded-lg">
+                        <div class="text-sm font-medium text-gray-700 mb-2">Punctuality</div>
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+                            {% if report_card.punctuality == 'A' %}bg-green-100 text-green-800
+                            {% elif report_card.punctuality == 'B' %}bg-blue-100 text-blue-800
+                            {% elif report_card.punctuality == 'C' %}bg-yellow-100 text-yellow-800
+                            {% elif report_card.punctuality == 'D' %}bg-orange-100 text-orange-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ report_card.punctuality or 'Not Rated' }}
+                        </span>
+                    </div>
+                    <div class="text-center p-4 bg-gray-50 rounded-lg">
+                        <div class="text-sm font-medium text-gray-700 mb-2">Neatness</div>
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+                            {% if report_card.neatness == 'A' %}bg-green-100 text-green-800
+                            {% elif report_card.neatness == 'B' %}bg-blue-100 text-blue-800
+                            {% elif report_card.neatness == 'C' %}bg-yellow-100 text-yellow-800
+                            {% elif report_card.neatness == 'D' %}bg-orange-100 text-orange-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ report_card.neatness or 'Not Rated' }}
+                        </span>
+                    </div>
+                    <div class="text-center p-4 bg-gray-50 rounded-lg">
+                        <div class="text-sm font-medium text-gray-700 mb-2">Politeness</div>
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+                            {% if report_card.politeness == 'A' %}bg-green-100 text-green-800
+                            {% elif report_card.politeness == 'B' %}bg-blue-100 text-blue-800
+                            {% elif report_card.politeness == 'C' %}bg-yellow-100 text-yellow-800
+                            {% elif report_card.politeness == 'D' %}bg-orange-100 text-orange-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ report_card.politeness or 'Not Rated' }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Teacher Comments -->
+            <div class="p-6 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Teacher's Comments</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">General Comment</label>
+                        <div class="p-4 bg-gray-50 rounded-lg text-sm text-gray-900">
+                            {{ report_card.teacher_comment or 'No comment provided' }}
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Recommendation</label>
+                        <div class="p-4 bg-gray-50 rounded-lg text-sm text-gray-900">
+                            {{ report_card.teacher_recommendation or 'No recommendation provided' }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Head Teacher's Comments -->
+            {% if report_card.admin_comment %}
+            <div class="p-6 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Head Teacher's Comments</h3>
+                <div class="p-4 bg-blue-50 rounded-lg text-sm text-gray-900">
+                    {{ report_card.admin_comment }}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Footer -->
+            <div class="p-6 bg-gray-50">
+                <div class="flex justify-between items-center text-sm text-gray-600">
+                    <div>
+                        <p>Report generated on: {{ report_card.created_at.strftime('%d %B, %Y') }}</p>
+                        <p>Teacher: {{ report_card.teacher.first_name }} {{ report_card.teacher.last_name }}</p>
+                    </div>
+                    <div class="text-right">
+                        <p>Status: <span class="font-medium text-green-600">Approved & Sent</span></p>
+                        {% if report_card.admin_approved_at %}
+                        <p>Approved on: {{ report_card.admin_approved_at.strftime('%d %B, %Y') }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Print Button -->
+        <div class="mt-6 text-center">
+            <button onclick="window.print()" class="inline-flex items-center px-4 py-2 bg-info text-white rounded-lg hover:bg-cyan-600 transition duration-200">
+                <i class="fas fa-print mr-2"></i>
+                Print Report Card
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    
+    body {
+        background: white !important;
+    }
+    
+    .bg-gray-50 {
+        background: white !important;
+    }
+    
+    .shadow-lg {
+        box-shadow: none !important;
+    }
+}
+</style>
+{% endblock %}

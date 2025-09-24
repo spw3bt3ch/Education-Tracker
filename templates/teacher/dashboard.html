@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Teacher Dashboard - EduTrack{% endblock %}
+{% block title %}Teacher Dashboard - SMIED{% endblock %}
 
 {% block content %}
 <!-- Welcome Section with Profile Picture -->
@@ -25,6 +25,38 @@
                 Welcome back, {{ current_user.first_name }}!
             </h1>
             <p class="text-gray-600 mb-3">Ready to inspire and educate your students today?</p>
+            
+            <!-- School Information - Prominently Displayed -->
+            {% if current_user.school %}
+            <div class="bg-gradient-to-r from-success to-green-600 rounded-lg p-4 mb-4 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-xl font-bold mb-1">
+                            <i class="fas fa-school mr-2"></i>
+                            {{ current_user.school.name }}
+                        </h2>
+                        {% if current_user.school.contact_email %}
+                        <p class="text-green-100 text-sm">
+                            <i class="fas fa-envelope mr-1"></i>
+                            {{ current_user.school.contact_email }}
+                        </p>
+                        {% endif %}
+                        {% if current_user.school.address %}
+                        <p class="text-green-100 text-sm">
+                            <i class="fas fa-map-marker-alt mr-1"></i>
+                            {{ current_user.school.address }}
+                        </p>
+                        {% endif %}
+                    </div>
+                    <div class="text-right">
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-white bg-opacity-20 text-white">
+                            <i class="fas fa-chalkboard-teacher mr-1"></i>
+                            Class Teacher
+                        </span>
+                    </div>
+                </div>
+            </div>
+            {% else %}
             <div class="flex flex-wrap items-center gap-3">
                 <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-success text-white">
                     <i class="fas fa-chalkboard-teacher mr-1"></i>
@@ -32,9 +64,10 @@
                 </span>
                 <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-700">
                     <i class="fas fa-school mr-1"></i>
-                    {{ current_user.school.name if current_user.school else 'Teacher' }}
+                    Teacher
                 </span>
             </div>
+            {% endif %}
         </div>
         
         <!-- Quick Stats -->
@@ -43,6 +76,32 @@
                 <div class="text-2xl font-bold text-success">{{ my_classes|length }}</div>
                 <div class="text-sm text-gray-500">Classes</div>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Notifications Section -->
+<div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+    <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+            <i class="fas fa-bell mr-2 text-warning"></i>
+            Notifications
+        </h3>
+        <a href="{{ url_for('teacher_messages') }}" class="text-sm text-info hover:text-cyan-600 relative">
+            View All Messages
+            {% if unread_messages > 0 %}
+            <span class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
+                {{ unread_messages }}
+            </span>
+            {% endif %}
+        </a>
+    </div>
+    
+    <div id="notifications-container">
+        <!-- Notifications will be loaded here via JavaScript -->
+        <div class="text-center py-4">
+            <i class="fas fa-spinner fa-spin text-gray-400"></i>
+            <p class="text-gray-500 mt-2">Loading notifications...</p>
         </div>
     </div>
 </div>
@@ -132,6 +191,16 @@
             <div class="text-sm font-medium">Register Parent</div>
         </a>
         
+        <a href="{{ url_for('teacher_report_cards') }}" class="bg-purple-500 text-white p-4 rounded-lg hover:bg-purple-600 transition duration-200 text-center">
+            <i class="fas fa-file-alt text-2xl mb-2"></i>
+            <div class="text-sm font-medium">Report Cards</div>
+        </a>
+        
+        <a href="{{ url_for('teacher_attendance') }}" class="bg-orange-500 text-white p-4 rounded-lg hover:bg-orange-600 transition duration-200 text-center">
+            <i class="fas fa-calendar-check text-2xl mb-2"></i>
+            <div class="text-sm font-medium">Attendance</div>
+        </a>
+        
         <a href="{{ url_for('create_lesson') }}" class="bg-indigo-500 text-white p-4 rounded-lg hover:bg-indigo-600 transition duration-200 text-center">
             <i class="fas fa-chalkboard text-2xl mb-2"></i>
             <div class="text-sm font-medium">Create Lesson</div>
@@ -152,6 +221,166 @@
             <div class="text-sm font-medium">Messages</div>
             <span id="messageBadge" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center hidden">0</span>
         </a>
+    </div>
+</div>
+
+<!-- Parent Management -->
+<div class="bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-6 sm:mb-8">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 space-y-2 sm:space-y-0">
+        <h2 class="text-lg sm:text-xl font-semibold text-gray-900 flex items-center">
+            <i class="fas fa-users mr-2 text-info"></i>Registered Parents
+        </h2>
+        <div class="text-xs sm:text-sm text-gray-500">
+            Parents from your classes
+        </div>
+    </div>
+    
+    {% if parents %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Parent Name</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Password</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Students</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for parent in parents %}
+                    <tr class="hover:bg-gray-50" data-parent-id="{{ parent.id }}">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 h-10 w-10">
+                                    {% if parent.profile_picture %}
+                                        <img class="h-10 w-10 rounded-full object-cover" src="{{ url_for('static', filename=parent.profile_picture) }}" alt="Profile">
+                                    {% else %}
+                                        <div class="h-10 w-10 rounded-full bg-info bg-opacity-10 flex items-center justify-center">
+                                            <i class="fas fa-user text-info"></i>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="ml-4">
+                                    <div class="text-sm font-medium text-gray-900">
+                                        {{ parent.first_name }} {{ parent.last_name }}
+                                    </div>
+                                    <div class="text-sm text-gray-500">
+                                        ID: {{ parent.id }}
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <i class="fas fa-user mr-2 text-gray-400"></i>
+                                <span class="font-mono text-sm">{{ parent.username }}</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <div class="flex items-center">
+                                <i class="fas fa-envelope mr-2 text-gray-400"></i>
+                                {{ parent.email }}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <div class="flex items-center">
+                                <i class="fas fa-key mr-2 text-gray-400"></i>
+                                <span class="font-mono text-sm" id="password-{{ parent.id }}">••••••••</span>
+                                <button onclick="togglePassword({{ parent.id }})" 
+                                        class="ml-2 text-blue-600 hover:text-blue-800 text-xs">
+                                    <i class="fas fa-eye" id="eye-{{ parent.id }}"></i>
+                                </button>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {% set parent_students = [] %}
+                            {% for class in classes %}
+                                {% for student in class.students %}
+                                    {% if student.parent_id == parent.id %}
+                                        {% set _ = parent_students.append(student) %}
+                                    {% endif %}
+                                {% endfor %}
+                            {% endfor %}
+                            <div class="flex items-center">
+                                <i class="fas fa-child mr-2 text-gray-400"></i>
+                                <span class="text-sm">{{ parent_students|length }} student(s)</span>
+                            </div>
+                            {% if parent_students %}
+                            <div class="text-xs text-gray-500 mt-1">
+                                {% for student in parent_students[:2] %}
+                                    {{ student.first_name }} {{ student.last_name }}{% if not loop.last %}, {% endif %}
+                                {% endfor %}
+                                {% if parent_students|length > 2 %}
+                                    +{{ parent_students|length - 2 }} more
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div class="flex space-x-2">
+                                <button onclick="viewParent({{ parent.id }})" 
+                                        class="text-blue-600 hover:text-blue-700 transition duration-150 ease-in-out"
+                                        title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button onclick="resetParentPassword({{ parent.id }})" 
+                                        class="text-purple-600 hover:text-purple-700 transition duration-150 ease-in-out"
+                                        title="Reset Password">
+                                    <i class="fas fa-key"></i>
+                                </button>
+                                <button onclick="deleteParent({{ parent.id }})" 
+                                        class="text-red-600 hover:text-red-700 transition duration-150 ease-in-out"
+                                        title="Delete Parent">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="text-center py-8">
+            <div class="mx-auto h-12 w-12 text-gray-400">
+                <i class="fas fa-users text-4xl"></i>
+            </div>
+            <h3 class="mt-2 text-sm font-medium text-gray-900">No parents registered</h3>
+            <p class="mt-1 text-sm text-gray-500">Parents will appear here once they register for your classes.</p>
+            <div class="mt-6">
+                <a href="{{ url_for('register_parent') }}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-info hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-info">
+                    <i class="fas fa-user-plus mr-2"></i>
+                    Register Parent
+                </a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Parent View Modal -->
+<div id="parentViewModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between pb-4 border-b">
+                <h3 class="text-lg font-medium text-gray-900" id="modalTitle">
+                    Parent Details
+                </h3>
+                <button onclick="closeParentModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <!-- Modal Content -->
+            <div class="mt-4" id="parentModalContent">
+                <div class="text-center py-8">
+                    <i class="fas fa-spinner fa-spin text-2xl text-gray-400"></i>
+                    <p class="text-gray-500 mt-2">Loading parent details...</p>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -617,6 +846,321 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Start refreshing
     refreshTeacherDashboardData();
+    
+    // Load notifications
+    loadNotifications();
 });
+
+// Load notifications function
+async function loadNotifications() {
+    try {
+        const response = await fetch('/api/teacher/notifications');
+        const data = await response.json();
+        
+        const container = document.getElementById('notifications-container');
+        
+        if (data.notifications && data.notifications.length > 0) {
+            container.innerHTML = data.notifications.map(notification => `
+                <div class="border border-gray-200 rounded-lg p-4 mb-3 hover:bg-gray-50 transition duration-200">
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                            <h4 class="font-medium text-gray-900">${notification.title}</h4>
+                            <p class="text-sm text-gray-600 mt-1">${notification.content}</p>
+                            <p class="text-xs text-gray-500 mt-2">${new Date(notification.created_at).toLocaleString()}</p>
+                        </div>
+                        <div class="ml-4">
+                            ${notification.is_read ? 
+                                '<span class="text-xs text-gray-400">Read</span>' : 
+                                '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-warning text-white">New</span>'
+                            }
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            container.innerHTML = `
+                <div class="text-center py-8">
+                    <i class="fas fa-bell-slash text-3xl text-gray-400 mb-3"></i>
+                    <p class="text-gray-500">No notifications yet</p>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Error loading notifications:', error);
+        document.getElementById('notifications-container').innerHTML = `
+            <div class="text-center py-4">
+                <p class="text-red-500">Error loading notifications</p>
+            </div>
+        `;
+    }
+}
+
+// Refresh notifications every 10 seconds
+setInterval(loadNotifications, 10000);
+
+// Parent Password Management Functions
+function togglePassword(parentId) {
+    const passwordElement = document.getElementById(`password-${parentId}`);
+    const eyeElement = document.getElementById(`eye-${parentId}`);
+    
+    if (passwordElement.textContent === '••••••••') {
+        // Show password placeholder
+        passwordElement.textContent = 'Hidden for security';
+        eyeElement.className = 'fas fa-eye-slash';
+        showNotification('Password is hidden for security. Use reset button to generate new password.', 'info');
+    } else {
+        // Hide password
+        passwordElement.textContent = '••••••••';
+        eyeElement.className = 'fas fa-eye';
+    }
+}
+
+function resetParentPassword(parentId) {
+    if (confirm('Are you sure you want to reset the password for this parent? This action cannot be undone.')) {
+        const button = event.target.closest('button');
+        const originalHTML = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        button.disabled = true;
+        
+        fetch(`/api/teacher/parent/${parentId}/reset-password`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification(`Password reset successfully! New password: ${data.new_password}`, 'success');
+                const passwordElement = document.getElementById(`password-${parentId}`);
+                if (passwordElement) {
+                    passwordElement.textContent = data.new_password;
+                    const eyeElement = document.getElementById(`eye-${parentId}`);
+                    if (eyeElement) {
+                        eyeElement.className = 'fas fa-eye-slash';
+                    }
+                }
+            } else {
+                showNotification('Error: ' + data.error, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error resetting password:', error);
+            showNotification('Error resetting password: ' + error.message, 'error');
+        })
+        .finally(() => {
+            button.innerHTML = originalHTML;
+            button.disabled = false;
+        });
+    }
+}
+
+function viewParent(parentId) {
+    const modal = document.getElementById('parentViewModal');
+    const modalContent = document.getElementById('parentModalContent');
+    const modalTitle = document.getElementById('modalTitle');
+    
+    // Show modal with loading state
+    modal.classList.remove('hidden');
+    modalContent.innerHTML = `
+        <div class="text-center py-8">
+            <i class="fas fa-spinner fa-spin text-2xl text-gray-400"></i>
+            <p class="text-gray-500 mt-2">Loading parent details...</p>
+        </div>
+    `;
+    
+    // Fetch parent details
+    fetch(`/api/teacher/parent/${parentId}/view`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const parent = data.parent;
+                const students = data.students;
+                
+                modalTitle.textContent = `${parent.first_name} ${parent.last_name} - Details`;
+                modalContent.innerHTML = `
+                    <div class="space-y-6">
+                        <!-- Parent Information -->
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <h4 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                                <i class="fas fa-user mr-2 text-blue-600"></i>
+                                Parent Information
+                            </h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="text-sm font-medium text-gray-500">Full Name</label>
+                                    <p class="text-gray-900">${parent.first_name} ${parent.last_name}</p>
+                                </div>
+                                <div>
+                                    <label class="text-sm font-medium text-gray-500">Username</label>
+                                    <p class="text-gray-900 font-mono">${parent.username}</p>
+                                </div>
+                                <div>
+                                    <label class="text-sm font-medium text-gray-500">Email</label>
+                                    <p class="text-gray-900">${parent.email}</p>
+                                </div>
+                                <div>
+                                    <label class="text-sm font-medium text-gray-500">Account Status</label>
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                        parent.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                                    }">
+                                        ${parent.is_active ? 'Active' : 'Inactive'}
+                                    </span>
+                                </div>
+                                <div>
+                                    <label class="text-sm font-medium text-gray-500">Member Since</label>
+                                    <p class="text-gray-900">${new Date(parent.created_at).toLocaleDateString()}</p>
+                                </div>
+                                <div>
+                                    <label class="text-sm font-medium text-gray-500">Parent ID</label>
+                                    <p class="text-gray-900 font-mono">${parent.id}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Students Information -->
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <h4 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                                <i class="fas fa-child mr-2 text-green-600"></i>
+                                Associated Students (${students.length})
+                            </h4>
+                            ${students.length > 0 ? `
+                                <div class="space-y-3">
+                                    ${students.map(student => `
+                                        <div class="bg-white rounded-lg p-3 border">
+                                            <div class="flex items-center justify-between">
+                                                <div>
+                                                    <h5 class="font-medium text-gray-900">${student.first_name} ${student.last_name}</h5>
+                                                    <p class="text-sm text-gray-500">Student ID: ${student.student_id}</p>
+                                                </div>
+                                                <div class="text-right">
+                                                    <p class="text-sm font-medium text-gray-900">${student.class_name}</p>
+                                                    <p class="text-xs text-gray-500">Class ID: ${student.class_id}</p>
+                                                </div>
+                                            </div>
+                                            ${student.date_of_birth ? `
+                                                <div class="mt-2 text-xs text-gray-500">
+                                                    <i class="fas fa-birthday-cake mr-1"></i>
+                                                    Born: ${new Date(student.date_of_birth).toLocaleDateString()}
+                                                </div>
+                                            ` : ''}
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            ` : `
+                                <p class="text-gray-500 text-center py-4">No students associated with this parent.</p>
+                            `}
+                        </div>
+                    </div>
+                `;
+            } else {
+                modalContent.innerHTML = `
+                    <div class="text-center py-8">
+                        <i class="fas fa-exclamation-triangle text-4xl text-red-500 mb-4"></i>
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">Error Loading Parent Details</h3>
+                        <p class="text-gray-500">${data.error}</p>
+                        <button onclick="closeParentModal()" class="mt-4 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">
+                            Close
+                        </button>
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error loading parent details:', error);
+            modalContent.innerHTML = `
+                <div class="text-center py-8">
+                    <i class="fas fa-exclamation-triangle text-4xl text-red-500 mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">Error Loading Parent Details</h3>
+                    <p class="text-gray-500">Failed to load parent details. Please try again.</p>
+                    <button onclick="closeParentModal()" class="mt-4 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">
+                        Close
+                    </button>
+                </div>
+            `;
+        });
+}
+
+function deleteParent(parentId) {
+    if (confirm('Are you sure you want to delete this parent account? This action cannot be undone and will remove the parent\'s access to the system.')) {
+        const button = event.target.closest('button');
+        const originalHTML = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        button.disabled = true;
+        
+        fetch(`/api/teacher/parent/${parentId}/delete`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification(data.message, 'success');
+                // Remove the parent row from the table
+                const parentRow = document.querySelector(`tr[data-parent-id="${parentId}"]`);
+                if (parentRow) {
+                    parentRow.remove();
+                }
+                // Check if no parents left
+                const tbody = document.querySelector('tbody');
+                if (tbody && tbody.children.length === 0) {
+                    location.reload(); // Reload to show "no parents" message
+                }
+            } else {
+                showNotification('Error: ' + data.error, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error deleting parent:', error);
+            showNotification('Error deleting parent: ' + error.message, 'error');
+        })
+        .finally(() => {
+            button.innerHTML = originalHTML;
+            button.disabled = false;
+        });
+    }
+}
+
+function closeParentModal() {
+    const modal = document.getElementById('parentViewModal');
+    modal.classList.add('hidden');
+}
+
+function showNotification(message, type = 'info') {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 max-w-sm ${
+        type === 'success' ? 'bg-green-500 text-white' :
+        type === 'error' ? 'bg-red-500 text-white' :
+        type === 'warning' ? 'bg-yellow-500 text-white' :
+        'bg-blue-500 text-white'
+    }`;
+    
+    notification.innerHTML = `
+        <div class="flex items-center">
+            <i class="fas ${
+                type === 'success' ? 'fa-check-circle' :
+                type === 'error' ? 'fa-exclamation-circle' :
+                type === 'warning' ? 'fa-exclamation-triangle' :
+                'fa-info-circle'
+            } mr-2"></i>
+            <span>${message}</span>
+            <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.remove();
+        }
+    }, 5000);
+}
 </script>
 {% endblock %}

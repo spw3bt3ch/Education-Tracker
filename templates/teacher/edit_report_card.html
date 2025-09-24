@@ -1,0 +1,273 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Report Card - SMIED{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900 mb-2">Edit Report Card</h1>
+                    <p class="text-gray-600">
+                        {{ report_card.student.first_name }} {{ report_card.student.last_name }} - 
+                        {{ report_card.academic_term.name }} {{ report_card.academic_term.academic_year }}
+                    </p>
+                </div>
+                <div class="mt-4 sm:mt-0">
+                    <a href="{{ url_for('teacher_report_cards') }}" class="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition duration-200">
+                        <i class="fas fa-arrow-left mr-2"></i>
+                        Back to Report Cards
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <form method="POST" class="space-y-8">
+            <!-- Student Information -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Student Information</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Student Name</label>
+                        <p class="mt-1 text-sm text-gray-900">{{ report_card.student.first_name }} {{ report_card.student.last_name }}</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Student ID</label>
+                        <p class="mt-1 text-sm text-gray-900">{{ report_card.student.student_id }}</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Class</label>
+                        <p class="mt-1 text-sm text-gray-900">{{ report_card.class_obj.name }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Attendance -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Attendance</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label for="days_present" class="block text-sm font-medium text-gray-700 mb-2">Days Present</label>
+                        <input type="number" id="days_present" name="days_present" 
+                               value="{{ report_card.days_present }}" min="0" max="200"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-info focus:border-transparent">
+                    </div>
+                    <div>
+                        <label for="days_absent" class="block text-sm font-medium text-gray-700 mb-2">Days Absent</label>
+                        <input type="number" id="days_absent" name="days_absent" 
+                               value="{{ report_card.days_absent }}" min="0" max="200"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-info focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Attendance %</label>
+                        <p class="mt-1 text-sm text-gray-900 font-medium">{{ "%.1f"|format(report_card.attendance_percentage) }}%</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Academic Performance -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Academic Performance</h3>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subject</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CA (40%)</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Exam (60%)</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total (100%)</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Grade</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Comment</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for subject_grade in report_card.subject_grades %}
+                            <tr>
+                                <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                    {{ subject_grade.subject.name }}
+                                </td>
+                                <td class="px-4 py-4 whitespace-nowrap">
+                                    <input type="number" name="ca_{{ subject_grade.subject_id }}" 
+                                           value="{{ subject_grade.ca_score }}" min="0" max="40" step="0.1"
+                                           class="w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-info">
+                                </td>
+                                <td class="px-4 py-4 whitespace-nowrap">
+                                    <input type="number" name="exam_{{ subject_grade.subject_id }}" 
+                                           value="{{ subject_grade.exam_score }}" min="0" max="60" step="0.1"
+                                           class="w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-info">
+                                </td>
+                                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                                    {{ "%.1f"|format(subject_grade.total_score) }}
+                                </td>
+                                <td class="px-4 py-4 whitespace-nowrap">
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
+                                        {% if subject_grade.grade == 'A' %}bg-green-100 text-green-800
+                                        {% elif subject_grade.grade == 'B' %}bg-blue-100 text-blue-800
+                                        {% elif subject_grade.grade == 'C' %}bg-yellow-100 text-yellow-800
+                                        {% elif subject_grade.grade == 'D' %}bg-orange-100 text-orange-800
+                                        {% else %}bg-red-100 text-red-800{% endif %}">
+                                        {{ subject_grade.grade or '-' }}
+                                    </span>
+                                </td>
+                                <td class="px-4 py-4">
+                                    <textarea name="comment_{{ subject_grade.subject_id }}" rows="2" 
+                                              class="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-info"
+                                              placeholder="Subject comment...">{{ subject_grade.teacher_comment or '' }}</textarea>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Total Performance -->
+                <div class="mt-4 p-4 bg-gray-50 rounded-lg">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Total Score</label>
+                            <p class="mt-1 text-lg font-semibold text-gray-900">{{ "%.1f"|format(report_card.total_score) }} / {{ "%.1f"|format(report_card.total_possible) }}</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Percentage</label>
+                            <p class="mt-1 text-lg font-semibold text-gray-900">{{ "%.1f"|format(report_card.percentage) }}%</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Position in Class</label>
+                            <p class="mt-1 text-lg font-semibold text-gray-900">
+                                {% if report_card.position_in_class %}
+                                    {{ report_card.position_in_class }}{{ 'st' if report_card.position_in_class == 1 else 'nd' if report_card.position_in_class == 2 else 'rd' if report_card.position_in_class == 3 else 'th' }} of {{ report_card.total_students }}
+                                {% else %}
+                                    Not calculated
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Conduct and Behavior -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Conduct and Behavior</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div>
+                        <label for="conduct_grade" class="block text-sm font-medium text-gray-700 mb-2">Conduct</label>
+                        <select id="conduct_grade" name="conduct_grade" 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-info focus:border-transparent">
+                            <option value="">Select Grade</option>
+                            <option value="A" {% if report_card.conduct_grade == 'A' %}selected{% endif %}>A - Excellent</option>
+                            <option value="B" {% if report_card.conduct_grade == 'B' %}selected{% endif %}>B - Very Good</option>
+                            <option value="C" {% if report_card.conduct_grade == 'C' %}selected{% endif %}>C - Good</option>
+                            <option value="D" {% if report_card.conduct_grade == 'D' %}selected{% endif %}>D - Fair</option>
+                            <option value="F" {% if report_card.conduct_grade == 'F' %}selected{% endif %}>F - Poor</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="punctuality" class="block text-sm font-medium text-gray-700 mb-2">Punctuality</label>
+                        <select id="punctuality" name="punctuality" 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-info focus:border-transparent">
+                            <option value="">Select Grade</option>
+                            <option value="A" {% if report_card.punctuality == 'A' %}selected{% endif %}>A - Excellent</option>
+                            <option value="B" {% if report_card.punctuality == 'B' %}selected{% endif %}>B - Very Good</option>
+                            <option value="C" {% if report_card.punctuality == 'C' %}selected{% endif %}>C - Good</option>
+                            <option value="D" {% if report_card.punctuality == 'D' %}selected{% endif %}>D - Fair</option>
+                            <option value="F" {% if report_card.punctuality == 'F' %}selected{% endif %}>F - Poor</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="neatness" class="block text-sm font-medium text-gray-700 mb-2">Neatness</label>
+                        <select id="neatness" name="neatness" 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-info focus:border-transparent">
+                            <option value="">Select Grade</option>
+                            <option value="A" {% if report_card.neatness == 'A' %}selected{% endif %}>A - Excellent</option>
+                            <option value="B" {% if report_card.neatness == 'B' %}selected{% endif %}>B - Very Good</option>
+                            <option value="C" {% if report_card.neatness == 'C' %}selected{% endif %}>C - Good</option>
+                            <option value="D" {% if report_card.neatness == 'D' %}selected{% endif %}>D - Fair</option>
+                            <option value="F" {% if report_card.neatness == 'F' %}selected{% endif %}>F - Poor</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="politeness" class="block text-sm font-medium text-gray-700 mb-2">Politeness</label>
+                        <select id="politeness" name="politeness" 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-info focus:border-transparent">
+                            <option value="">Select Grade</option>
+                            <option value="A" {% if report_card.politeness == 'A' %}selected{% endif %}>A - Excellent</option>
+                            <option value="B" {% if report_card.politeness == 'B' %}selected{% endif %}>B - Very Good</option>
+                            <option value="C" {% if report_card.politeness == 'C' %}selected{% endif %}>C - Good</option>
+                            <option value="D" {% if report_card.politeness == 'D' %}selected{% endif %}>D - Fair</option>
+                            <option value="F" {% if report_card.politeness == 'F' %}selected{% endif %}>F - Poor</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Teacher Comments -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Teacher Comments</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label for="teacher_comment" class="block text-sm font-medium text-gray-700 mb-2">General Comment</label>
+                        <textarea id="teacher_comment" name="teacher_comment" rows="4" 
+                                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-info focus:border-transparent"
+                                  placeholder="Write your general comment about the student's performance...">{{ report_card.teacher_comment or '' }}</textarea>
+                    </div>
+                    <div>
+                        <label for="teacher_recommendation" class="block text-sm font-medium text-gray-700 mb-2">Recommendation</label>
+                        <textarea id="teacher_recommendation" name="teacher_recommendation" rows="3" 
+                                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-info focus:border-transparent"
+                                  placeholder="Write your recommendation for the student...">{{ report_card.teacher_recommendation or '' }}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div class="flex justify-between items-center">
+                    <div class="text-sm text-gray-500">
+                        Status: <span class="font-medium text-gray-900">{{ report_card.status.title() }}</span>
+                    </div>
+                    <div class="flex space-x-4">
+                        <button type="submit" name="action" value="save" 
+                                class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-info">
+                            <i class="fas fa-save mr-2"></i>
+                            Save Draft
+                        </button>
+                        {% if report_card.status != 'approved' %}
+                        <button type="submit" name="action" value="submit" 
+                                class="px-4 py-2 bg-info text-white rounded-md text-sm font-medium hover:bg-cyan-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-info">
+                            <i class="fas fa-paper-plane mr-2"></i>
+                            Submit for Review
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Auto-calculate totals when CA or Exam scores change
+document.addEventListener('DOMContentLoaded', function() {
+    const inputs = document.querySelectorAll('input[name^="ca_"], input[name^="exam_"]');
+    
+    inputs.forEach(input => {
+        input.addEventListener('input', function() {
+            const subjectId = this.name.split('_')[1];
+            const caInput = document.querySelector(`input[name="ca_${subjectId}"]`);
+            const examInput = document.querySelector(`input[name="exam_${subjectId}"]`);
+            
+            if (caInput && examInput) {
+                const caScore = parseFloat(caInput.value) || 0;
+                const examScore = parseFloat(examInput.value) || 0;
+                const totalScore = caScore + examScore;
+                
+                // Update the total display (you might want to add a total display element)
+                console.log(`Subject ${subjectId}: CA=${caScore}, Exam=${examScore}, Total=${totalScore}`);
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

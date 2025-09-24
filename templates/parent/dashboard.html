@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Academic Report - EduTrack{% endblock %}
+{% block title %}Academic Report - SMIED{% endblock %}
 
 {% block content %}
 <!-- Welcome Section with Profile Picture -->
@@ -25,15 +25,35 @@
                 Welcome, {{ current_user.first_name }}!
             </h1>
             <p class="text-gray-600 mb-3">Stay updated with your child's academic progress and school activities.</p>
-            <div class="flex flex-wrap items-center gap-3">
-                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-info text-white">
+            
+            <!-- School Information - Prominently Displayed -->
+            <div class="bg-gradient-to-r from-info to-cyan-600 rounded-lg p-4 mb-4 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-xl font-bold mb-1">
+                            <i class="fas fa-school mr-2"></i>
+                            {{ school_name }}
+                        </h2>
+                        {% if school_contact %}
+                        <p class="text-cyan-100 text-sm">
+                            <i class="fas fa-envelope mr-1"></i>
+                            {{ school_contact }}
+                        </p>
+                        {% endif %}
+                        {% if school_address %}
+                        <p class="text-cyan-100 text-sm">
+                            <i class="fas fa-map-marker-alt mr-1"></i>
+                            {{ school_address }}
+                        </p>
+                        {% endif %}
+                    </div>
+                    <div class="text-right">
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-white bg-opacity-20 text-white">
                     <i class="fas fa-user mr-1"></i>
                     Parent
                 </span>
-                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-700">
-                    <i class="fas fa-school mr-1"></i>
-                    {{ school_name }}
-                </span>
+                    </div>
+                </div>
             </div>
         </div>
         
@@ -47,48 +67,52 @@
     </div>
 </div>
 
-<!-- School Information Header -->
-<div class="bg-gradient-to-r from-primary to-blue-600 rounded-xl shadow-lg p-6 mb-8 text-white">
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center">
-        <div class="mb-4 sm:mb-0">
-            <h1 class="text-2xl sm:text-3xl font-bold mb-2 flex items-center">
-                <i class="fas fa-school mr-2 sm:mr-3"></i>{{ school_name }}
-            </h1>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
-                {% if school_address %}
-                <div class="flex items-center text-sm sm:text-base opacity-90">
-                    <i class="fas fa-map-marker-alt mr-2 flex-shrink-0"></i>
-                    <span class="truncate">{{ school_address }}</span>
-                </div>
-                {% endif %}
-                {% if school_phone %}
-                <div class="flex items-center text-sm sm:text-base opacity-90">
-                    <i class="fas fa-phone mr-2 flex-shrink-0"></i>
-                    <span>{{ school_phone }}</span>
-                </div>
-                {% endif %}
-                {% if school_email %}
-                <div class="flex items-center text-sm sm:text-base opacity-90">
-                    <i class="fas fa-envelope mr-2 flex-shrink-0"></i>
-                    <span class="truncate">{{ school_email }}</span>
-                </div>
-                {% endif %}
-                {% if school_website %}
-                <div class="flex items-center text-sm sm:text-base opacity-90">
-                    <i class="fas fa-globe mr-2 flex-shrink-0"></i>
-                    <a href="{{ school_website }}" target="_blank" class="hover:underline truncate">{{ school_website }}</a>
-                </div>
-                {% endif %}
-            </div>
-        </div>
-        <div class="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
-            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-white bg-opacity-20 text-white">
-                <i class="fas fa-user-friends mr-1"></i>Parent Portal
+<!-- Quick Actions Section -->
+<div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+    <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+        <i class="fas fa-bolt mr-2"></i>
+        Quick Actions
+    </h3>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <!-- Send Message to Teacher -->
+        <button onclick="openMessageModal()" class="bg-gradient-to-r from-info to-cyan-600 text-white p-4 rounded-lg hover:from-info hover:to-cyan-700 transition duration-200 flex items-center justify-center space-x-2 relative">
+            <i class="fas fa-envelope text-xl"></i>
+            <span class="font-medium">Message Teacher</span>
+            {% if unread_notifications > 0 %}
+            <span class="absolute -top-2 -right-2 bg-yellow-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
+                {{ unread_notifications }}
             </span>
-            <button onclick="window.print()" class="bg-white bg-opacity-20 text-white px-4 py-2 rounded-lg hover:bg-opacity-30 transition duration-200 text-sm w-full sm:w-auto">
-                <i class="fas fa-print mr-2"></i>Print Report
+            {% endif %}
+        </button>
+        
+        <!-- View Messages -->
+        <a href="{{ url_for('parent_messages') }}" class="bg-gradient-to-r from-success to-green-600 text-white p-4 rounded-lg hover:from-success hover:to-green-700 transition duration-200 flex items-center justify-center space-x-2 relative">
+            <i class="fas fa-inbox text-xl"></i>
+            <span class="font-medium">View Messages</span>
+            {% if unread_messages > 0 %}
+            <span class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center font-bold">
+                {{ unread_messages }}
+            </span>
+            {% endif %}
+        </a>
+        
+        <!-- View Report Cards -->
+        <a href="{{ url_for('parent_report_cards') }}" class="bg-gradient-to-r from-purple-500 to-purple-600 text-white p-4 rounded-lg hover:from-purple-500 hover:to-purple-700 transition duration-200 flex items-center justify-center space-x-2">
+            <i class="fas fa-file-alt text-xl"></i>
+            <span class="font-medium">Report Cards</span>
+        </a>
+        
+        <!-- View Attendance -->
+        <a href="{{ url_for('parent_attendance') }}" class="bg-gradient-to-r from-orange-500 to-orange-600 text-white p-4 rounded-lg hover:from-orange-500 hover:to-orange-700 transition duration-200 flex items-center justify-center space-x-2">
+            <i class="fas fa-calendar-check text-xl"></i>
+            <span class="font-medium">Attendance</span>
+        </a>
+        
+        <!-- Print Report -->
+        <button onclick="window.print()" class="bg-gradient-to-r from-warning to-yellow-600 text-white p-4 rounded-lg hover:from-warning hover:to-yellow-700 transition duration-200 flex items-center justify-center space-x-2">
+            <i class="fas fa-print text-xl"></i>
+            <span class="font-medium">Print Report</span>
             </button>
-        </div>
     </div>
 </div>
 
@@ -448,5 +472,171 @@ document.addEventListener('DOMContentLoaded', function() {
     // Start refreshing
     refreshParentDashboardData();
 });
+
+// Message modal functions
+function openMessageModal() {
+    document.getElementById('messageModal').classList.remove('hidden');
+}
+
+function closeMessageModal() {
+    document.getElementById('messageModal').classList.add('hidden');
+    document.getElementById('messageForm').reset();
+}
+
+// Handle URL parameters to pre-fill message form
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const teacherId = urlParams.get('teacher_id');
+    const subject = urlParams.get('subject');
+    const content = urlParams.get('content');
+    
+    if (teacherId || subject || content) {
+        // Pre-fill the form if URL parameters are present
+        if (teacherId) {
+            const teacherSelect = document.getElementById('teacher_id');
+            if (teacherSelect) {
+                // Check if the teacher ID exists in the dropdown options
+                const optionExists = Array.from(teacherSelect.options).some(option => option.value === teacherId);
+                if (optionExists) {
+                    teacherSelect.value = teacherId;
+                } else {
+                    console.warn('Teacher ID ' + teacherId + ' is not available in your school');
+                    // Show a warning message
+                    setTimeout(() => {
+                        alert('Warning: The specified teacher (ID: ' + teacherId + ') is not available in your school. Please select a teacher from the dropdown list.');
+                    }, 500);
+                }
+            }
+        }
+        
+        if (subject) {
+            const subjectInput = document.getElementById('subject');
+            if (subjectInput) {
+                subjectInput.value = decodeURIComponent(subject);
+            }
+        }
+        
+        if (content) {
+            const contentInput = document.getElementById('content');
+            if (contentInput) {
+                contentInput.value = decodeURIComponent(content);
+            }
+        }
+        
+        // Open the message modal automatically
+        openMessageModal();
+        
+        // Clear URL parameters after pre-filling
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, newUrl);
+    }
+});
+
+// Handle message form submission
+document.getElementById('messageForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const submitButton = document.getElementById('submitMessage');
+    const originalText = submitButton.innerHTML;
+    
+    // Show loading state
+    submitButton.disabled = true;
+    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Sending...';
+    
+    try {
+        // Debug: Log form data
+        console.log('Sending message with data:');
+        for (let [key, value] of formData.entries()) {
+            console.log(key, value);
+        }
+        
+        const response = await fetch('/parent/send-message', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        console.log('Response:', data);
+        
+        if (data.success) {
+            alert('Message sent successfully!');
+            closeMessageModal();
+            // Refresh the page to show the new message
+            setTimeout(() => {
+                window.location.href = '/parent/messages';
+            }, 1000);
+        } else {
+            // Show more detailed error message
+            let errorMsg = data.message;
+            if (errorMsg.includes('Invalid teacher selected')) {
+                errorMsg = 'The selected teacher is not available in your school. Please select a different teacher from the list.';
+            }
+            alert('Error: ' + errorMsg);
+        }
+    } catch (error) {
+        console.error('Error sending message:', error);
+        alert('Error sending message: ' + error.message);
+    } finally {
+        // Reset button state
+        submitButton.disabled = false;
+        submitButton.innerHTML = originalText;
+    }
+});
 </script>
+
+<!-- Message Modal -->
+<div id="messageModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900">Send Message to Teacher</h3>
+                    <button onclick="closeMessageModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <form id="messageForm">
+                    <div class="mb-4">
+                        <label for="teacher_id" class="block text-sm font-medium text-gray-700 mb-2">Select Teacher</label>
+                        <select id="teacher_id" name="teacher_id" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-info focus:border-transparent">
+                            <option value="">Choose a teacher...</option>
+                            {% for teacher in teachers %}
+                            <option value="{{ teacher.id }}">{{ teacher.first_name }} {{ teacher.last_name }} - {{ teacher.classes[0].name if teacher.classes else 'General' }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="subject" class="block text-sm font-medium text-gray-700 mb-2">Subject</label>
+                        <input type="text" id="subject" name="subject" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-info focus:border-transparent"
+                               placeholder="Enter message subject">
+                    </div>
+                    
+                    <div class="mb-6">
+                        <label for="content" class="block text-sm font-medium text-gray-700 mb-2">Message</label>
+                        <textarea id="content" name="content" rows="5" required
+                                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-info focus:border-transparent"
+                                  placeholder="Type your message here..."></textarea>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-3">
+                        <button type="button" onclick="closeMessageModal()"
+                                class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition duration-150 ease-in-out">
+                            Cancel
+                        </button>
+                        <button type="submit" id="submitMessage"
+                                class="px-4 py-2 text-sm font-medium text-white bg-info hover:bg-cyan-600 rounded-md transition duration-150 ease-in-out">
+                            <i class="fas fa-paper-plane mr-2"></i>Send Message
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}

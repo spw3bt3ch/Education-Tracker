@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+
+{% block title %}{{ class_obj.name }} Attendance - Admin{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900 mb-2">{{ class_obj.name }} Attendance</h1>
+                    <p class="text-gray-600">Detailed attendance overview for {{ class_obj.name }}</p>
+                </div>
+                <div class="mt-4 sm:mt-0 flex space-x-3">
+                    <a href="{{ url_for('admin_class_daily_attendance', class_id=class_obj.id) }}" 
+                       class="inline-flex items-center px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition duration-200">
+                        <i class="fas fa-calendar-day mr-2"></i>
+                        Daily View
+                    </a>
+                    <a href="{{ url_for('admin_attendance') }}" 
+                       class="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition duration-200">
+                        <i class="fas fa-arrow-left mr-2"></i>
+                        Back to Overview
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Class Overview -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-users text-blue-500 text-2xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-lg font-medium text-gray-900">Total Students</h3>
+                        <p class="text-2xl font-bold text-blue-600">{{ students|length }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-check-circle text-green-500 text-2xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-lg font-medium text-gray-900">Good Attendance</h3>
+                        <p class="text-2xl font-bold text-green-600">
+                            {% set good_count = attendance_data.values() | selectattr('attendance_percentage', '>=', 75) | list | length %}
+                            {{ good_count }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-exclamation-triangle text-yellow-500 text-2xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-lg font-medium text-gray-900">Poor Attendance</h3>
+                        <p class="text-2xl font-bold text-yellow-600">
+                            {% set poor_count = attendance_data.values() | selectattr('attendance_percentage', '<', 75) | list | length %}
+                            {{ poor_count }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-percentage text-purple-500 text-2xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-lg font-medium text-gray-900">Avg Attendance</h3>
+                        <p class="text-2xl font-bold text-purple-600">
+                            {% set avg_attendance = attendance_data.values() | map(attribute='attendance_percentage') | list | sum / attendance_data.values() | length if attendance_data.values() | length > 0 else 0 %}
+                            {{ "%.1f"|format(avg_attendance) }}%
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Students Attendance Table -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900">Student Attendance (Last 30 Days)</h3>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Present</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Absent</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Late</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Excused</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Total Days</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Attendance %</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for student in students %}
+                        {% set student_attendance = attendance_data.get(student.id, {}) %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0 h-10 w-10">
+                                        <div class="h-10 w-10 rounded-full bg-orange-500 flex items-center justify-center">
+                                            <span class="text-white font-medium text-sm">
+                                                {{ student.first_name[0] }}{{ student.last_name[0] }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="ml-4">
+                                        <div class="text-sm font-medium text-gray-900">
+                                            {{ student.first_name }} {{ student.last_name }}
+                                        </div>
+                                        <div class="text-sm text-gray-500">
+                                            {{ student.student_id }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900">
+                                {{ student_attendance.get('days_present', 0) }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900">
+                                {{ student_attendance.get('days_absent', 0) }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900">
+                                {{ student_attendance.get('days_late', 0) }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900">
+                                {{ student_attendance.get('days_excused', 0) }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900">
+                                {{ student_attendance.get('total_days', 0) }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900">
+                                <span class="font-medium">{{ "%.1f"|format(student_attendance.get('attendance_percentage', 0)) }}%</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-center">
+                                {% set attendance_pct = student_attendance.get('attendance_percentage', 0) %}
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
+                                    {% if attendance_pct >= 90 %}bg-green-100 text-green-800
+                                    {% elif attendance_pct >= 75 %}bg-yellow-100 text-yellow-800
+                                    {% elif attendance_pct >= 50 %}bg-orange-100 text-orange-800
+                                    {% else %}bg-red-100 text-red-800{% endif %}">
+                                    {% if attendance_pct >= 90 %}Excellent
+                                    {% elif attendance_pct >= 75 %}Good
+                                    {% elif attendance_pct >= 50 %}Fair
+                                    {% else %}Poor{% endif %}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-center">
+                                <a href="{{ url_for('admin_student_attendance', student_id=student.id) }}" 
+                                   class="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                                    View History
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Recent Attendance Activity -->
+        <div class="mt-8 bg-white rounded-lg shadow-sm border border-gray-200">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900">Recent Attendance Activity</h3>
+            </div>
+            <div class="p-6">
+                {% if recent_attendance %}
+                <div class="space-y-3">
+                    {% for record in recent_attendance[:10] %}
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 h-8 w-8">
+                                <div class="h-8 w-8 rounded-full bg-orange-500 flex items-center justify-center">
+                                    <span class="text-white font-medium text-xs">
+                                        {{ record.student.first_name[0] }}{{ record.student.last_name[0] }}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="ml-3">
+                                <div class="text-sm font-medium text-gray-900">
+                                    {{ record.student.first_name }} {{ record.student.last_name }}
+                                </div>
+                                <div class="text-sm text-gray-500">
+                                    {{ record.date.strftime('%B %d, %Y') }} - {{ record.status.title() }}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
+                                {% if record.status == 'present' %}bg-green-100 text-green-800
+                                {% elif record.status == 'absent' %}bg-red-100 text-red-800
+                                {% elif record.status == 'late' %}bg-yellow-100 text-yellow-800
+                                {% else %}bg-blue-100 text-blue-800{% endif %}">
+                                {{ record.status.title() }}
+                            </span>
+                            {% if record.notes %}
+                            <span class="text-xs text-gray-500">{{ record.notes }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-8 text-gray-500">
+                    <i class="fas fa-calendar-times text-4xl mb-4"></i>
+                    <p>No recent attendance activity</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

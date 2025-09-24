@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+
+{% block title %}Daily Attendance - Admin{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900 mb-2">Daily Attendance</h1>
+                    <p class="text-gray-600">View attendance for {{ attendance_date.strftime('%B %d, %Y') }}</p>
+                </div>
+                <div class="mt-4 sm:mt-0 flex space-x-3">
+                    <input type="date" id="date-picker" value="{{ attendance_date.strftime('%Y-%m-%d') }}" 
+                           class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500">
+                    <a href="{{ url_for('admin_attendance') }}" class="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition duration-200">
+                        <i class="fas fa-arrow-left mr-2"></i>
+                        Back to Overview
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Daily Summary -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-check-circle text-green-500 text-2xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-lg font-medium text-gray-900">Present</h3>
+                        <p class="text-2xl font-bold text-green-600">
+                            {% set total_present = class_attendance.values() | map(attribute='present') | list | sum %}
+                            {{ total_present }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-times-circle text-red-500 text-2xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-lg font-medium text-gray-900">Absent</h3>
+                        <p class="text-2xl font-bold text-red-600">
+                            {% set total_absent = class_attendance.values() | map(attribute='absent') | list | sum %}
+                            {{ total_absent }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-clock text-yellow-500 text-2xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-lg font-medium text-gray-900">Late</h3>
+                        <p class="text-2xl font-bold text-yellow-600">
+                            {% set total_late = class_attendance.values() | map(attribute='late') | list | sum %}
+                            {{ total_late }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-percentage text-blue-500 text-2xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-lg font-medium text-gray-900">Attendance %</h3>
+                        <p class="text-2xl font-bold text-blue-600">
+                            {% set total_students = class_attendance.values() | map(attribute='students') | list | map('length') | sum %}
+                            {% set total_attended = total_present + total_late %}
+                            {% set attendance_pct = (total_attended / total_students * 100) if total_students > 0 else 0 %}
+                            {{ "%.1f"|format(attendance_pct) }}%
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Classes Attendance -->
+        <div class="space-y-6">
+            {% for class_id, class_data in class_attendance.items() %}
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-lg font-semibold text-gray-900">{{ class_data.class.name }}</h3>
+                        <div class="flex items-center space-x-4">
+                            <div class="text-sm text-gray-600">
+                                <span class="text-green-600 font-medium">{{ class_data.present }}</span> present,
+                                <span class="text-red-600 font-medium">{{ class_data.absent }}</span> absent,
+                                <span class="text-yellow-600 font-medium">{{ class_data.late }}</span> late
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
+                                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
+                                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Marked By</th>
+                                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for student_data in class_data.students %}
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0 h-10 w-10">
+                                            <div class="h-10 w-10 rounded-full bg-orange-500 flex items-center justify-center">
+                                                <span class="text-white font-medium text-sm">
+                                                    {{ student_data.student.first_name[0] }}{{ student_data.student.last_name[0] }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div class="ml-4">
+                                            <div class="text-sm font-medium text-gray-900">
+                                                {{ student_data.student.first_name }} {{ student_data.student.last_name }}
+                                            </div>
+                                            <div class="text-sm text-gray-500">
+                                                {{ student_data.student.student_id }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-center">
+                                    {% if student_data.status == 'present' %}
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                            <i class="fas fa-check-circle mr-1"></i>
+                                            Present
+                                        </span>
+                                    {% elif student_data.status == 'absent' %}
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                            <i class="fas fa-times-circle mr-1"></i>
+                                            Absent
+                                        </span>
+                                    {% elif student_data.status == 'late' %}
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                            <i class="fas fa-clock mr-1"></i>
+                                            Late
+                                        </span>
+                                    {% elif student_data.status == 'excused' %}
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                            <i class="fas fa-user-check mr-1"></i>
+                                            Excused
+                                        </span>
+                                    {% else %}
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                            <i class="fas fa-question-circle mr-1"></i>
+                                            Not Marked
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900">
+                                    {{ student_data.notes or '-' }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900">
+                                    {% if student_data.marked_by %}
+                                        {{ student_data.marked_by.first_name }} {{ student_data.marked_by.last_name }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-center">
+                                    <a href="{{ url_for('admin_student_attendance', student_id=student_data.student.id) }}" 
+                                       class="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                                        View History
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- No Data Message -->
+        {% if not class_attendance %}
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
+            <div class="text-center">
+                <i class="fas fa-calendar-times text-4xl text-gray-400 mb-4"></i>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No Attendance Data</h3>
+                <p class="text-gray-600">No attendance records found for {{ attendance_date.strftime('%B %d, %Y') }}</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const datePicker = document.getElementById('date-picker');
+    
+    datePicker.addEventListener('change', function() {
+        const selectedDate = this.value;
+        if (selectedDate) {
+            window.location.href = `{{ url_for('admin_daily_attendance') }}?date=${selectedDate}`;
+        }
+    });
+});
+</script>
+{% endblock %}

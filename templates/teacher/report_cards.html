@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}Report Cards - SMIED{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900 mb-2">Report Cards</h1>
+                    <p class="text-gray-600">Create and manage student report cards</p>
+                </div>
+                <div class="mt-4 sm:mt-0">
+                    <a href="{{ url_for('teacher_create_report_card') }}" class="inline-flex items-center px-4 py-2 bg-info text-white rounded-lg hover:bg-cyan-600 transition duration-200">
+                        <i class="fas fa-plus mr-2"></i>
+                        Create Report Card
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Report Cards Table -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900">Report Cards</h3>
+            </div>
+            
+            {% if report_cards %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Class</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Term</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Percentage</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Position</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for report in report_cards %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0 h-10 w-10">
+                                        <div class="h-10 w-10 rounded-full bg-info flex items-center justify-center">
+                                            <span class="text-white font-medium text-sm">
+                                                {{ report.student.first_name[0] }}{{ report.student.last_name[0] }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="ml-4">
+                                        <div class="text-sm font-medium text-gray-900">
+                                            {{ report.student.first_name }} {{ report.student.last_name }}
+                                        </div>
+                                        <div class="text-sm text-gray-500">
+                                            {{ report.student.student_id }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ report.class_obj.name }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ report.academic_term.name }} {{ report.academic_term.academic_year }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                <div class="flex items-center">
+                                    <span class="font-medium">{{ "%.1f"|format(report.percentage) }}%</span>
+                                    <span class="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
+                                        {% if report.percentage >= 75 %}bg-green-100 text-green-800
+                                        {% elif report.percentage >= 60 %}bg-blue-100 text-blue-800
+                                        {% elif report.percentage >= 50 %}bg-yellow-100 text-yellow-800
+                                        {% elif report.percentage >= 40 %}bg-orange-100 text-orange-800
+                                        {% else %}bg-red-100 text-red-800{% endif %}">
+                                        {{ report.percentage|round|int >= 75 and 'A' or report.percentage|round|int >= 60 and 'B' or report.percentage|round|int >= 50 and 'C' or report.percentage|round|int >= 40 and 'D' or 'F' }}
+                                    </span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {% if report.position_in_class %}
+                                    {{ report.position_in_class }}{{ 'st' if report.position_in_class == 1 else 'nd' if report.position_in_class == 2 else 'rd' if report.position_in_class == 3 else 'th' }} of {{ report.total_students }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
+                                    {% if report.status == 'draft' %}bg-gray-100 text-gray-800
+                                    {% elif report.status == 'submitted' %}bg-yellow-100 text-yellow-800
+                                    {% elif report.status == 'approved' %}bg-green-100 text-green-800
+                                    {% elif report.status == 'sent' %}bg-blue-100 text-blue-800
+                                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                    {{ report.status.title() }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <div class="flex space-x-2">
+                                    <a href="{{ url_for('teacher_edit_report_card', report_id=report.id) }}" 
+                                       class="text-info hover:text-cyan-700 transition duration-150 ease-in-out"
+                                       title="Edit Report Card">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    {% if report.status == 'approved' %}
+                                    <a href="{{ url_for('parent_view_report_card', report_id=report.id) }}" 
+                                       class="text-green-600 hover:text-green-700 transition duration-150 ease-in-out"
+                                       title="View Report Card"
+                                       target="_blank">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-12">
+                <i class="fas fa-file-alt text-4xl text-gray-400 mb-4"></i>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No report cards found</h3>
+                <p class="text-gray-600">Create your first report card to get started</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

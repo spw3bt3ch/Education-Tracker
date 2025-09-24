@@ -1,14 +1,14 @@
 {% extends "emails/base.html" %}
 
-{% block title %}Welcome to EduTrack{% endblock %}
+{% block title %}Welcome to SMIED{% endblock %}
 
-{% block header_title %}Welcome to EduTrack!{% endblock %}
+{% block header_title %}Welcome to SMIED!{% endblock %}
 {% block header_subtitle %}Your account has been created successfully{% endblock %}
 
 {% block content %}
 <h2>Welcome, {{ user.first_name }}!</h2>
 
-<p>We're excited to have you join the EduTrack community. Your account has been successfully created and you can now access all the features of our student assignment tracking system.</p>
+<p>We're excited to have you join the SMIED community. Your account has been successfully created and you can now access all the features of our student assignment tracking system.</p>
 
 {% if school %}
 <div class="school-info">
@@ -45,5 +45,5 @@
 <p>If you have any questions or need assistance, please don't hesitate to contact your school administrator or our support team.</p>
 
 <p>Best regards,<br>
-The EduTrack Team</p>
+The SMIED Team</p>
 {% endblock %}
