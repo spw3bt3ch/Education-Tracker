@@ -249,6 +249,48 @@ class PaymentService:
         
         return subscription
     
+    def create_free_trial_subscription(self, db, SubscriptionPlan, School, Payment, SchoolSubscription, User, school_id, plan_id):
+        """
+        Create a free trial subscription without payment
+        """
+        try:
+            # Get plan details
+            plan = SubscriptionPlan.query.get(plan_id)
+            if not plan:
+                return False, "Invalid plan selected"
+            
+            # Check if school already has an active subscription
+            existing_subscription = SchoolSubscription.query.filter_by(
+                school_id=school_id, 
+                status='active'
+            ).first()
+            
+            if existing_subscription:
+                return False, "School already has an active subscription"
+            
+            # Calculate trial end date
+            trial_days = plan.duration_days or 7  # Default to 7 days if not specified
+            start_date = datetime.utcnow()
+            end_date = start_date + timedelta(days=trial_days)
+            
+            # Create free trial subscription
+            subscription = SchoolSubscription(
+                school_id=school_id,
+                plan_id=plan_id,
+                status='active',
+                start_date=start_date,
+                end_date=end_date,
+                created_at=datetime.utcnow()
+            )
+            
+            db.session.add(subscription)
+            db.session.commit()
+            
+            return True, "Free trial subscription created successfully"
+            
+        except Exception as e:
+            return False, f"Error creating free trial: {str(e)}"
+
     def is_subscription_active(self, school_id):
         """
         Check if school has an active subscription
@@ -376,6 +418,7 @@ class PaymentService:
         try:
             from email_service import EmailService
             from datetime import datetime
+            from app import School
             
             school = School.query.get(school_id)
             if not school or not admin_user:

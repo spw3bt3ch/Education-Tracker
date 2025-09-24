@@ -1,4 +1,4 @@
-# EduTrack - Student Assignment Tracking System
+# SMIED - Student Management Information Education Database
 
 A comprehensive Flask-based web application for tracking student assignments, managing classes, and facilitating communication between teachers, administrators, and parents.
 

@@ -23,7 +23,7 @@ load_dotenv('aiven_config.env')
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key-here')
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///edutrack.db')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///smied.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['DATABASE_TOTAL_CAPACITY_GB'] = int(os.getenv('DATABASE_TOTAL_CAPACITY_GB', '1'))
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
@@ -471,6 +471,149 @@ class Payment(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+# Report Card System Models
+class AcademicTerm(db.Model):
+    """Academic terms (1st, 2nd, 3rd Term)"""
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), nullable=False)  # "1st Term", "2nd Term", "3rd Term"
+    school_id = db.Column(db.Integer, db.ForeignKey('school.id'), nullable=False)
+    academic_year = db.Column(db.String(20), nullable=False)  # "2024/2025"
+    start_date = db.Column(db.Date, nullable=False)
+    end_date = db.Column(db.Date, nullable=False)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    report_cards = db.relationship('ReportCard', backref='term', lazy=True)
+
+class ReportCard(db.Model):
+    """Main report card for a student"""
+    id = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
+    class_id = db.Column(db.Integer, db.ForeignKey('class.id'), nullable=False)
+    teacher_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    school_id = db.Column(db.Integer, db.ForeignKey('school.id'), nullable=False)
+    term_id = db.Column(db.Integer, db.ForeignKey('academic_term.id'), nullable=False)
+    
+    # Academic performance
+    total_score = db.Column(db.Float, default=0.0)
+    total_possible = db.Column(db.Float, default=0.0)
+    percentage = db.Column(db.Float, default=0.0)
+    position_in_class = db.Column(db.Integer, nullable=True)
+    total_students = db.Column(db.Integer, nullable=True)
+    
+    # Attendance
+    days_present = db.Column(db.Integer, default=0)
+    days_absent = db.Column(db.Integer, default=0)
+    total_days = db.Column(db.Integer, default=0)
+    attendance_percentage = db.Column(db.Float, default=0.0)
+    
+    # Conduct and behavior
+    conduct_grade = db.Column(db.String(2), nullable=True)  # A, B, C, D, F
+    punctuality = db.Column(db.String(2), nullable=True)    # A, B, C, D, F
+    neatness = db.Column(db.String(2), nullable=True)       # A, B, C, D, F
+    politeness = db.Column(db.String(2), nullable=True)     # A, B, C, D, F
+    
+    # Teacher comments
+    teacher_comment = db.Column(db.Text, nullable=True)
+    teacher_recommendation = db.Column(db.Text, nullable=True)
+    
+    # Admin review
+    admin_comment = db.Column(db.Text, nullable=True)
+    admin_approved = db.Column(db.Boolean, default=False)
+    admin_approved_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    admin_approved_at = db.Column(db.DateTime, nullable=True)
+    
+    # Status
+    status = db.Column(db.String(20), default='draft')  # draft, submitted, approved, sent
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    student = db.relationship('Student', backref='student_report_cards', lazy=True)
+    class_obj = db.relationship('Class', backref='class_report_cards', lazy=True)
+    teacher = db.relationship('User', foreign_keys=[teacher_id], backref='created_report_cards', lazy=True)
+    academic_term = db.relationship('AcademicTerm', backref='term_report_cards', lazy=True)
+    subject_grades = db.relationship('SubjectGrade', backref='report_card', lazy=True, cascade='all, delete-orphan')
+    admin_approver = db.relationship('User', foreign_keys=[admin_approved_by], backref='approved_reports')
+
+class SubjectGrade(db.Model):
+    """Individual subject grades in a report card"""
+    id = db.Column(db.Integer, primary_key=True)
+    report_card_id = db.Column(db.Integer, db.ForeignKey('report_card.id'), nullable=False)
+    subject_id = db.Column(db.Integer, db.ForeignKey('subject.id'), nullable=False)
+    school_id = db.Column(db.Integer, db.ForeignKey('school.id'), nullable=False)
+    
+    # Continuous Assessment (CA) - 40%
+    ca_score = db.Column(db.Float, default=0.0)
+    ca_max = db.Column(db.Float, default=40.0)
+    
+    # Examination (Exam) - 60%
+    exam_score = db.Column(db.Float, default=0.0)
+    exam_max = db.Column(db.Float, default=60.0)
+    
+    # Total
+    total_score = db.Column(db.Float, default=0.0)
+    total_max = db.Column(db.Float, default=100.0)
+    percentage = db.Column(db.Float, default=0.0)
+    grade = db.Column(db.String(2), nullable=True)  # A, B, C, D, F
+    
+    # Teacher comment for this subject
+    teacher_comment = db.Column(db.Text, nullable=True)
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    subject = db.relationship('Subject', backref='subject_grades', lazy=True)
+    
+    # Ensure unique subject per report card
+    __table_args__ = (db.UniqueConstraint('report_card_id', 'subject_id', name='unique_subject_grade'),)
+
+class Attendance(db.Model):
+    """Daily attendance records for students"""
+    id = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
+    class_id = db.Column(db.Integer, db.ForeignKey('class.id'), nullable=False)
+    school_id = db.Column(db.Integer, db.ForeignKey('school.id'), nullable=False)
+    date = db.Column(db.Date, nullable=False)
+    status = db.Column(db.String(20), nullable=False)  # present, absent, late, excused
+    notes = db.Column(db.Text, nullable=True)
+    marked_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)  # Teacher who marked attendance
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    student = db.relationship('Student', backref='attendance_records', lazy=True)
+    class_obj = db.relationship('Class', backref='attendance_records', lazy=True)
+    teacher = db.relationship('User', backref='marked_attendance', lazy=True)
+    
+    # Ensure one attendance record per student per day
+    __table_args__ = (db.UniqueConstraint('student_id', 'date', 'school_id', name='unique_daily_attendance'),)
+
+class AttendanceSummary(db.Model):
+    """Monthly attendance summary for students"""
+    id = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
+    class_id = db.Column(db.Integer, db.ForeignKey('class.id'), nullable=False)
+    school_id = db.Column(db.Integer, db.ForeignKey('school.id'), nullable=False)
+    month = db.Column(db.Integer, nullable=False)  # 1-12
+    year = db.Column(db.Integer, nullable=False)
+    days_present = db.Column(db.Integer, default=0)
+    days_absent = db.Column(db.Integer, default=0)
+    days_late = db.Column(db.Integer, default=0)
+    days_excused = db.Column(db.Integer, default=0)
+    total_days = db.Column(db.Integer, default=0)
+    attendance_percentage = db.Column(db.Float, default=0.0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    student = db.relationship('Student', backref='attendance_summaries', lazy=True)
+    class_obj = db.relationship('Class', backref='attendance_summaries', lazy=True)
+    
+    # Ensure one summary per student per month
+    __table_args__ = (db.UniqueConstraint('student_id', 'month', 'year', 'school_id', name='unique_monthly_attendance'),)
+
 @login_manager.user_loader
 def load_user(user_id):
     return db.session.get(User, int(user_id))
@@ -486,6 +629,146 @@ def get_school_context():
     except Exception as e:
         print(f"Error getting school context: {e}")
     return None
+
+# Report Card Helper Functions
+def calculate_grade(percentage):
+    """Calculate grade based on Nigerian education system"""
+    if percentage >= 75:
+        return 'A'
+    elif percentage >= 60:
+        return 'B'
+    elif percentage >= 50:
+        return 'C'
+    elif percentage >= 40:
+        return 'D'
+    else:
+        return 'F'
+
+def get_grade_description(grade):
+    """Get description for grade"""
+    descriptions = {
+        'A': 'Excellent',
+        'B': 'Very Good',
+        'C': 'Good',
+        'D': 'Pass',
+        'F': 'Fail'
+    }
+    return descriptions.get(grade, 'Unknown')
+
+def calculate_position_in_class(student_id, class_id, term_id, school_id):
+    """Calculate student's position in class based on total percentage"""
+    # Get all report cards for the class in this term
+    report_cards = ReportCard.query.filter_by(
+        class_id=class_id,
+        term_id=term_id,
+        school_id=school_id,
+        status='submitted'
+    ).order_by(ReportCard.percentage.desc()).all()
+    
+    # Find the student's position
+    for i, report in enumerate(report_cards, 1):
+        if report.student_id == student_id:
+            return i, len(report_cards)
+    
+    return None, len(report_cards)
+
+def calculate_student_attendance(student_id, school_id, start_date=None, end_date=None):
+    """Calculate student's attendance for a given period"""
+    from datetime import date, timedelta
+    
+    if not start_date:
+        start_date = date.today().replace(day=1)  # First day of current month
+    if not end_date:
+        end_date = date.today()  # Today
+    
+    # Get attendance records for the period
+    attendance_records = Attendance.query.filter(
+        Attendance.student_id == student_id,
+        Attendance.school_id == school_id,
+        Attendance.date >= start_date,
+        Attendance.date <= end_date
+    ).all()
+    
+    # Calculate totals
+    days_present = len([r for r in attendance_records if r.status == 'present'])
+    days_absent = len([r for r in attendance_records if r.status == 'absent'])
+    days_late = len([r for r in attendance_records if r.status == 'late'])
+    days_excused = len([r for r in attendance_records if r.status == 'excused'])
+    total_days = len(attendance_records)
+    
+    # Calculate percentage (present + late count as attended)
+    attended_days = days_present + days_late
+    attendance_percentage = (attended_days / total_days * 100) if total_days > 0 else 0
+    
+    return {
+        'days_present': days_present,
+        'days_absent': days_absent,
+        'days_late': days_late,
+        'days_excused': days_excused,
+        'total_days': total_days,
+        'attended_days': attended_days,
+        'attendance_percentage': attendance_percentage
+    }
+
+def update_attendance_summary(student_id, school_id, month, year):
+    """Update monthly attendance summary for a student"""
+    from datetime import date
+    
+    # Calculate attendance for the month
+    start_date = date(year, month, 1)
+    if month == 12:
+        end_date = date(year + 1, 1, 1) - timedelta(days=1)
+    else:
+        end_date = date(year, month + 1, 1) - timedelta(days=1)
+    
+    attendance_data = calculate_student_attendance(student_id, school_id, start_date, end_date)
+    
+    # Get or create summary
+    summary = AttendanceSummary.query.filter_by(
+        student_id=student_id,
+        school_id=school_id,
+        month=month,
+        year=year
+    ).first()
+    
+    if not summary:
+        # Get student's class
+        student = Student.query.get(student_id)
+        summary = AttendanceSummary(
+            student_id=student_id,
+            class_id=student.class_id,
+            school_id=school_id,
+            month=month,
+            year=year
+        )
+        db.session.add(summary)
+    
+    # Update summary data
+    summary.days_present = attendance_data['days_present']
+    summary.days_absent = attendance_data['days_absent']
+    summary.days_late = attendance_data['days_late']
+    summary.days_excused = attendance_data['days_excused']
+    summary.total_days = attendance_data['total_days']
+    summary.attendance_percentage = attendance_data['attendance_percentage']
+    
+    db.session.commit()
+    return summary
+
+def get_unread_message_count(user_id):
+    """Get the count of unread messages for a user"""
+    try:
+        return Message.query.filter_by(recipient_id=user_id, is_read=False).count()
+    except Exception as e:
+        print(f"Error getting unread message count: {e}")
+        return 0
+
+def get_unread_notification_count(user_id):
+    """Get the count of unread notifications for a user"""
+    try:
+        return Notification.query.filter_by(user_id=user_id, is_read=False).count()
+    except Exception as e:
+        print(f"Error getting unread notification count: {e}")
+        return 0
 
 def check_subscription_status():
     """Check if the current school has an active subscription"""
@@ -701,6 +984,14 @@ def initialize_payment():
             admin_last_name = data.get('admin_last_name')
             admin_password = data.get('admin_password')
             
+            # Debug logging
+            print(f"Received form data:")
+            print(f"School name: {school_name}")
+            print(f"School code: {school_code}")
+            print(f"Admin first name: {admin_first_name}")
+            print(f"Admin last name: {admin_last_name}")
+            print(f"Email: {email}")
+            
             if not all([school_name, school_code, admin_first_name, admin_last_name, admin_password]):
                 flash('❌ Missing school registration details. Please fill in all required fields.', 'error')
                 return jsonify({'success': False, 'message': 'Missing school registration details'}), 400
@@ -722,6 +1013,22 @@ def initialize_payment():
             
             # Generate username for admin
             admin_username = f"{admin_first_name.lower()}{admin_last_name.lower()}{secrets.randbelow(1000)}"
+            
+            # Debug logging
+            print(f"Creating admin user with username: {admin_username}")
+            print(f"Admin first name: {admin_first_name}, last name: {admin_last_name}")
+            
+            # Validate required fields
+            if not admin_username or not admin_first_name or not admin_last_name or not email:
+                return jsonify({'success': False, 'message': 'Missing required fields for user creation'}), 400
+            
+            # Check if email already exists
+            existing_user = User.query.filter_by(email=email).first()
+            if existing_user:
+                return jsonify({
+                    'success': False, 
+                    'message': f'❌ Email {email} is already registered. Please use a different email or try logging in instead.'
+                }), 400
             
             # Create admin user
             admin_user = User(
@@ -785,12 +1092,32 @@ def initialize_payment():
             'Content-Type': 'application/json'
         }
         
-        # Use minimum amount for free trials (Paystack requires amount >= 100 NGN for transfer)
-        amount_kobo = max(int(plan.price * 100), 10000)  # Minimum 100 NGN (10000 kobo) for transfer support
-        
-        # Add info message for free trials about minimum charge
+        # Check if this is a free trial
         if plan.price == 0:
-            flash('ℹ️ Free trial requires a minimum charge of ₦100 for payment processing. This amount will be refunded after successful verification.', 'info')
+            # Handle free trial - create subscription directly without payment
+            payment_service = PaymentService()
+            success, message = payment_service.create_free_trial_subscription(
+                db, SubscriptionPlan, School, Payment, SchoolSubscription, User, school_id, plan_id
+            )
+            if success:
+                # Log in the admin user if it's a new registration
+                if not current_user.is_authenticated:
+                    admin_user = User.query.filter_by(school_id=school_id, role='school_admin').first()
+                    if admin_user:
+                        login_user(admin_user)
+                
+                flash('✅ Free trial activated successfully! You now have full access to all features.', 'success')
+                return jsonify({
+                    'success': True, 
+                    'message': 'Free trial activated successfully!',
+                    'redirect_url': url_for('admin_dashboard')
+                })
+            else:
+                flash(f'❌ Free trial activation failed: {message}', 'error')
+                return jsonify({'success': False, 'message': message}), 400
+        
+        # For paid plans, use actual plan price
+        amount_kobo = int(plan.price * 100)
         
         data = {
             'email': email,
@@ -954,6 +1281,27 @@ def super_admin_dashboard():
     total_schools = len(schools)
     total_users = User.query.count()
     
+    # Get school admin details and subscription plans
+    school_details = []
+    for school in schools:
+        # Get school admin user
+        admin_user = User.query.filter_by(school_id=school.id, role='school_admin').first()
+        
+        # Get school subscription
+        subscription = SchoolSubscription.query.filter_by(school_id=school.id, status='active').first()
+        plan_name = "No Plan"
+        if subscription:
+            plan = SubscriptionPlan.query.get(subscription.plan_id)
+            if plan:
+                plan_name = plan.name
+        
+        school_details.append({
+            'school': school,
+            'admin': admin_user,
+            'plan_name': plan_name,
+            'subscription': subscription
+        })
+    
     # Initialize database monitor with app context
     db_monitor.init_app(current_app)
     
@@ -976,6 +1324,7 @@ def super_admin_dashboard():
     
     return render_template('super_admin/dashboard.html', 
                          schools=schools, 
+                         school_details=school_details,
                          total_schools=total_schools, 
                          total_users=total_users,
                          db_size=db_size,
@@ -1082,6 +1431,30 @@ def admin_dashboard():
     recent_notifications = Notification.query.filter_by(user_id=current_user.id).order_by(Notification.created_at.desc()).limit(5).all()
     unread_notifications_count = Notification.query.filter_by(user_id=current_user.id, is_read=False).count()
     
+    # Get unread messages count
+    unread_messages_count = get_unread_message_count(current_user.id)
+    
+    # Get subscription information for countdown timer
+    subscription_info = None
+    if school_id:
+        subscription = SchoolSubscription.query.filter_by(school_id=school_id, status='active').first()
+        if subscription:
+            plan = SubscriptionPlan.query.get(subscription.plan_id)
+            if plan and subscription.end_date:
+                subscription_info = {
+                    'plan_name': plan.name,
+                    'end_date': subscription.end_date,
+                    'is_trial': 'trial' in plan.name.lower() or 'free' in plan.name.lower(),
+                    'days_remaining': (subscription.end_date - datetime.utcnow()).days
+                }
+                print(f"DEBUG: subscription_info created: {subscription_info}")
+            else:
+                print(f"DEBUG: Plan or end_date missing - plan: {plan}, end_date: {subscription.end_date}")
+        else:
+            print(f"DEBUG: No active subscription found for school_id: {school_id}")
+    else:
+        print(f"DEBUG: No school_id found for user: {current_user.id}")
+    
     return render_template('admin/dashboard.html', 
                          total_students=total_students,
                          total_teachers=total_teachers,
@@ -1090,7 +1463,9 @@ def admin_dashboard():
                          recent_lessons=recent_lessons,
                          teachers_with_submissions=teachers_with_submissions,
                          recent_notifications=recent_notifications,
-                         unread_notifications_count=unread_notifications_count)
+                         unread_notifications_count=unread_notifications_count,
+                         unread_messages_count=unread_messages_count,
+                         subscription_info=subscription_info)
 
 @app.route('/api/admin/dashboard-data')
 @login_required
@@ -1268,6 +1643,48 @@ def api_parent_dashboard_data():
         'recent_records': records_data
     })
 
+@app.route('/api/teacher/notifications')
+@login_required
+def api_teacher_notifications():
+    if current_user.role != 'teacher':
+        return jsonify({'error': 'Access denied'}), 403
+    
+    # Get recent notifications for the teacher
+    notifications = Notification.query.filter_by(user_id=current_user.id).order_by(Notification.created_at.desc()).limit(10).all()
+    
+    notifications_data = []
+    for notification in notifications:
+        notifications_data.append({
+            'id': notification.id,
+            'title': notification.title,
+            'content': notification.content,
+            'type': notification.type,
+            'is_read': notification.is_read,
+            'created_at': notification.created_at.isoformat()
+        })
+    
+    return jsonify({
+        'notifications': notifications_data
+    })
+
+@app.route('/api/teacher/message-count')
+@login_required
+def api_teacher_message_count():
+    if current_user.role != 'teacher':
+        return jsonify({'error': 'Access denied'}), 403
+    
+    count = get_unread_message_count(current_user.id)
+    return jsonify({'count': count})
+
+@app.route('/api/parent/message-count')
+@login_required
+def api_parent_message_count():
+    if current_user.role != 'parent':
+        return jsonify({'error': 'Access denied'}), 403
+    
+    count = get_unread_message_count(current_user.id)
+    return jsonify({'count': count})
+
 @app.route('/admin/lesson-submissions')
 @login_required
 def admin_lesson_submissions():
@@ -1347,12 +1764,23 @@ def admin_add_lesson_comment(lesson_id):
     comment = LessonComment(
         lesson_id=lesson_id,
         admin_id=current_user.id,
+        school_id=current_user.school_id,
         comment=comment_text
     )
     
     try:
         db.session.add(comment)
         db.session.commit()
+        
+        # Create notification for the teacher
+        create_notification(
+            user_id=lesson.teacher_id,
+            notification_type='lesson_comment',
+            title='New Comment on Your Lesson',
+            content=f'Admin {current_user.first_name} {current_user.last_name} added a comment to your lesson: "{lesson.title}"',
+            school_id=current_user.school_id
+        )
+        
         flash('Comment added successfully', 'success')
     except Exception as e:
         db.session.rollback()
@@ -1426,10 +1854,215 @@ def teacher_dashboard():
         Lesson.teacher_id == current_user.id
     ).order_by(LessonComment.created_at.desc()).limit(5).all()
     
+    # Get parents from teacher's classes
+    parents = []
+    if classes:
+        # Get all students from teacher's classes
+        class_ids = [cls.id for cls in classes]
+        students = Student.query.filter(Student.class_id.in_(class_ids)).all()
+        
+        # Get unique parents
+        parent_ids = set()
+        for student in students:
+            if student.parent_id:
+                parent_ids.add(student.parent_id)
+        
+        # Get parent details
+        parents = User.query.filter(
+            User.id.in_(parent_ids),
+            User.role == 'parent'
+        ).all()
+    
+    # Get unread counts
+    unread_messages = get_unread_message_count(current_user.id)
+    unread_notifications = get_unread_notification_count(current_user.id)
+    
     return render_template('teacher/dashboard.html', 
                          classes=classes, 
                          recent_assignments=recent_assignments,
-                         recent_comments=recent_comments)
+                         recent_comments=recent_comments,
+                         parents=parents,
+                         unread_messages=unread_messages,
+                         unread_notifications=unread_notifications)
+
+@app.route('/api/teacher/parent/<int:parent_id>/reset-password', methods=['POST'])
+@login_required
+def api_teacher_reset_parent_password(parent_id):
+    """Reset parent password - Teacher only"""
+    if current_user.role != 'teacher':
+        return jsonify({'error': 'Access denied'}), 403
+    
+    try:
+        # Verify parent exists and is in teacher's classes
+        parent = User.query.filter_by(id=parent_id, role='parent').first()
+        if not parent:
+            return jsonify({'error': 'Parent not found'}), 404
+        
+        # Check if parent has students in teacher's classes
+        teacher_classes = Class.query.filter_by(teacher_id=current_user.id).all()
+        class_ids = [cls.id for cls in teacher_classes]
+        
+        parent_students = Student.query.filter(
+            Student.parent_id == parent_id,
+            Student.class_id.in_(class_ids)
+        ).first()
+        
+        if not parent_students:
+            return jsonify({'error': 'Parent not associated with your classes'}), 403
+        
+        # Generate new password
+        new_password = generate_password()
+        parent.password_hash = generate_password_hash(new_password)
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Password reset successfully',
+            'new_password': new_password,
+            'parent_username': parent.username
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/teacher/parent/<int:parent_id>/password')
+@login_required
+def api_teacher_get_parent_password(parent_id):
+    """Get parent password for display - Teacher only"""
+    if current_user.role != 'teacher':
+        return jsonify({'error': 'Access denied'}), 403
+    
+    try:
+        # Verify parent exists and is in teacher's classes
+        parent = User.query.filter_by(id=parent_id, role='parent').first()
+        if not parent:
+            return jsonify({'error': 'Parent not found'}), 404
+        
+        # Check if parent has students in teacher's classes
+        teacher_classes = Class.query.filter_by(teacher_id=current_user.id).all()
+        class_ids = [cls.id for cls in teacher_classes]
+        
+        parent_students = Student.query.filter(
+            Student.parent_id == parent_id,
+            Student.class_id.in_(class_ids)
+        ).first()
+        
+        if not parent_students:
+            return jsonify({'error': 'Parent not associated with your classes'}), 403
+        
+        return jsonify({
+            'success': True,
+            'password': '••••••••',  # Placeholder for security
+            'username': parent.username,
+            'message': 'Password is hidden for security. Use reset to generate new password.'
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/teacher/parent/<int:parent_id>/view')
+@login_required
+def api_teacher_view_parent(parent_id):
+    """View parent details - Teacher only"""
+    if current_user.role != 'teacher':
+        return jsonify({'error': 'Access denied'}), 403
+    
+    try:
+        # Verify parent exists and is in teacher's classes
+        parent = User.query.filter_by(id=parent_id, role='parent').first()
+        if not parent:
+            return jsonify({'error': 'Parent not found'}), 404
+        
+        # Check if parent has students in teacher's classes
+        teacher_classes = Class.query.filter_by(teacher_id=current_user.id).all()
+        class_ids = [cls.id for cls in teacher_classes]
+        
+        parent_students = Student.query.filter(
+            Student.parent_id == parent_id,
+            Student.class_id.in_(class_ids)
+        ).all()
+        
+        if not parent_students:
+            return jsonify({'error': 'Parent not associated with your classes'}), 403
+        
+        # Get parent's students with class information
+        students_data = []
+        for student in parent_students:
+            student_class = Class.query.get(student.class_id)
+            students_data.append({
+                'id': student.id,
+                'first_name': student.first_name,
+                'last_name': student.last_name,
+                'student_id': student.student_id,
+                'class_name': student_class.name if student_class else 'Unknown',
+                'class_id': student.class_id,
+                'date_of_birth': student.date_of_birth.isoformat() if student.date_of_birth else None,
+                'created_at': student.created_at.isoformat()
+            })
+        
+        return jsonify({
+            'success': True,
+            'parent': {
+                'id': parent.id,
+                'username': parent.username,
+                'email': parent.email,
+                'first_name': parent.first_name,
+                'last_name': parent.last_name,
+                'profile_picture': parent.profile_picture,
+                'created_at': parent.created_at.isoformat(),
+                'is_active': parent.is_active
+            },
+            'students': students_data
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/teacher/parent/<int:parent_id>/delete', methods=['DELETE'])
+@login_required
+def api_teacher_delete_parent(parent_id):
+    """Delete parent account - Teacher only"""
+    if current_user.role != 'teacher':
+        return jsonify({'error': 'Access denied'}), 403
+    
+    try:
+        # Verify parent exists and is in teacher's classes
+        parent = User.query.filter_by(id=parent_id, role='parent').first()
+        if not parent:
+            return jsonify({'error': 'Parent not found'}), 404
+        
+        # Check if parent has students in teacher's classes
+        teacher_classes = Class.query.filter_by(teacher_id=current_user.id).all()
+        class_ids = [cls.id for cls in teacher_classes]
+        
+        parent_students = Student.query.filter(
+            Student.parent_id == parent_id,
+            Student.class_id.in_(class_ids)
+        ).all()
+        
+        if not parent_students:
+            return jsonify({'error': 'Parent not associated with your classes'}), 403
+        
+        # Get parent details for confirmation
+        parent_name = f"{parent.first_name} {parent.last_name}"
+        student_count = len(parent_students)
+        
+        # Delete parent account
+        db.session.delete(parent)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Parent {parent_name} and their account have been deleted successfully.',
+            'deleted_parent': parent_name,
+            'affected_students': student_count
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/parent/dashboard')
 @login_required
@@ -1459,6 +2092,16 @@ def parent_dashboard():
     school_email = get_setting('school_email', '')
     school_website = get_setting('school_website', '')
     
+    # Get teachers for messaging
+    school_id = get_school_context()
+    teachers = []
+    if school_id:
+        teachers = User.query.filter_by(role='teacher', school_id=school_id).all()
+    
+    # Get unread counts
+    unread_messages = get_unread_message_count(current_user.id)
+    unread_notifications = get_unread_notification_count(current_user.id)
+    
     return render_template('parent/dashboard.html', 
                          children=children, 
                          recent_records=recent_records,
@@ -1467,7 +2110,452 @@ def parent_dashboard():
                          school_address=school_address,
                          school_phone=school_phone,
                          school_email=school_email,
-                         school_website=school_website)
+                         school_website=school_website,
+                         school_contact=school_email,
+                         teachers=teachers,
+                         unread_messages=unread_messages,
+                         unread_notifications=unread_notifications)
+
+# Parent messaging routes
+@app.route('/parent/send-message', methods=['POST'])
+@login_required
+def parent_send_message():
+    if current_user.role != 'parent':
+        return jsonify({'success': False, 'message': 'Access denied'}), 403
+    
+    teacher_id = request.form.get('teacher_id')
+    subject = request.form.get('subject')
+    content = request.form.get('content')
+    
+    if not all([teacher_id, subject, content]):
+        return jsonify({'success': False, 'message': 'All fields are required'}), 400
+    
+    try:
+        # Get school context
+        school_id = get_school_context()
+        if not school_id:
+            return jsonify({'success': False, 'message': 'School context not found'}), 400
+        
+        # Verify teacher exists and is in the same school
+        teacher = User.query.filter_by(id=teacher_id, role='teacher').first()
+        print(f"Teacher lookup: teacher_id={teacher_id}, found_teacher={teacher is not None}")
+        if teacher:
+            print(f"Teacher school_id={teacher.school_id}, parent school_id={school_id}")
+        if not teacher or teacher.school_id != school_id:
+            return jsonify({'success': False, 'message': 'Invalid teacher selected'}), 400
+        
+        # Create message
+        message = Message(
+            sender_id=current_user.id,
+            recipient_id=teacher_id,
+            subject=subject,
+            content=content,
+            school_id=school_id
+        )
+        
+        print(f"Creating message: sender_id={current_user.id}, recipient_id={teacher_id}, school_id={school_id}")
+        db.session.add(message)
+        db.session.flush()  # Get the message ID before creating notification
+        print(f"Message created with ID: {message.id}")
+        
+        # Create notification for teacher
+        notification = Notification(
+            user_id=teacher_id,
+            message_id=message.id,
+            type='message_received',
+            title=f'New Message from {current_user.first_name} {current_user.last_name}',
+            content=f'Subject: {subject}',
+            school_id=school_id
+        )
+        db.session.add(notification)
+        
+        print("Committing to database...")
+        db.session.commit()
+        print("Database commit successful")
+        
+        return jsonify({'success': True, 'message': 'Message sent successfully'})
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error in parent_send_message: {str(e)}")  # Debug logging
+        return jsonify({'success': False, 'message': f'Error sending message: {str(e)}'}), 500
+
+@app.route('/parent/messages')
+@login_required
+def parent_messages():
+    if current_user.role != 'parent':
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    # Get messages sent by parent and replies received
+    sent_messages = Message.query.filter_by(sender_id=current_user.id).order_by(Message.created_at.desc()).all()
+    received_messages = Message.query.filter_by(recipient_id=current_user.id).order_by(Message.created_at.desc()).all()
+    
+    # Debug logging
+    print(f"Parent {current_user.id} - Sent messages: {len(sent_messages)}")
+    print(f"Parent {current_user.id} - Received messages: {len(received_messages)}")
+    
+    # Mark received messages as read
+    for message in received_messages:
+        if not message.is_read:
+            message.is_read = True
+    db.session.commit()
+    
+    return render_template('parent/messages.html', 
+                         sent_messages=sent_messages, 
+                         received_messages=received_messages)
+
+# Parent Report Card Routes
+@app.route('/parent/report-cards')
+@login_required
+def parent_report_cards():
+    if current_user.role != 'parent':
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    # Get parent's children
+    children = Student.query.filter_by(parent_id=current_user.id).all()
+    child_ids = [child.id for child in children]
+    
+    # Get report cards for parent's children
+    report_cards = ReportCard.query.filter(
+        ReportCard.student_id.in_(child_ids),
+        ReportCard.school_id == current_user.school_id,
+        ReportCard.status == 'sent'  # Only show sent report cards
+    ).order_by(ReportCard.created_at.desc()).all()
+    
+    # Get academic terms
+    terms = AcademicTerm.query.filter_by(school_id=current_user.school_id).order_by(AcademicTerm.start_date.desc()).all()
+    
+    return render_template('parent/report_cards.html', 
+                         report_cards=report_cards, 
+                         children=children,
+                         terms=terms)
+
+@app.route('/parent/report-cards/<int:report_id>')
+@login_required
+def parent_view_report_card(report_id):
+    if current_user.role != 'parent':
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    report_card = ReportCard.query.get_or_404(report_id)
+    
+    # Check if report card belongs to parent's child and is sent
+    if (report_card.student.parent_id != current_user.id or 
+        report_card.school_id != current_user.school_id or 
+        report_card.status != 'sent'):
+        flash('Access denied', 'error')
+        return redirect(url_for('parent_report_cards'))
+    
+    # Get subjects for the class
+    subjects = Subject.query.filter_by(class_id=report_card.class_id, school_id=current_user.school_id).all()
+    
+    return render_template('parent/view_report_card.html', 
+                         report_card=report_card, 
+                         subjects=subjects)
+
+# Parent Attendance Routes
+@app.route('/parent/attendance')
+@login_required
+def parent_attendance():
+    if current_user.role != 'parent':
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    # Get parent's children
+    children = Student.query.filter_by(parent_id=current_user.id, school_id=current_user.school_id).all()
+    
+    # Get current date
+    from datetime import date, timedelta
+    today = date.today()
+    start_date = today - timedelta(days=30)  # Last 30 days
+    
+    # Get attendance data for each child
+    children_attendance = {}
+    for child in children:
+        children_attendance[child.id] = {
+            'child': child,
+            'attendance_data': calculate_student_attendance(child.id, current_user.school_id, start_date, today),
+            'recent_attendance': Attendance.query.filter(
+                Attendance.student_id == child.id,
+                Attendance.school_id == current_user.school_id,
+                Attendance.date >= start_date
+            ).order_by(Attendance.date.desc()).limit(10).all()
+        }
+    
+    return render_template('parent/attendance.html', 
+                         children_attendance=children_attendance,
+                         today=today)
+
+@app.route('/parent/attendance/child/<int:student_id>')
+@login_required
+def parent_child_attendance(student_id):
+    if current_user.role != 'parent':
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    # Verify child belongs to parent
+    child = Student.query.filter_by(id=student_id, parent_id=current_user.id, school_id=current_user.school_id).first()
+    if not child:
+        flash('Access denied', 'error')
+        return redirect(url_for('parent_attendance'))
+    
+    # Get date range (last 30 days by default)
+    from datetime import date, timedelta
+    end_date = date.today()
+    start_date = end_date - timedelta(days=30)
+    
+    # Get attendance records
+    attendance_records = Attendance.query.filter(
+        Attendance.student_id == student_id,
+        Attendance.school_id == current_user.school_id,
+        Attendance.date >= start_date
+    ).order_by(Attendance.date.desc()).all()
+    
+    # Calculate attendance summary
+    attendance_summary = calculate_student_attendance(student_id, current_user.school_id, start_date, end_date)
+    
+    return render_template('parent/child_attendance.html', 
+                         child=child,
+                         attendance_records=attendance_records,
+                         attendance_summary=attendance_summary,
+                         start_date=start_date,
+                         end_date=end_date)
+
+@app.route('/parent/attendance/child/<int:student_id>/daily')
+@login_required
+def parent_child_daily_attendance(student_id):
+    if current_user.role != 'parent':
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    # Verify child belongs to parent
+    child = Student.query.filter_by(id=student_id, parent_id=current_user.id, school_id=current_user.school_id).first()
+    if not child:
+        flash('Access denied', 'error')
+        return redirect(url_for('parent_attendance'))
+    
+    # Get date from query parameter or use today
+    from datetime import date, timedelta
+    date_str = request.args.get('date')
+    if date_str:
+        try:
+            attendance_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+            attendance_date = date.today()
+    else:
+        attendance_date = date.today()
+    
+    # Get attendance record for the date
+    attendance_record = Attendance.query.filter_by(
+        student_id=student_id,
+        school_id=current_user.school_id,
+        date=attendance_date
+    ).first()
+    
+    # Get recent attendance (last 7 days)
+    recent_attendance = Attendance.query.filter(
+        Attendance.student_id == student_id,
+        Attendance.school_id == current_user.school_id,
+        Attendance.date >= attendance_date - timedelta(days=7)
+    ).order_by(Attendance.date.desc()).all()
+    
+    return render_template('parent/child_daily_attendance.html', 
+                         child=child,
+                         attendance_record=attendance_record,
+                         attendance_date=attendance_date,
+                         recent_attendance=recent_attendance)
+
+# Debug route to test messaging
+@app.route('/debug/messages')
+@login_required
+def debug_messages():
+    if current_user.role != 'parent':
+        return jsonify({'error': 'Access denied'}), 403
+    
+    # Get all messages for this user
+    sent_messages = Message.query.filter_by(sender_id=current_user.id).all()
+    received_messages = Message.query.filter_by(recipient_id=current_user.id).all()
+    
+    return jsonify({
+        'user_id': current_user.id,
+        'school_id': current_user.school_id,
+        'sent_count': len(sent_messages),
+        'received_count': len(received_messages),
+        'sent_messages': [{'id': m.id, 'subject': m.subject, 'created_at': m.created_at.isoformat()} for m in sent_messages],
+        'received_messages': [{'id': m.id, 'subject': m.subject, 'created_at': m.created_at.isoformat()} for m in received_messages]
+    })
+
+@app.route('/debug/test-message')
+@login_required
+def debug_test_message():
+    """Test route to create a test message from parent to teacher"""
+    if current_user.role != 'parent':
+        return jsonify({'error': 'Access denied'}), 403
+    
+    try:
+        # Get school context
+        school_id = get_school_context()
+        if not school_id:
+            return jsonify({'error': 'School context not found'}), 400
+        
+        # Get first teacher in the school
+        teacher = User.query.filter_by(role='teacher', school_id=school_id).first()
+        if not teacher:
+            return jsonify({'error': 'No teacher found in school'}), 400
+        
+        # Create test message
+        message = Message(
+            sender_id=current_user.id,
+            recipient_id=teacher.id,
+            subject='Test Message',
+            content='This is a test message from parent to teacher',
+            school_id=school_id
+        )
+        
+        db.session.add(message)
+        db.session.flush()
+        
+        # Create notification
+        notification = Notification(
+            user_id=teacher.id,
+            message_id=message.id,
+            type='message_received',
+            title=f'Test Message from {current_user.first_name} {current_user.last_name}',
+            content='Subject: Test Message',
+            school_id=school_id
+        )
+        db.session.add(notification)
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Test message created successfully',
+            'teacher_id': teacher.id,
+            'teacher_name': f"{teacher.first_name} {teacher.last_name}",
+            'message_id': message.id
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Error creating test message: {str(e)}'}), 500
+
+@app.route('/debug/teacher-messages')
+@login_required
+def debug_teacher_messages():
+    """Debug route for teachers to check their messages"""
+    if current_user.role != 'teacher':
+        return jsonify({'error': 'Access denied'}), 403
+    
+    try:
+        # Get messages received by teacher
+        received_messages = Message.query.filter_by(recipient_id=current_user.id).all()
+        
+        # Get messages sent by teacher
+        sent_messages = Message.query.filter_by(sender_id=current_user.id).all()
+        
+        message_data = []
+        for message in received_messages:
+            message_data.append({
+                'id': message.id,
+                'sender_id': message.sender_id,
+                'sender_name': f"{message.sender.first_name} {message.sender.last_name}" if message.sender else "Unknown",
+                'subject': message.subject,
+                'content': message.content[:100] + '...' if len(message.content) > 100 else message.content,
+                'is_read': message.is_read,
+                'created_at': message.created_at.isoformat(),
+                'school_id': message.school_id
+            })
+        
+        return jsonify({
+            'teacher_id': current_user.id,
+            'school_id': current_user.school_id,
+            'received_count': len(received_messages),
+            'sent_count': len(sent_messages),
+            'received_messages': message_data
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'Error getting teacher messages: {str(e)}'}), 500
+
+@app.route('/debug/all-messages')
+@login_required
+def debug_all_messages():
+    """Debug route to see all messages in the database"""
+    if current_user.role not in ['admin', 'school_admin']:
+        return jsonify({'error': 'Access denied'}), 403
+    
+    try:
+        # Get all messages
+        messages = Message.query.all()
+        message_data = []
+        
+        for message in messages:
+            message_data.append({
+                'id': message.id,
+                'sender_id': message.sender_id,
+                'recipient_id': message.recipient_id,
+                'subject': message.subject,
+                'content': message.content[:100] + '...' if len(message.content) > 100 else message.content,
+                'is_read': message.is_read,
+                'school_id': message.school_id,
+                'created_at': message.created_at.isoformat(),
+                'sender_name': f"{message.sender.first_name} {message.sender.last_name}" if message.sender else "Unknown",
+                'recipient_name': f"{message.recipient.first_name} {message.recipient.last_name}" if message.recipient else "Unknown",
+                'sender_role': message.sender.role if message.sender else "Unknown",
+                'recipient_role': message.recipient.role if message.recipient else "Unknown"
+            })
+        
+        return jsonify({
+            'total_messages': len(messages),
+            'messages': message_data
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'Error getting all messages: {str(e)}'}), 500
+
+@app.route('/admin/cleanup-duplicates')
+@login_required
+def cleanup_duplicates():
+    """Clean up duplicate users and data"""
+    if current_user.role not in ['admin', 'school_admin', 'super_admin']:
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    try:
+        # Find duplicate emails
+        from sqlalchemy import func
+        duplicate_emails = db.session.query(User.email, func.count(User.email)).group_by(User.email).having(func.count(User.email) > 1).all()
+        
+        cleaned_count = 0
+        for email, count in duplicate_emails:
+            # Keep the first user, delete the rest
+            users_with_email = User.query.filter_by(email=email).order_by(User.created_at.asc()).all()
+            for user in users_with_email[1:]:  # Skip the first one
+                db.session.delete(user)
+                cleaned_count += 1
+        
+        # Find duplicate usernames
+        duplicate_usernames = db.session.query(User.username, func.count(User.username)).group_by(User.username).having(func.count(User.username) > 1).all()
+        
+        for username, count in duplicate_usernames:
+            # Keep the first user, delete the rest
+            users_with_username = User.query.filter_by(username=username).order_by(User.created_at.asc()).all()
+            for user in users_with_username[1:]:  # Skip the first one
+                db.session.delete(user)
+                cleaned_count += 1
+        
+        db.session.commit()
+        
+        flash(f'✅ Cleanup completed! Removed {cleaned_count} duplicate users.', 'success')
+        return redirect(url_for('admin_dashboard'))
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'❌ Error during cleanup: {str(e)}', 'error')
+        return redirect(url_for('admin_dashboard'))
 
 # Additional routes for admin functionality
 @app.route('/admin/teachers')
@@ -2049,12 +3137,18 @@ def cleanup_old_backups():
     except Exception as e:
         print(f"Error cleaning up old backups: {e}")
 
-def create_notification(user_id, notification_type, title, content, message_id=None):
+def create_notification(user_id, notification_type, title, content, message_id=None, school_id=None):
     """Create a notification for a user"""
     try:
+        # Get school_id from user if not provided
+        if not school_id:
+            user = User.query.get(user_id)
+            school_id = user.school_id if user else None
+        
         notification = Notification(
             user_id=user_id,
             message_id=message_id,
+            school_id=school_id,
             type=notification_type,
             title=title,
             content=content
@@ -2237,12 +3331,35 @@ def manage_assignments():
         print(f"DEBUG: Assignment: {assignment.title} (ID: {assignment.id})")
     return render_template('teacher/assignments.html', assignments=assignments)
 
-@app.route('/teacher/class/create')
+@app.route('/teacher/class/create', methods=['GET', 'POST'])
 @login_required
 def create_class():
     if current_user.role != 'teacher':
         flash('Access denied', 'error')
         return redirect(url_for('index'))
+    
+    if request.method == 'POST':
+        name = request.form['class_name']
+        grade_level = request.form['grade_level']
+        description = request.form.get('description', '')
+        
+        # Validate required fields
+        if not name or not grade_level:
+            flash('Class name and grade level are required', 'error')
+            return redirect(url_for('create_class'))
+        
+        # Create class
+        class_obj = Class(
+            name=name,
+            grade_level=grade_level,
+            teacher_id=current_user.id,
+            school_id=current_user.school_id
+        )
+        db.session.add(class_obj)
+        db.session.commit()
+        
+        flash('Class created successfully!', 'success')
+        return redirect(url_for('teacher_dashboard'))
     
     return render_template('teacher/create_class.html')
 
@@ -2254,6 +3371,347 @@ def create_assignment():
         return redirect(url_for('index'))
     
     return render_template('teacher/create_assignment.html')
+
+# Teacher Report Card Routes
+@app.route('/teacher/report-cards')
+@login_required
+def teacher_report_cards():
+    if current_user.role != 'teacher':
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    # Get teacher's classes
+    classes = Class.query.filter_by(teacher_id=current_user.id).all()
+    class_ids = [cls.id for cls in classes]
+    
+    # Get report cards for teacher's classes
+    report_cards = ReportCard.query.filter(
+        ReportCard.class_id.in_(class_ids),
+        ReportCard.school_id == current_user.school_id
+    ).order_by(ReportCard.created_at.desc()).all()
+    
+    # Get academic terms
+    terms = AcademicTerm.query.filter_by(school_id=current_user.school_id).order_by(AcademicTerm.start_date.desc()).all()
+    
+    return render_template('teacher/report_cards.html', 
+                         report_cards=report_cards, 
+                         classes=classes,
+                         terms=terms)
+
+@app.route('/teacher/report-cards/create', methods=['GET', 'POST'])
+@login_required
+def teacher_create_report_card():
+    if current_user.role != 'teacher':
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    if request.method == 'POST':
+        student_id = request.form.get('student_id')
+        term_id = request.form.get('term_id')
+        
+        if not student_id or not term_id:
+            flash('Please select a student and term', 'error')
+            return redirect(url_for('teacher_create_report_card'))
+        
+        # Check if report card already exists
+        existing_report = ReportCard.query.filter_by(
+            student_id=student_id,
+            term_id=term_id,
+            school_id=current_user.school_id
+        ).first()
+        
+        if existing_report:
+            flash('Report card already exists for this student and term', 'error')
+            return redirect(url_for('teacher_create_report_card'))
+        
+        # Get student and class info
+        student = Student.query.get(student_id)
+        if not student or student.class_id not in [cls.id for cls in Class.query.filter_by(teacher_id=current_user.id).all()]:
+            flash('Invalid student selection', 'error')
+            return redirect(url_for('teacher_create_report_card'))
+        
+        # Create report card
+        report_card = ReportCard(
+            student_id=student_id,
+            class_id=student.class_id,
+            teacher_id=current_user.id,
+            school_id=current_user.school_id,
+            term_id=term_id,
+            status='draft'
+        )
+        
+        db.session.add(report_card)
+        db.session.flush()  # Get the ID
+        
+        # Get subjects for the class
+        subjects = Subject.query.filter_by(class_id=student.class_id, school_id=current_user.school_id).all()
+        
+        # Create subject grades
+        for subject in subjects:
+            subject_grade = SubjectGrade(
+                report_card_id=report_card.id,
+                subject_id=subject.id,
+                school_id=current_user.school_id
+            )
+            db.session.add(subject_grade)
+        
+        db.session.commit()
+        
+        flash('Report card created successfully', 'success')
+        return redirect(url_for('teacher_edit_report_card', report_id=report_card.id))
+    
+    # Get teacher's classes and students
+    classes = Class.query.filter_by(teacher_id=current_user.id).all()
+    students = []
+    for cls in classes:
+        class_students = Student.query.filter_by(class_id=cls.id, school_id=current_user.school_id).all()
+        students.extend(class_students)
+    
+    # Get academic terms
+    terms = AcademicTerm.query.filter_by(school_id=current_user.school_id).order_by(AcademicTerm.start_date.desc()).all()
+    
+    return render_template('teacher/create_report_card.html', 
+                         students=students, 
+                         terms=terms)
+
+@app.route('/teacher/report-cards/<int:report_id>/edit', methods=['GET', 'POST'])
+@login_required
+def teacher_edit_report_card(report_id):
+    if current_user.role != 'teacher':
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    report_card = ReportCard.query.get_or_404(report_id)
+    
+    # Check if teacher owns this report card
+    if report_card.teacher_id != current_user.id or report_card.school_id != current_user.school_id:
+        flash('Access denied', 'error')
+        return redirect(url_for('teacher_report_cards'))
+    
+    if request.method == 'POST':
+        # Update attendance
+        report_card.days_present = int(request.form.get('days_present', 0))
+        report_card.days_absent = int(request.form.get('days_absent', 0))
+        report_card.total_days = report_card.days_present + report_card.days_absent
+        if report_card.total_days > 0:
+            report_card.attendance_percentage = (report_card.days_present / report_card.total_days) * 100
+        
+        # Update conduct grades
+        report_card.conduct_grade = request.form.get('conduct_grade')
+        report_card.punctuality = request.form.get('punctuality')
+        report_card.neatness = request.form.get('neatness')
+        report_card.politeness = request.form.get('politeness')
+        
+        # Update teacher comments
+        report_card.teacher_comment = request.form.get('teacher_comment')
+        report_card.teacher_recommendation = request.form.get('teacher_recommendation')
+        
+        # Update subject grades
+        for subject_grade in report_card.subject_grades:
+            subject_id = str(subject_grade.subject_id)
+            ca_score = request.form.get(f'ca_{subject_id}', 0)
+            exam_score = request.form.get(f'exam_{subject_id}', 0)
+            subject_comment = request.form.get(f'comment_{subject_id}', '')
+            
+            subject_grade.ca_score = float(ca_score) if ca_score else 0
+            subject_grade.exam_score = float(exam_score) if exam_score else 0
+            subject_grade.total_score = subject_grade.ca_score + subject_grade.exam_score
+            subject_grade.percentage = (subject_grade.total_score / subject_grade.total_max) * 100
+            subject_grade.grade = calculate_grade(subject_grade.percentage)
+            subject_grade.teacher_comment = subject_comment
+        
+        # Calculate total scores
+        total_score = sum(sg.total_score for sg in report_card.subject_grades)
+        total_possible = sum(sg.total_max for sg in report_card.subject_grades)
+        report_card.total_score = total_score
+        report_card.total_possible = total_possible
+        report_card.percentage = (total_score / total_possible * 100) if total_possible > 0 else 0
+        
+        # Calculate position in class
+        position, total_students = calculate_position_in_class(
+            report_card.student_id, 
+            report_card.class_id, 
+            report_card.term_id, 
+            report_card.school_id
+        )
+        report_card.position_in_class = position
+        report_card.total_students = total_students
+        
+        # Update status
+        action = request.form.get('action')
+        if action == 'submit':
+            report_card.status = 'submitted'
+            flash('Report card submitted for review', 'success')
+        else:
+            report_card.status = 'draft'
+            flash('Report card saved as draft', 'success')
+        
+        db.session.commit()
+        return redirect(url_for('teacher_edit_report_card', report_id=report_id))
+    
+    # Get subjects for the class
+    subjects = Subject.query.filter_by(class_id=report_card.class_id, school_id=current_user.school_id).all()
+    
+    return render_template('teacher/edit_report_card.html', 
+                         report_card=report_card, 
+                         subjects=subjects)
+
+# Teacher Attendance Routes
+@app.route('/teacher/attendance')
+@login_required
+def teacher_attendance():
+    if current_user.role != 'teacher':
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    # Get teacher's classes
+    classes = Class.query.filter_by(teacher_id=current_user.id, school_id=current_user.school_id).all()
+    
+    # Get current date and month
+    from datetime import date
+    today = date.today()
+    current_month = today.month
+    current_year = today.year
+    
+    # Get attendance for current month
+    attendance_data = {}
+    for cls in classes:
+        students = Student.query.filter_by(class_id=cls.id, school_id=current_user.school_id).all()
+        for student in students:
+            attendance_data[student.id] = calculate_student_attendance(
+                student.id, 
+                current_user.school_id, 
+                date(current_year, current_month, 1),
+                today
+            )
+    
+    return render_template('teacher/attendance.html', 
+                         classes=classes, 
+                         attendance_data=attendance_data,
+                         current_month=current_month,
+                         current_year=current_year)
+
+@app.route('/teacher/attendance/mark', methods=['GET', 'POST'])
+@login_required
+def teacher_mark_attendance():
+    if current_user.role != 'teacher':
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    if request.method == 'POST':
+        date_str = request.form.get('date')
+        class_id = request.form.get('class_id')
+        
+        if not date_str or not class_id:
+            flash('Please select a date and class', 'error')
+            return redirect(url_for('teacher_mark_attendance'))
+        
+        # Parse date
+        from datetime import datetime
+        attendance_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        
+        # Get students in the class
+        students = Student.query.filter_by(class_id=class_id, school_id=current_user.school_id).all()
+        
+        # Process attendance for each student
+        for student in students:
+            status = request.form.get(f'status_{student.id}')
+            notes = request.form.get(f'notes_{student.id}', '')
+            
+            if status:
+                # Check if attendance already exists for this date
+                existing = Attendance.query.filter_by(
+                    student_id=student.id,
+                    date=attendance_date,
+                    school_id=current_user.school_id
+                ).first()
+                
+                if existing:
+                    # Update existing record
+                    existing.status = status
+                    existing.notes = notes
+                    existing.marked_by = current_user.id
+                else:
+                    # Create new record
+                    attendance = Attendance(
+                        student_id=student.id,
+                        class_id=class_id,
+                        school_id=current_user.school_id,
+                        date=attendance_date,
+                        status=status,
+                        notes=notes,
+                        marked_by=current_user.id
+                    )
+                    db.session.add(attendance)
+        
+        db.session.commit()
+        
+        # Update attendance summaries for the month
+        for student in students:
+            update_attendance_summary(student.id, current_user.school_id, attendance_date.month, attendance_date.year)
+        
+        flash('Attendance marked successfully', 'success')
+        return redirect(url_for('teacher_attendance'))
+    
+    # Get teacher's classes
+    classes = Class.query.filter_by(teacher_id=current_user.id, school_id=current_user.school_id).all()
+    
+    # Get current date
+    from datetime import date
+    today = date.today()
+    
+    return render_template('teacher/mark_attendance.html', classes=classes, today=today)
+
+@app.route('/teacher/attendance/class/<int:class_id>')
+@login_required
+def teacher_class_attendance(class_id):
+    if current_user.role != 'teacher':
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    # Verify teacher owns this class
+    class_obj = Class.query.filter_by(id=class_id, teacher_id=current_user.id, school_id=current_user.school_id).first()
+    if not class_obj:
+        flash('Access denied', 'error')
+        return redirect(url_for('teacher_attendance'))
+    
+    # Get students in the class
+    students = Student.query.filter_by(class_id=class_id, school_id=current_user.school_id).all()
+    
+    # Get attendance data for each student
+    attendance_data = {}
+    for student in students:
+        attendance_data[student.id] = calculate_student_attendance(student.id, current_user.school_id)
+    
+    return render_template('teacher/class_attendance.html', 
+                         class_obj=class_obj, 
+                         students=students,
+                         attendance_data=attendance_data)
+
+@app.route('/api/teacher/class/<int:class_id>/students')
+@login_required
+def api_teacher_class_students(class_id):
+    if current_user.role != 'teacher':
+        return jsonify({'error': 'Access denied'}), 403
+    
+    # Verify teacher owns this class
+    class_obj = Class.query.filter_by(id=class_id, teacher_id=current_user.id, school_id=current_user.school_id).first()
+    if not class_obj:
+        return jsonify({'error': 'Class not found'}), 404
+    
+    # Get students in the class
+    students = Student.query.filter_by(class_id=class_id, school_id=current_user.school_id).all()
+    
+    students_data = []
+    for student in students:
+        students_data.append({
+            'id': student.id,
+            'first_name': student.first_name,
+            'last_name': student.last_name,
+            'student_id': student.student_id
+        })
+    
+    return jsonify({'success': True, 'students': students_data})
 
 # Parent routes
 @app.route('/parent/child/<int:student_id>/progress')
@@ -2299,6 +3757,7 @@ def mark_assignment(assignment_id):
         record = AssignmentRecord(
             student_id=student_id,
             assignment_id=assignment_id,
+            school_id=current_user.school_id,
             completed=completed,
             grade=grade if grade else None,
             feedback=feedback if feedback else None
@@ -2749,7 +4208,8 @@ def create_subject():
             name=name,
             class_id=class_id,
             description=description,
-            teacher_id=current_user.id
+            teacher_id=current_user.id,
+            school_id=current_user.school_id
         )
         db.session.add(subject)
         db.session.commit()
@@ -2784,7 +4244,8 @@ def teacher_create_assignment():
             description=description,
             subject_id=subject_id,
             due_date=due_date,
-            teacher_id=current_user.id
+            teacher_id=current_user.id,
+            school_id=current_user.school_id
         )
         db.session.add(assignment)
         db.session.commit()
@@ -2797,7 +4258,8 @@ def teacher_create_assignment():
                 user_id=admin_user.id,
                 notification_type='assignment_created',
                 title='New Assignment Created',
-                content=f'Teacher {current_user.first_name} {current_user.last_name} created a new assignment: "{title}"'
+                content=f'Teacher {current_user.first_name} {current_user.last_name} created a new assignment: "{title}"',
+                school_id=current_user.school_id
             )
         
         flash('Assignment created successfully!', 'success')
@@ -2858,6 +4320,7 @@ def process_assignment_assignment(assignment_id):
             assignment_record = AssignmentRecord(
                 student_id=student_id,
                 assignment_id=assignment_id,
+                school_id=current_user.school_id,
                 completed=False
             )
             db.session.add(assignment_record)
@@ -3073,7 +4536,8 @@ def create_homework_record():
             week=week,
             description=description,
             class_id=class_id,
-            teacher_id=current_user.id
+            teacher_id=current_user.id,
+            school_id=current_user.school_id
         )
         
         try:
@@ -3170,6 +4634,7 @@ def admin_comment_homework_record(record_id):
     comment = HomeworkComment(
         homework_record_id=record_id,
         admin_id=current_user.id,
+        school_id=current_user.school_id,
         comment=comment_text
     )
     
@@ -3251,21 +4716,36 @@ def admin_send_message():
             return redirect(url_for('admin_send_message'))
         
         try:
+            # Get school context
+            school_id = get_school_context()
+            if not school_id:
+                flash('School context not found', 'error')
+                return redirect(url_for('admin_send_message'))
+            
             if recipient_type == 'all':
                 # Send to all teachers in the same school
-                school_id = get_school_context()
-                if school_id:
-                    teachers = User.query.filter_by(role='teacher', school_id=school_id).all()
-                else:
-                    teachers = User.query.filter_by(role='teacher').all()
+                teachers = User.query.filter_by(role='teacher', school_id=school_id).all()
                 for teacher in teachers:
                     message = Message(
                         sender_id=current_user.id,
                         recipient_id=teacher.id,
                         subject=subject,
-                        content=content
+                        content=content,
+                        school_id=school_id
                     )
                     db.session.add(message)
+                    
+                    # Create notification for teacher
+                    notification = Notification(
+                        user_id=teacher.id,
+                        message_id=None,  # Will be set after flush
+                        type='message_received',
+                        title=f'New Message from {current_user.first_name} {current_user.last_name}',
+                        content=f'Subject: {subject}',
+                        school_id=school_id
+                    )
+                    db.session.add(notification)
+                
                 flash(f'Message sent to all {len(teachers)} teachers', 'success')
             else:
                 # Send to specific teacher
@@ -3273,13 +4753,33 @@ def admin_send_message():
                     flash('Please select a teacher', 'error')
                     return redirect(url_for('admin_send_message'))
                 
+                # Verify teacher exists and is in the same school
+                teacher = User.query.filter_by(id=teacher_id, role='teacher', school_id=school_id).first()
+                if not teacher:
+                    flash('Invalid teacher selected', 'error')
+                    return redirect(url_for('admin_send_message'))
+                
                 message = Message(
                     sender_id=current_user.id,
                     recipient_id=teacher_id,
                     subject=subject,
-                    content=content
+                    content=content,
+                    school_id=school_id
                 )
                 db.session.add(message)
+                db.session.flush()  # Get message ID
+                
+                # Create notification for teacher
+                notification = Notification(
+                    user_id=teacher_id,
+                    message_id=message.id,
+                    type='message_received',
+                    title=f'New Message from {current_user.first_name} {current_user.last_name}',
+                    content=f'Subject: {subject}',
+                    school_id=school_id
+                )
+                db.session.add(notification)
+                
                 flash('Message sent successfully', 'success')
             
             db.session.commit()
@@ -3296,6 +4796,419 @@ def admin_send_message():
         teachers = User.query.filter_by(role='teacher').all()
     return render_template('admin/send_message.html', teachers=teachers)
 
+@app.route('/admin/messages')
+@login_required
+def admin_messages():
+    if current_user.role not in ['admin', 'school_admin']:
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    # Get messages sent by admin and replies received
+    sent_messages = Message.query.filter_by(sender_id=current_user.id).order_by(Message.created_at.desc()).all()
+    received_messages = Message.query.filter_by(recipient_id=current_user.id).order_by(Message.created_at.desc()).all()
+    
+    # Mark received messages as read
+    for message in received_messages:
+        if not message.is_read:
+            message.is_read = True
+    db.session.commit()
+    
+    return render_template('admin/messages.html', 
+                         sent_messages=sent_messages, 
+                         received_messages=received_messages)
+
+@app.route('/admin/send-message-to-parent', methods=['GET', 'POST'])
+@login_required
+def admin_send_message_to_parent():
+    if current_user.role not in ['admin', 'school_admin']:
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    if request.method == 'POST':
+        subject = request.form.get('subject')
+        content = request.form.get('content')
+        parent_id = request.form.get('parent_id')
+        
+        if not all([subject, content, parent_id]):
+            flash('All fields are required', 'error')
+            return redirect(url_for('admin_send_message_to_parent'))
+        
+        try:
+            # Get school context
+            school_id = get_school_context()
+            if not school_id:
+                flash('School context not found', 'error')
+                return redirect(url_for('admin_send_message_to_parent'))
+            
+            # Verify parent exists and is in the same school
+            parent = User.query.filter_by(id=parent_id, role='parent', school_id=school_id).first()
+            if not parent:
+                flash('Invalid parent selected', 'error')
+                return redirect(url_for('admin_send_message_to_parent'))
+            
+            # Create message
+            message = Message(
+                sender_id=current_user.id,
+                recipient_id=parent_id,
+                subject=subject,
+                content=content,
+                school_id=school_id
+            )
+            db.session.add(message)
+            db.session.flush()  # Get message ID
+            
+            # Create notification for parent
+            notification = Notification(
+                user_id=parent_id,
+                message_id=message.id,
+                type='message_received',
+                title=f'New Message from {current_user.first_name} {current_user.last_name}',
+                content=f'Subject: {subject}',
+                school_id=school_id
+            )
+            db.session.add(notification)
+            
+            db.session.commit()
+            flash('Message sent to parent successfully', 'success')
+            return redirect(url_for('admin_messages'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error sending message: {str(e)}', 'error')
+    
+    # Get all parents for the form
+    school_id = get_school_context()
+    parents = []
+    if school_id:
+        parents = User.query.filter_by(role='parent', school_id=school_id).all()
+    
+    return render_template('admin/send_message_to_parent.html', parents=parents)
+
+# Admin Report Card Routes
+@app.route('/admin/report-cards')
+@login_required
+def admin_report_cards():
+    if current_user.role not in ['admin', 'school_admin']:
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    # Get report cards for the school
+    report_cards = ReportCard.query.filter_by(
+        school_id=current_user.school_id
+    ).order_by(ReportCard.created_at.desc()).all()
+    
+    # Get academic terms
+    terms = AcademicTerm.query.filter_by(school_id=current_user.school_id).order_by(AcademicTerm.start_date.desc()).all()
+    
+    return render_template('admin/report_cards.html', 
+                         report_cards=report_cards, 
+                         terms=terms)
+
+@app.route('/admin/report-cards/<int:report_id>/review', methods=['GET', 'POST'])
+@login_required
+def admin_review_report_card(report_id):
+    if current_user.role not in ['admin', 'school_admin']:
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    report_card = ReportCard.query.get_or_404(report_id)
+    
+    # Check if report card belongs to admin's school
+    if report_card.school_id != current_user.school_id:
+        flash('Access denied', 'error')
+        return redirect(url_for('admin_report_cards'))
+    
+    if request.method == 'POST':
+        # Update admin comment
+        report_card.admin_comment = request.form.get('admin_comment')
+        
+        # Update approval status
+        action = request.form.get('action')
+        if action == 'approve':
+            report_card.admin_approved = True
+            report_card.admin_approved_by = current_user.id
+            report_card.admin_approved_at = datetime.utcnow()
+            report_card.status = 'approved'
+            flash('Report card approved successfully', 'success')
+        elif action == 'reject':
+            report_card.admin_approved = False
+            report_card.admin_approved_by = None
+            report_card.admin_approved_at = None
+            report_card.status = 'draft'
+            flash('Report card rejected and returned to teacher', 'success')
+        
+        db.session.commit()
+        return redirect(url_for('admin_review_report_card', report_id=report_id))
+    
+    # Get subjects for the class
+    subjects = Subject.query.filter_by(class_id=report_card.class_id, school_id=current_user.school_id).all()
+    
+    return render_template('admin/review_report_card.html', 
+                         report_card=report_card, 
+                         subjects=subjects)
+
+@app.route('/admin/report-cards/<int:report_id>/send', methods=['POST'])
+@login_required
+def admin_send_report_card(report_id):
+    if current_user.role not in ['admin', 'school_admin']:
+        return jsonify({'error': 'Access denied'}), 403
+    
+    report_card = ReportCard.query.get_or_404(report_id)
+    
+    # Check if report card belongs to admin's school and is approved
+    if report_card.school_id != current_user.school_id or not report_card.admin_approved:
+        return jsonify({'error': 'Report card not approved or access denied'}), 403
+    
+    # Update status to sent
+    report_card.status = 'sent'
+    db.session.commit()
+    
+    # Create notification for parent
+    if report_card.student.parent_id:
+        create_notification(
+            user_id=report_card.student.parent_id,
+            notification_type='report_card_available',
+            title='New Report Card Available',
+            content=f'Report card for {report_card.student.first_name} {report_card.student.last_name} ({report_card.academic_term.name}) is now available.',
+            school_id=current_user.school_id
+        )
+    
+    return jsonify({'success': True, 'message': 'Report card sent to parent successfully'})
+
+# Admin Attendance Routes
+@app.route('/admin/attendance')
+@login_required
+def admin_attendance():
+    if current_user.role not in ['admin', 'school_admin']:
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    # Get all classes in the school
+    classes = Class.query.filter_by(school_id=current_user.school_id).all()
+    
+    # Get current date
+    from datetime import date
+    today = date.today()
+    
+    # Get attendance summary for all students
+    attendance_summaries = AttendanceSummary.query.filter_by(
+        school_id=current_user.school_id,
+        month=today.month,
+        year=today.year
+    ).all()
+    
+    return render_template('admin/attendance.html', 
+                         classes=classes, 
+                         attendance_summaries=attendance_summaries,
+                         current_month=today.month,
+                         current_year=today.year)
+
+@app.route('/admin/attendance/daily')
+@login_required
+def admin_daily_attendance():
+    if current_user.role not in ['admin', 'school_admin']:
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    # Get date from query parameter or use today
+    from datetime import date, timedelta
+    date_str = request.args.get('date')
+    if date_str:
+        try:
+            attendance_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+            attendance_date = date.today()
+    else:
+        attendance_date = date.today()
+    
+    # Get all classes
+    classes = Class.query.filter_by(school_id=current_user.school_id).all()
+    
+    # Get attendance records for the date
+    attendance_records = Attendance.query.filter_by(
+        school_id=current_user.school_id,
+        date=attendance_date
+    ).all()
+    
+    # Organize by class
+    class_attendance = {}
+    for cls in classes:
+        class_attendance[cls.id] = {
+            'class': cls,
+            'students': [],
+            'present': 0,
+            'absent': 0,
+            'late': 0,
+            'excused': 0
+        }
+        
+        # Get students in this class
+        students = Student.query.filter_by(class_id=cls.id, school_id=current_user.school_id).all()
+        for student in students:
+            # Find attendance record for this student
+            record = next((r for r in attendance_records if r.student_id == student.id), None)
+            status = record.status if record else 'not_marked'
+            
+            class_attendance[cls.id]['students'].append({
+                'student': student,
+                'status': status,
+                'notes': record.notes if record else '',
+                'marked_by': record.teacher if record else None
+            })
+            
+            # Count by status
+            if status == 'present':
+                class_attendance[cls.id]['present'] += 1
+            elif status == 'absent':
+                class_attendance[cls.id]['absent'] += 1
+            elif status == 'late':
+                class_attendance[cls.id]['late'] += 1
+            elif status == 'excused':
+                class_attendance[cls.id]['excused'] += 1
+    
+    return render_template('admin/daily_attendance.html', 
+                         class_attendance=class_attendance,
+                         attendance_date=attendance_date)
+
+@app.route('/admin/attendance/student/<int:student_id>')
+@login_required
+def admin_student_attendance(student_id):
+    if current_user.role not in ['admin', 'school_admin']:
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    # Get student
+    student = Student.query.filter_by(id=student_id, school_id=current_user.school_id).first()
+    if not student:
+        flash('Student not found', 'error')
+        return redirect(url_for('admin_attendance'))
+    
+    # Get attendance records for the student
+    from datetime import date, timedelta
+    end_date = date.today()
+    start_date = end_date - timedelta(days=30)  # Last 30 days
+    
+    attendance_records = Attendance.query.filter(
+        Attendance.student_id == student_id,
+        Attendance.school_id == current_user.school_id,
+        Attendance.date >= start_date,
+        Attendance.date <= end_date
+    ).order_by(Attendance.date.desc()).all()
+    
+    # Calculate summary
+    attendance_summary = calculate_student_attendance(student_id, current_user.school_id, start_date, end_date)
+    
+    return render_template('admin/student_attendance.html', 
+                         student=student,
+                         attendance_records=attendance_records,
+                         attendance_summary=attendance_summary)
+
+@app.route('/admin/attendance/class/<int:class_id>')
+@login_required
+def admin_class_attendance(class_id):
+    if current_user.role not in ['admin', 'school_admin']:
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    # Get class
+    class_obj = Class.query.filter_by(id=class_id, school_id=current_user.school_id).first()
+    if not class_obj:
+        flash('Class not found', 'error')
+        return redirect(url_for('admin_attendance'))
+    
+    # Get students in the class
+    students = Student.query.filter_by(class_id=class_id, school_id=current_user.school_id).all()
+    
+    # Get date range (last 30 days by default)
+    from datetime import date, timedelta
+    end_date = date.today()
+    start_date = end_date - timedelta(days=30)
+    
+    # Get attendance data for each student
+    attendance_data = {}
+    for student in students:
+        attendance_data[student.id] = calculate_student_attendance(student.id, current_user.school_id, start_date, end_date)
+    
+    # Get recent attendance records for the class
+    recent_attendance = Attendance.query.filter(
+        Attendance.class_id == class_id,
+        Attendance.school_id == current_user.school_id,
+        Attendance.date >= start_date
+    ).order_by(Attendance.date.desc()).limit(50).all()
+    
+    return render_template('admin/class_attendance.html', 
+                         class_obj=class_obj,
+                         students=students,
+                         attendance_data=attendance_data,
+                         recent_attendance=recent_attendance,
+                         start_date=start_date,
+                         end_date=end_date)
+
+@app.route('/admin/attendance/class/<int:class_id>/daily')
+@login_required
+def admin_class_daily_attendance(class_id):
+    if current_user.role not in ['admin', 'school_admin']:
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    # Get class
+    class_obj = Class.query.filter_by(id=class_id, school_id=current_user.school_id).first()
+    if not class_obj:
+        flash('Class not found', 'error')
+        return redirect(url_for('admin_attendance'))
+    
+    # Get date from query parameter or use today
+    from datetime import date, timedelta
+    date_str = request.args.get('date')
+    if date_str:
+        try:
+            attendance_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+            attendance_date = date.today()
+    else:
+        attendance_date = date.today()
+    
+    # Get students in the class
+    students = Student.query.filter_by(class_id=class_id, school_id=current_user.school_id).all()
+    
+    # Get attendance records for the date
+    attendance_records = Attendance.query.filter_by(
+        class_id=class_id,
+        school_id=current_user.school_id,
+        date=attendance_date
+    ).all()
+    
+    # Organize attendance data
+    student_attendance = {}
+    for student in students:
+        record = next((r for r in attendance_records if r.student_id == student.id), None)
+        student_attendance[student.id] = {
+            'student': student,
+            'status': record.status if record else 'not_marked',
+            'notes': record.notes if record else '',
+            'marked_by': record.teacher if record else None,
+            'record': record
+        }
+    
+    # Calculate class statistics for the day
+    present_count = len([s for s in student_attendance.values() if s['status'] == 'present'])
+    absent_count = len([s for s in student_attendance.values() if s['status'] == 'absent'])
+    late_count = len([s for s in student_attendance.values() if s['status'] == 'late'])
+    excused_count = len([s for s in student_attendance.values() if s['status'] == 'excused'])
+    total_students = len(students)
+    attendance_percentage = ((present_count + late_count) / total_students * 100) if total_students > 0 else 0
+    
+    return render_template('admin/class_daily_attendance.html', 
+                         class_obj=class_obj,
+                         student_attendance=student_attendance,
+                         attendance_date=attendance_date,
+                         present_count=present_count,
+                         absent_count=absent_count,
+                         late_count=late_count,
+                         excused_count=excused_count,
+                         total_students=total_students,
+                         attendance_percentage=attendance_percentage)
+
 @app.route('/teacher/messages')
 @login_required
 def teacher_messages():
@@ -3303,8 +5216,25 @@ def teacher_messages():
         flash('Access denied', 'error')
         return redirect(url_for('index'))
     
-    messages = Message.query.filter_by(recipient_id=current_user.id).order_by(Message.created_at.desc()).all()
-    return render_template('teacher/messages.html', messages=messages)
+    # Get messages received by teacher
+    received_messages = Message.query.filter_by(recipient_id=current_user.id).order_by(Message.created_at.desc()).all()
+    
+    # Get messages sent by teacher (replies)
+    sent_messages = Message.query.filter_by(sender_id=current_user.id).order_by(Message.created_at.desc()).all()
+    
+    # Get notifications for teacher
+    notifications = Notification.query.filter_by(user_id=current_user.id).order_by(Notification.created_at.desc()).all()
+    
+    # Mark received messages as read
+    for message in received_messages:
+        if not message.is_read:
+            message.is_read = True
+    db.session.commit()
+    
+    return render_template('teacher/messages.html', 
+                         received_messages=received_messages, 
+                         sent_messages=sent_messages,
+                         notifications=notifications)
 
 @app.route('/teacher/message/<int:message_id>/read', methods=['POST'])
 @login_required
@@ -3320,6 +5250,20 @@ def mark_message_read(message_id):
     
     return jsonify({'error': 'Message not found'}), 404
 
+@app.route('/teacher/notification/<int:notification_id>/read', methods=['POST'])
+@login_required
+def teacher_mark_notification_read(notification_id):
+    if current_user.role != 'teacher':
+        return jsonify({'error': 'Access denied'}), 403
+    
+    notification = Notification.query.filter_by(id=notification_id, user_id=current_user.id).first()
+    if notification:
+        notification.is_read = True
+        db.session.commit()
+        return jsonify({'success': True})
+    
+    return jsonify({'error': 'Notification not found'}), 404
+
 @app.route('/api/teacher/notifications')
 @login_required
 def teacher_notifications():
@@ -3327,9 +5271,21 @@ def teacher_notifications():
         return jsonify({'error': 'Access denied'}), 403
     
     unread_messages = Message.query.filter_by(recipient_id=current_user.id, is_read=False).count()
+    
+    # Get recent homework comments
     recent_homework_comments = HomeworkComment.query.join(HomeworkRecord).filter(
         HomeworkRecord.teacher_id == current_user.id
     ).order_by(HomeworkComment.created_at.desc()).limit(5).all()
+    
+    # Get recent lesson comments
+    recent_lesson_comments = LessonComment.query.join(Lesson).filter(
+        Lesson.teacher_id == current_user.id
+    ).order_by(LessonComment.created_at.desc()).limit(5).all()
+    
+    # Get recent notifications
+    recent_notifications = Notification.query.filter_by(
+        user_id=current_user.id
+    ).order_by(Notification.created_at.desc()).limit(10).all()
     
     return jsonify({
         'unread_messages': unread_messages,
@@ -3339,8 +5295,26 @@ def teacher_notifications():
             'week': comment.homework_record.week,
             'comment': comment.comment,
             'created_at': comment.created_at.isoformat(),
-            'admin_name': comment.admin.first_name + ' ' + comment.admin.last_name
-        } for comment in recent_homework_comments]
+            'admin_name': comment.admin.first_name + ' ' + comment.admin.last_name,
+            'type': 'homework'
+        } for comment in recent_homework_comments],
+        'recent_lesson_comments': [{
+            'id': comment.id,
+            'lesson_id': comment.lesson_id,
+            'lesson_title': comment.lesson.title,
+            'comment': comment.comment,
+            'created_at': comment.created_at.isoformat(),
+            'admin_name': comment.admin.first_name + ' ' + comment.admin.last_name,
+            'type': 'lesson'
+        } for comment in recent_lesson_comments],
+        'notifications': [{
+            'id': notification.id,
+            'type': notification.type,
+            'title': notification.title,
+            'content': notification.content,
+            'is_read': notification.is_read,
+            'created_at': notification.created_at.isoformat()
+        } for notification in recent_notifications]
     })
 
 # Database Monitoring Routes for Super Admin
@@ -3462,6 +5436,207 @@ def api_edit_school(school_id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/super-admin/delete-all-users', methods=['POST'])
+@login_required
+def api_delete_all_users():
+    """Delete all users except superadmin"""
+    if current_user.role != 'super_admin':
+        return jsonify({'error': 'Access denied'}), 403
+    
+    try:
+        # Get confirmation from request
+        data = request.get_json()
+        if not data.get('confirmed'):
+            return jsonify({'error': 'Confirmation required'}), 400
+        
+        # Count users to be deleted
+        users_to_delete = User.query.filter(User.role != 'super_admin').all()
+        user_count = len(users_to_delete)
+        
+        if user_count == 0:
+            return jsonify({'success': True, 'message': 'No users to delete', 'deleted_count': 0})
+        
+        # Delete all related data first (in correct order to avoid foreign key violations)
+        for user in users_to_delete:
+            # Get user's assignments first
+            user_assignments = Assignment.query.filter_by(teacher_id=user.id).all()
+            assignment_ids = [a.id for a in user_assignments]
+            
+            # Delete assignment records for these assignments
+            if assignment_ids:
+                AssignmentRecord.query.filter(AssignmentRecord.assignment_id.in_(assignment_ids)).delete()
+            
+            # Delete user's assignments
+            Assignment.query.filter_by(teacher_id=user.id).delete()
+            
+            # Delete messages sent by this user
+            Message.query.filter_by(sender_id=user.id).delete()
+            
+            # Delete notifications for this user
+            Notification.query.filter_by(user_id=user.id).delete()
+            
+            # Delete user's classes
+            Class.query.filter_by(teacher_id=user.id).delete()
+            
+            # Delete user's students (if parent)
+            Student.query.filter_by(parent_id=user.id).delete()
+            
+            # Delete comments
+            Comment.query.filter_by(giver_id=user.id).delete()
+            Comment.query.filter_by(receiver_id=user.id).delete()
+            
+            # Delete the user
+            db.session.delete(user)
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True, 
+            'message': f'Successfully deleted {user_count} users',
+            'deleted_count': user_count
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/super-admin/school/<int:school_id>/admin-password')
+@login_required
+def api_get_school_admin_password(school_id):
+    """Get school admin password for display"""
+    if current_user.role != 'super_admin':
+        return jsonify({'error': 'Access denied'}), 403
+    
+    try:
+        # Get school admin user
+        admin_user = User.query.filter_by(school_id=school_id, role='school_admin').first()
+        if not admin_user:
+            return jsonify({'error': 'School admin not found'}), 404
+        
+        # For security, we can't retrieve the actual password hash
+        # Instead, we'll return a placeholder or generate a temporary display password
+        return jsonify({
+            'success': True,
+            'password': '••••••••',  # Placeholder for security
+            'username': admin_user.username,
+            'message': 'Password is hidden for security. Use reset to generate new password.'
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/super-admin/school/<int:school_id>/reset-admin-password', methods=['POST'])
+@login_required
+def api_reset_school_admin_password(school_id):
+    """Reset school admin password"""
+    if current_user.role != 'super_admin':
+        return jsonify({'error': 'Access denied'}), 403
+    
+    try:
+        # Get school admin user
+        admin_user = User.query.filter_by(school_id=school_id, role='school_admin').first()
+        if not admin_user:
+            return jsonify({'error': 'School admin not found'}), 404
+        
+        # Generate new password
+        new_password = generate_password()
+        admin_user.password_hash = generate_password_hash(new_password)
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Password reset successfully',
+            'new_password': new_password,
+            'admin_username': admin_user.username
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/super-admin/delete-all-schools', methods=['POST'])
+@login_required
+def api_delete_all_schools():
+    """Delete all schools and their associated data"""
+    if current_user.role != 'super_admin':
+        return jsonify({'error': 'Access denied'}), 403
+    
+    try:
+        # Get confirmation from request
+        data = request.get_json()
+        if not data.get('confirmed'):
+            return jsonify({'error': 'Confirmation required'}), 400
+        
+        # Count schools to be deleted
+        schools_to_delete = School.query.all()
+        school_count = len(schools_to_delete)
+        
+        if school_count == 0:
+            return jsonify({'success': True, 'message': 'No schools to delete', 'deleted_count': 0})
+        
+        # Delete all related data first (in correct order to avoid foreign key violations)
+        for school in schools_to_delete:
+            # Get all assignments for this school first
+            school_assignments = Assignment.query.filter_by(school_id=school.id).all()
+            assignment_ids = [a.id for a in school_assignments]
+            
+            # Delete assignment records for these assignments
+            if assignment_ids:
+                AssignmentRecord.query.filter(AssignmentRecord.assignment_id.in_(assignment_ids)).delete()
+            
+            # Delete all assignments
+            Assignment.query.filter_by(school_id=school.id).delete()
+            
+            # Delete all subjects (they reference classes)
+            Subject.query.filter_by(school_id=school.id).delete()
+            
+            # Delete all students (they reference users and classes)
+            Student.query.filter_by(school_id=school.id).delete()
+            
+            # Delete all classes (they reference users)
+            Class.query.filter_by(school_id=school.id).delete()
+            
+            # Delete all school subscriptions (they reference schools)
+            SchoolSubscription.query.filter_by(school_id=school.id).delete()
+            
+            # Delete all payments (they reference schools)
+            Payment.query.filter_by(school_id=school.id).delete()
+            
+            # Delete all messages (they reference users) - need to delete by sender_id
+            school_users = User.query.filter_by(school_id=school.id).all()
+            user_ids = [u.id for u in school_users]
+            if user_ids:
+                Message.query.filter(Message.sender_id.in_(user_ids)).delete()
+            
+            # Delete all notifications (they reference users)
+            if user_ids:
+                Notification.query.filter(Notification.user_id.in_(user_ids)).delete()
+            
+            # Delete all lessons
+            Lesson.query.filter_by(school_id=school.id).delete()
+            
+            # Delete all homework records
+            HomeworkRecord.query.filter_by(school_id=school.id).delete()
+            
+            # Finally delete all users associated with this school
+            User.query.filter_by(school_id=school.id).delete()
+            
+            # Delete the school
+            db.session.delete(school)
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True, 
+            'message': f'Successfully deleted {school_count} schools and all associated data',
+            'deleted_count': school_count
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @app.route('/admin/teacher-submissions')
 @login_required
 def admin_teacher_submissions():
@@ -3544,23 +5719,24 @@ def teacher_reply_message(message_id):
             recipient_id=original_message.sender_id,
             subject=f"Re: {original_message.subject}",
             content=reply_content,
-            parent_message_id=message_id
+            parent_message_id=message_id,
+            school_id=current_user.school_id
         )
         
         try:
             db.session.add(reply)
+            db.session.flush()  # Get reply ID
             
-            # Create notification for admin about the reply
-            admin = User.query.filter_by(role='admin').first()
-            if admin:
-                notification = Notification(
-                    user_id=admin.id,
+            # Create notification for the parent who sent the original message
+            notification = Notification(
+                user_id=original_message.sender_id,
                     message_id=reply.id,
                     type='message_reply',
                     title=f'New Reply from {current_user.first_name} {current_user.last_name}',
-                    content=f'Re: {original_message.subject}'
-                )
-                db.session.add(notification)
+                content=f'Re: {original_message.subject}',
+                school_id=current_user.school_id
+            )
+            db.session.add(notification)
             
             db.session.commit()
             flash('Reply sent successfully', 'success')
@@ -3827,6 +6003,7 @@ def create_lesson():
             title=title,
             subject_id=subject_id,
             teacher_id=current_user.id,
+            school_id=current_user.school_id,
             week=week,
             term=term,
             session=session,
@@ -3866,6 +6043,7 @@ def create_lesson():
                             
                             attachment = LessonAttachment(
                                 lesson_id=lesson.id,
+                                school_id=current_user.school_id,
                                 filename=filename,
                                 original_filename=file.filename,
                                 file_path=f"uploads/lessons/{filename}",

@@ -8,6 +8,8 @@ from flask import current_app, render_template
 from flask_mail import Mail, Message
 from threading import Thread
 import os
+import json
+from datetime import datetime
 
 # Initialize Flask-Mail
 mail = Mail()
@@ -16,18 +18,93 @@ def init_mail(app):
     """Initialize Flask-Mail with the Flask app"""
     mail.init_app(app)
 
+def save_email_to_file(msg, error_message):
+    """Save failed email to file as backup"""
+    try:
+        # Create emails directory if it doesn't exist
+        emails_dir = 'failed_emails'
+        if not os.path.exists(emails_dir):
+            os.makedirs(emails_dir)
+        
+        # Create filename with timestamp
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f"{emails_dir}/email_{timestamp}.json"
+        
+        # Prepare email data
+        email_data = {
+            'timestamp': timestamp,
+            'subject': msg.subject,
+            'recipients': msg.recipients,
+            'sender': msg.sender,
+            'body': msg.body,
+            'html': msg.html,
+            'error': error_message
+        }
+        
+        # Save to file
+        with open(filename, 'w', encoding='utf-8') as f:
+            json.dump(email_data, f, indent=2, ensure_ascii=False)
+        
+        print(f"📧 Email saved to file: {filename}")
+        
+    except Exception as e:
+        print(f"❌ Failed to save email to file: {e}")
+
+def test_email_connection():
+    """Test email connection and return status"""
+    try:
+        with current_app.app_context():
+            # Test basic connection
+            server = current_app.config.get('MAIL_SERVER')
+            port = current_app.config.get('MAIL_PORT')
+            
+            import smtplib
+            import socket
+            
+            # Set timeout
+            socket.setdefaulttimeout(10)
+            
+            # Try to connect
+            smtp = smtplib.SMTP(server, port)
+            smtp.starttls()
+            smtp.login(
+                current_app.config.get('MAIL_USERNAME'),
+                current_app.config.get('MAIL_PASSWORD')
+            )
+            smtp.quit()
+            
+            return True, "Email connection successful"
+            
+    except Exception as e:
+        return False, f"Email connection failed: {str(e)}"
+
 def send_async_email(app, msg):
     """Send email asynchronously"""
     with app.app_context():
         try:
             mail.send(msg)
-            print(f"Email sent successfully to {msg.recipients}")
+            print(f"✅ Email sent successfully to {msg.recipients}")
         except Exception as e:
-            print(f"Failed to send email: {str(e)}")
+            print(f"❌ Failed to send email: {str(e)}")
+            # Log the error for debugging
+            import logging
+            logging.error(f"Email sending failed: {str(e)}")
+            
+            # Try to save email to a file as backup
+            try:
+                save_email_to_file(msg, str(e))
+            except Exception as file_error:
+                print(f"❌ Failed to save email to file: {file_error}")
 
 def send_email(subject, recipients, template, **kwargs):
     """Send email with template"""
     try:
+        # Test email connection first
+        connection_ok, connection_msg = test_email_connection()
+        if not connection_ok:
+            print(f"⚠️ Email connection test failed: {connection_msg}")
+            print("📧 Email will be saved to file as backup")
+        
         msg = Message(
             subject=subject,
             recipients=recipients,
@@ -42,7 +119,18 @@ def send_email(subject, recipients, template, **kwargs):
         
         return True
     except Exception as e:
-        print(f"Error sending email: {str(e)}")
+        print(f"❌ Error sending email: {str(e)}")
+        # Try to save email to file as backup
+        try:
+            msg = Message(
+                subject=subject,
+                recipients=recipients,
+                sender=current_app.config.get('MAIL_DEFAULT_SENDER')
+            )
+            msg.html = render_template(f'emails/{template}.html', **kwargs)
+            save_email_to_file(msg, str(e))
+        except Exception as backup_error:
+            print(f"❌ Failed to save email backup: {backup_error}")
         return False
 
 class EmailService:
