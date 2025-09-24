@@ -79,11 +79,27 @@ def test_email_connection():
         return False, f"Email connection failed: {str(e)}"
 
 def send_async_email(app, msg):
-    """Send email asynchronously"""
+    """Send email asynchronously with improved error handling"""
     with app.app_context():
         try:
+            # Set a reasonable timeout for email sending
+            import socket
+            original_timeout = socket.getdefaulttimeout()
+            socket.setdefaulttimeout(30)  # 30 second timeout
+            
             mail.send(msg)
             print(f"✅ Email sent successfully to {msg.recipients}")
+            
+            # Restore original timeout
+            socket.setdefaulttimeout(original_timeout)
+            
+        except socket.timeout:
+            print(f"⏰ Email sending timed out for {msg.recipients}")
+            # Try to save email to a file as backup
+            try:
+                save_email_to_file(msg, "Email sending timed out")
+            except Exception as file_error:
+                print(f"❌ Failed to save email to file: {file_error}")
         except Exception as e:
             print(f"❌ Failed to send email: {str(e)}")
             # Log the error for debugging
@@ -95,15 +111,27 @@ def send_async_email(app, msg):
                 save_email_to_file(msg, str(e))
             except Exception as file_error:
                 print(f"❌ Failed to save email to file: {file_error}")
+        finally:
+            # Restore original timeout
+            socket.setdefaulttimeout(original_timeout)
 
 def send_email(subject, recipients, template, **kwargs):
     """Send email with template"""
     try:
-        # Test email connection first
-        connection_ok, connection_msg = test_email_connection()
-        if not connection_ok:
-            print(f"⚠️ Email connection test failed: {connection_msg}")
-            print("📧 Email will be saved to file as backup")
+        # Check if email sending is suppressed
+        if current_app.config.get('MAIL_SUPPRESS_SEND', False):
+            print(f"📧 Email sending is suppressed. Would send to {recipients}: {subject}")
+            return True
+        
+        # Test email connection first (but don't fail if it times out)
+        try:
+            connection_ok, connection_msg = test_email_connection()
+            if not connection_ok:
+                print(f"⚠️ Email connection test failed: {connection_msg}")
+                print("📧 Proceeding with email sending anyway...")
+        except Exception as conn_error:
+            print(f"⚠️ Connection test error: {conn_error}")
+            print("📧 Proceeding with email sending anyway...")
         
         msg = Message(
             subject=subject,
@@ -117,9 +145,10 @@ def send_email(subject, recipients, template, **kwargs):
         # Send email asynchronously
         Thread(target=send_async_email, args=(current_app._get_current_object(), msg)).start()
         
+        print(f"📧 Email queued for sending to {recipients}: {subject}")
         return True
     except Exception as e:
-        print(f"❌ Error sending email: {str(e)}")
+        print(f"❌ Error preparing email: {str(e)}")
         # Try to save email to file as backup
         try:
             msg = Message(
