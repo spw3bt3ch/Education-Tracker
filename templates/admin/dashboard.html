@@ -12,7 +12,7 @@
             {% if current_user.profile_picture %}
                 <img src="{{ url_for('static', filename=current_user.profile_picture) }}" 
                      alt="Profile Picture" 
-                     class="w-20 h-20 rounded-full object-cover border-4 border-primary shadow-lg">
+                     class="w-20 h-20 rounded-full object-cover border-4 border-primary shadow-lg" />
             {% else %}
                 <div class="w-20 h-20 bg-primary bg-opacity-10 rounded-full flex items-center justify-center border-4 border-primary shadow-lg">
                     <i class="fas fa-user text-3xl text-primary"></i>
@@ -541,7 +541,65 @@
             </div>
         {% endif %}
     </div>
-</div>{% endblock %}
+</div>
+
+<!-- Notifications Section -->
+<div class="bg-white rounded-xl shadow-lg mb-8">
+    <div class="px-6 py-4 border-b border-gray-200">
+        <div class="flex justify-between items-center">
+            <h2 class="text-xl font-semibold text-gray-900 flex items-center">
+                <i class="fas fa-bell mr-2 text-orange-500"></i>Recent Notifications
+                {% if unread_notifications_count > 0 %}
+                    <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                        {{ unread_notifications_count }} unread
+                    </span>
+                {% endif %}
+            </h2>
+            <a href="{{ url_for('admin_notifications') }}" class="text-primary hover:text-blue-700 text-sm font-medium">
+                View All
+            </a>
+        </div>
+    </div>
+    <div class="p-6">
+        {% if recent_notifications %}
+            <div class="space-y-4">
+                {% for notification in recent_notifications %}
+                <div class="flex items-start space-x-3 p-4 rounded-lg {% if not notification.is_read %}bg-blue-50 border border-blue-200{% else %}bg-gray-50{% endif %}">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
+                            <i class="fas fa-bell text-orange-600 text-sm"></i>
+                        </div>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-sm font-semibold text-gray-900 {% if not notification.is_read %}font-semibold{% endif %}">
+                                {{ notification.title }}
+                            </h3>
+                            <span class="text-xs text-gray-500">
+                                {{ notification.created_at.strftime('%H:%M') }}
+                            </span>
+                        </div>
+                        <p class="text-sm text-gray-600 mt-1">{{ notification.content }}</p>
+                        {% if not notification.is_read %}
+                        <button onclick="markNotificationRead({{ notification.id }})" 
+                                class="mt-2 text-xs text-blue-600 hover:text-blue-800 font-medium">
+                            Mark as read
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-12">
+                <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-bell text-2xl text-gray-400"></i>
+                </div>
+                <p class="text-gray-500">No notifications found.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
 
 <script>
 // Auto-refresh dashboard data every 30 seconds
@@ -745,4 +803,6 @@ function markNotificationRead(notificationId) {
         console.error('Error marking notification as read:', error);
     });
 }
+</script>
 
+{% endblock %}
