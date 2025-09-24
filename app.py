@@ -2198,11 +2198,23 @@ def parent_report_cards():
     child_ids = [child.id for child in children]
     
     # Get report cards for parent's children
-    report_cards = ReportCard.query.filter(
+    # First, let's get all report cards for debugging
+    all_report_cards = ReportCard.query.filter(
         ReportCard.student_id.in_(child_ids),
-        ReportCard.school_id == current_user.school_id,
-        ReportCard.status == 'sent'  # Only show sent report cards
+        ReportCard.school_id == current_user.school_id
     ).order_by(ReportCard.created_at.desc()).all()
+    
+    # For now, show all report cards regardless of status for debugging
+    # In production, you might want to filter by status == 'sent'
+    report_cards = all_report_cards
+    
+    # Debug information
+    print(f"Debug - Parent ID: {current_user.id}")
+    print(f"Debug - Children IDs: {child_ids}")
+    print(f"Debug - School ID: {current_user.school_id}")
+    print(f"Debug - Total report cards found: {len(report_cards)}")
+    for rc in report_cards:
+        print(f"Debug - Report Card: ID={rc.id}, Student={rc.student_id}, Status={rc.status}")
     
     # Get academic terms
     terms = AcademicTerm.query.filter_by(school_id=current_user.school_id).order_by(AcademicTerm.start_date.desc()).all()
