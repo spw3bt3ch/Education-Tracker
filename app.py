@@ -18,33 +18,13 @@ import requests
 from sqlalchemy.exc import OperationalError, DisconnectionError, TimeoutError as SQLTimeoutError
 from requests.exceptions import ConnectionError, Timeout, RequestException
 
-# Load environment variables
-load_dotenv('aiven_config.env')
+# Import configuration
+from config import Config
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key-here')
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///smied.db')
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['DATABASE_TOTAL_CAPACITY_GB'] = int(os.getenv('DATABASE_TOTAL_CAPACITY_GB', '1'))
-app.config['UPLOAD_FOLDER'] = 'static/uploads'
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
-# Email Configuration
-app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
-app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 587))
-app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', 'True').lower() == 'true'
-app.config['MAIL_USE_SSL'] = os.getenv('MAIL_USE_SSL', 'False').lower() == 'true'
-app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
-app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
-app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER')
-app.config['MAIL_MAX_EMAILS'] = int(os.getenv('MAIL_MAX_EMAILS', 100))
-app.config['MAIL_SUPPRESS_SEND'] = os.getenv('MAIL_SUPPRESS_SEND', 'False').lower() == 'true'
-app.config['BASE_URL'] = os.getenv('BASE_URL', 'http://127.0.0.1:5000')
-
-# Paystack Configuration
-app.config['PAYSTACK_PUBLIC_KEY'] = os.getenv('PAYSTACK_PUBLIC_KEY')
-app.config['PAYSTACK_SECRET_KEY'] = os.getenv('PAYSTACK_SECRET_KEY')
-app.config['PAYSTACK_WEBHOOK_SECRET'] = os.getenv('PAYSTACK_WEBHOOK_SECRET')
+# Load configuration from config.py
+app.config.from_object(Config)
 
 # Create upload directory if it doesn't exist
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
@@ -6265,7 +6245,7 @@ if __name__ == '__main__':
         # Create super admin user if it doesn't exist
         if not User.query.filter_by(username='superadmin').first():
             try:
-                super_admin_password = os.getenv('SUPER_ADMIN_PASSWORD', 'superadmin123')
+                super_admin_password = Config.SUPER_ADMIN_PASSWORD
                 super_admin = User(
                     username='superadmin',
                     email='superadmin@edutrack.com',
@@ -6298,7 +6278,7 @@ if __name__ == '__main__':
                 db.session.flush()
                 
                 # Create school admin
-                admin_password = os.getenv('ADMIN_PASSWORD', 'admin123')
+                admin_password = Config.ADMIN_PASSWORD
                 admin = User(
                     username='admin',
                     email='admin@demoschool.com',
@@ -6327,7 +6307,7 @@ if __name__ == '__main__':
         # Create teacher user if it doesn't exist
         if not User.query.filter_by(username='teacher1').first():
             try:
-                teacher_password = os.getenv('TEACHER_PASSWORD', 'teacher123')
+                teacher_password = Config.TEACHER_PASSWORD
                 # Get the first school for the teacher
                 school = School.query.first()
                 teacher = User(
@@ -6349,7 +6329,7 @@ if __name__ == '__main__':
         # Create parent user if it doesn't exist
         if not User.query.filter_by(username='parent1').first():
             try:
-                parent_password = os.getenv('PARENT_PASSWORD', 'parent123')
+                parent_password = Config.PARENT_PASSWORD
                 # Get the first school for the parent
                 school = School.query.first()
                 parent = User(
