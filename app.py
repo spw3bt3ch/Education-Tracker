@@ -513,6 +513,7 @@ class ReportCard(db.Model):
     student = db.relationship('Student', backref='student_report_cards', lazy=True)
     class_obj = db.relationship('Class', backref='class_report_cards', lazy=True)
     teacher = db.relationship('User', foreign_keys=[teacher_id], backref='created_report_cards', lazy=True)
+    school = db.relationship('School', backref='school_report_cards', lazy=True)
     academic_term = db.relationship('AcademicTerm', backref='term_report_cards', lazy=True)
     subject_grades = db.relationship('SubjectGrade', backref='report_card', lazy=True, cascade='all, delete-orphan')
     admin_approver = db.relationship('User', foreign_keys=[admin_approved_by], backref='approved_reports')
@@ -2197,32 +2198,46 @@ def parent_report_cards():
     children = Student.query.filter_by(parent_id=current_user.id).all()
     child_ids = [child.id for child in children]
     
-    # Get report cards for parent's children
-    # First, let's get all report cards for debugging
+    if not child_ids:
+        flash('No children found for this parent account', 'warning')
+        return render_template('parent/report_cards.html', 
+                             report_cards=[], 
+                             children=children,
+                             latest_report_card=None,
+                             subjects=[])
+    
+    # Get the most recent report card for display
+    latest_report_card = ReportCard.query.filter(
+        ReportCard.student_id.in_(child_ids),
+        ReportCard.school_id == current_user.school_id
+    ).order_by(ReportCard.created_at.desc()).first()
+    
+    # Get all report cards for the dropdown/selection
     all_report_cards = ReportCard.query.filter(
         ReportCard.student_id.in_(child_ids),
         ReportCard.school_id == current_user.school_id
     ).order_by(ReportCard.created_at.desc()).all()
     
-    # For now, show all report cards regardless of status for debugging
-    # In production, you might want to filter by status == 'sent'
-    report_cards = all_report_cards
+    # Get subjects for the latest report card
+    subjects = []
+    if latest_report_card:
+        subjects = Subject.query.filter_by(
+            class_id=latest_report_card.class_id, 
+            school_id=current_user.school_id
+        ).all()
     
     # Debug information
     print(f"Debug - Parent ID: {current_user.id}")
     print(f"Debug - Children IDs: {child_ids}")
     print(f"Debug - School ID: {current_user.school_id}")
-    print(f"Debug - Total report cards found: {len(report_cards)}")
-    for rc in report_cards:
-        print(f"Debug - Report Card: ID={rc.id}, Student={rc.student_id}, Status={rc.status}")
-    
-    # Get academic terms
-    terms = AcademicTerm.query.filter_by(school_id=current_user.school_id).order_by(AcademicTerm.start_date.desc()).all()
+    print(f"Debug - Latest report card: {latest_report_card.id if latest_report_card else 'None'}")
+    print(f"Debug - Total report cards found: {len(all_report_cards)}")
     
     return render_template('parent/report_cards.html', 
-                         report_cards=report_cards, 
+                         report_cards=all_report_cards, 
                          children=children,
-                         terms=terms)
+                         latest_report_card=latest_report_card,
+                         subjects=subjects)
 
 @app.route('/parent/report-cards/<int:report_id>')
 @login_required
@@ -2233,10 +2248,9 @@ def parent_view_report_card(report_id):
     
     report_card = ReportCard.query.get_or_404(report_id)
     
-    # Check if report card belongs to parent's child and is sent
+    # Check if report card belongs to parent's child
     if (report_card.student.parent_id != current_user.id or 
-        report_card.school_id != current_user.school_id or 
-        report_card.status != 'sent'):
+        report_card.school_id != current_user.school_id):
         flash('Access denied', 'error')
         return redirect(url_for('parent_report_cards'))
     
@@ -2246,6 +2260,80 @@ def parent_view_report_card(report_id):
     return render_template('parent/view_report_card.html', 
                          report_card=report_card, 
                          subjects=subjects)
+
+@app.route('/api/parent/report-cards/<int:report_id>')
+@login_required
+def api_parent_report_card(report_id):
+    """API endpoint to get report card data for AJAX requests"""
+    if current_user.role != 'parent':
+        return jsonify({'error': 'Access denied'}), 403
+    
+    report_card = ReportCard.query.get_or_404(report_id)
+    
+    # Check if report card belongs to parent's child
+    if (report_card.student.parent_id != current_user.id or 
+        report_card.school_id != current_user.school_id):
+        return jsonify({'error': 'Access denied'}), 403
+    
+    # Get subjects for the class
+    subjects = Subject.query.filter_by(class_id=report_card.class_id, school_id=current_user.school_id).all()
+    
+    # Prepare report card data
+    report_data = {
+        'id': report_card.id,
+        'student': {
+            'first_name': report_card.student.first_name,
+            'last_name': report_card.student.last_name,
+            'student_id': report_card.student.student_id
+        },
+        'academic_term': {
+            'name': report_card.academic_term.name,
+            'academic_year': report_card.academic_term.academic_year
+        },
+        'class_obj': {
+            'name': report_card.class_obj.name
+        },
+        'school': {
+            'name': report_card.school.name
+        },
+        'teacher': {
+            'first_name': report_card.teacher.first_name,
+            'last_name': report_card.teacher.last_name
+        },
+        'percentage': report_card.percentage,
+        'position_in_class': report_card.position_in_class,
+        'total_students': report_card.total_students,
+        'attendance_percentage': report_card.attendance_percentage,
+        'days_present': report_card.days_present,
+        'days_absent': report_card.days_absent,
+        'total_days': report_card.total_days,
+        'conduct_grade': report_card.conduct_grade,
+        'punctuality': report_card.punctuality,
+        'neatness': report_card.neatness,
+        'politeness': report_card.politeness,
+        'teacher_comment': report_card.teacher_comment,
+        'teacher_recommendation': report_card.teacher_recommendation,
+        'admin_comment': report_card.admin_comment,
+        'status': report_card.status,
+        'created_at': report_card.created_at.isoformat(),
+        'subject_grades': []
+    }
+    
+    # Add subject grades
+    for subject_grade in report_card.subject_grades:
+        report_data['subject_grades'].append({
+            'subject_name': subject_grade.subject.name,
+            'ca_score': subject_grade.ca_score,
+            'ca_max': subject_grade.ca_max,
+            'exam_score': subject_grade.exam_score,
+            'exam_max': subject_grade.exam_max,
+            'total_score': subject_grade.total_score,
+            'total_max': subject_grade.total_max,
+            'percentage': subject_grade.percentage,
+            'grade': subject_grade.grade
+        })
+    
+    return jsonify(report_data)
 
 # Parent Attendance Routes
 @app.route('/parent/attendance')
