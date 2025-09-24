@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="min-h-screen bg-gray-50 py-8">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <!-- Header -->
         <div class="mb-8">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center">
@@ -12,151 +12,295 @@
                     <h1 class="text-3xl font-bold text-gray-900 mb-2">Report Cards</h1>
                     <p class="text-gray-600">View your children's academic performance</p>
                 </div>
+                {% if report_cards|length > 1 %}
+                <div class="mt-4 sm:mt-0">
+                    <select id="reportCardSelector" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Select a report card to view</option>
+                        {% for report in report_cards %}
+                        <option value="{{ report.id }}" {% if latest_report_card and report.id == latest_report_card.id %}selected{% endif %}>
+                            {{ report.student.first_name }} {{ report.student.last_name }} - {{ report.academic_term.name }} {{ report.academic_term.academic_year }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
             </div>
         </div>
 
-        <!-- Report Cards Table -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h3 class="text-lg font-semibold text-gray-900">Available Report Cards</h3>
+        {% if latest_report_card %}
+        <!-- Full Report Card Display -->
+        <div class="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
+            <!-- School Header -->
+            <div class="bg-gradient-to-r from-blue-600 to-blue-800 text-white p-6">
+                <div class="text-center">
+                    <h2 class="text-2xl font-bold mb-2">{{ latest_report_card.school.name }}</h2>
+                    <p class="text-blue-100">Student Academic Report</p>
+                    <p class="text-blue-200 text-sm">{{ latest_report_card.academic_term.name }} {{ latest_report_card.academic_term.academic_year }}</p>
+                </div>
             </div>
-            
-            {% if report_cards %}
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Child</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Class</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Term</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Percentage</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Grade</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Position</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        {% for report in report_cards %}
-                        <tr class="hover:bg-gray-50">
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex items-center">
-                                    <div class="flex-shrink-0 h-10 w-10">
-                                        <div class="h-10 w-10 rounded-full bg-info flex items-center justify-center">
-                                            <span class="text-white font-medium text-sm">
-                                                {{ report.student.first_name[0] }}{{ report.student.last_name[0] }}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div class="ml-4">
-                                        <div class="text-sm font-medium text-gray-900">
-                                            {{ report.student.first_name }} {{ report.student.last_name }}
-                                        </div>
-                                        <div class="text-sm text-gray-500">
-                                            {{ report.student.student_id }}
-                                        </div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {{ report.class_obj.name }}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {{ report.academic_term.name }} {{ report.academic_term.academic_year }}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                <div class="flex items-center">
-                                    <span class="font-medium text-lg">{{ "%.1f"|format(report.percentage) }}%</span>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
-                                    {% if report.percentage >= 75 %}bg-green-100 text-green-800
-                                    {% elif report.percentage >= 60 %}bg-blue-100 text-blue-800
-                                    {% elif report.percentage >= 50 %}bg-yellow-100 text-yellow-800
-                                    {% elif report.percentage >= 40 %}bg-orange-100 text-orange-800
-                                    {% else %}bg-red-100 text-red-800{% endif %}">
-                                    {{ report.percentage|round|int >= 75 and 'A' or report.percentage|round|int >= 60 and 'B' or report.percentage|round|int >= 50 and 'C' or report.percentage|round|int >= 40 and 'D' or 'F' }}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {% if report.position_in_class %}
-                                    <span class="font-medium">
-                                        {{ report.position_in_class }}{{ 'st' if report.position_in_class == 1 else 'nd' if report.position_in_class == 2 else 'rd' if report.position_in_class == 3 else 'th' }} of {{ report.total_students }}
+
+            <!-- Student Information -->
+            <div class="p-6 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Student Information</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Student Name</label>
+                        <p class="mt-1 text-sm text-gray-900 font-medium">{{ latest_report_card.student.first_name }} {{ latest_report_card.student.last_name }}</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Student ID</label>
+                        <p class="mt-1 text-sm text-gray-900">{{ latest_report_card.student.student_id }}</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Class</label>
+                        <p class="mt-1 text-sm text-gray-900">{{ latest_report_card.class_obj.name }}</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Academic Year</label>
+                        <p class="mt-1 text-sm text-gray-900">{{ latest_report_card.academic_term.academic_year }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Academic Performance Summary -->
+            <div class="p-6 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Academic Performance Summary</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="text-center">
+                        <div class="text-3xl font-bold text-blue-600">{{ "%.1f"|format(latest_report_card.percentage) }}%</div>
+                        <div class="text-sm text-gray-600">Overall Percentage</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-3xl font-bold text-green-600">{{ latest_report_card.position_in_class }}{{ "st" if latest_report_card.position_in_class == 1 else "nd" if latest_report_card.position_in_class == 2 else "rd" if latest_report_card.position_in_class == 3 else "th" }}</div>
+                        <div class="text-sm text-gray-600">Position in Class</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-3xl font-bold text-purple-600">{{ latest_report_card.total_students }}</div>
+                        <div class="text-sm text-gray-600">Total Students</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-3xl font-bold text-orange-600">{{ "%.1f"|format(latest_report_card.attendance_percentage) }}%</div>
+                        <div class="text-sm text-gray-600">Attendance</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Subject Grades -->
+            <div class="p-6 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Subject Grades</h3>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subject</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CA Score</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Exam Score</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Score</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Percentage</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Grade</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for subject_grade in latest_report_card.subject_grades %}
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                    {{ subject_grade.subject.name }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    {{ subject_grade.ca_score }}/{{ subject_grade.ca_max }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    {{ subject_grade.exam_score }}/{{ subject_grade.exam_max }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    {{ subject_grade.total_score }}/{{ subject_grade.total_max }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    {{ "%.1f"|format(subject_grade.percentage) }}%
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                        {% if subject_grade.grade == 'A' %}bg-green-100 text-green-800
+                                        {% elif subject_grade.grade == 'B' %}bg-blue-100 text-blue-800
+                                        {% elif subject_grade.grade == 'C' %}bg-yellow-100 text-yellow-800
+                                        {% elif subject_grade.grade == 'D' %}bg-orange-100 text-orange-800
+                                        {% else %}bg-red-100 text-red-800{% endif %}">
+                                        {{ subject_grade.grade }}
                                     </span>
-                                {% else %}
-                                    -
-                                {% endif %}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {{ report.created_at.strftime('%d/%m/%Y') }}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                <a href="{{ url_for('parent_view_report_card', report_id=report.id) }}" 
-                                   class="text-info hover:text-cyan-700 transition duration-150 ease-in-out"
-                                   title="View Full Report Card">
-                                    <i class="fas fa-eye mr-1"></i>
-                                    View
-                                </a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
-            {% else %}
+
+            <!-- Attendance Details -->
+            <div class="p-6 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Attendance Details</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-green-600">{{ latest_report_card.days_present }}</div>
+                        <div class="text-sm text-gray-600">Days Present</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-red-600">{{ latest_report_card.days_absent }}</div>
+                        <div class="text-sm text-gray-600">Days Absent</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-blue-600">{{ latest_report_card.total_days }}</div>
+                        <div class="text-sm text-gray-600">Total Days</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Conduct and Behavior -->
+            <div class="p-6 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Conduct and Behavior</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-green-600">{{ latest_report_card.conduct_grade }}</div>
+                        <div class="text-sm text-gray-600">Conduct</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-blue-600">{{ latest_report_card.punctuality }}</div>
+                        <div class="text-sm text-gray-600">Punctuality</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-purple-600">{{ latest_report_card.neatness }}</div>
+                        <div class="text-sm text-gray-600">Neatness</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-orange-600">{{ latest_report_card.politeness }}</div>
+                        <div class="text-sm text-gray-600">Politeness</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comments -->
+            <div class="p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Comments</h3>
+                <div class="space-y-4">
+                    {% if latest_report_card.teacher_comment %}
+                    <div>
+                        <h4 class="text-sm font-medium text-gray-700 mb-2">Teacher's Comment</h4>
+                        <p class="text-sm text-gray-900 bg-gray-50 p-3 rounded-lg">{{ latest_report_card.teacher_comment }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if latest_report_card.teacher_recommendation %}
+                    <div>
+                        <h4 class="text-sm font-medium text-gray-700 mb-2">Teacher's Recommendation</h4>
+                        <p class="text-sm text-gray-900 bg-blue-50 p-3 rounded-lg">{{ latest_report_card.teacher_recommendation }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if latest_report_card.admin_comment %}
+                    <div>
+                        <h4 class="text-sm font-medium text-gray-700 mb-2">Principal's Comment</h4>
+                        <p class="text-sm text-gray-900 bg-green-50 p-3 rounded-lg">{{ latest_report_card.admin_comment }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="bg-gray-50 px-6 py-4 border-t border-gray-200">
+                <div class="flex justify-between items-center text-sm text-gray-500">
+                    <div>
+                        <p>Report generated on: {{ latest_report_card.created_at.strftime('%B %d, %Y') }}</p>
+                        <p>Status: <span class="font-medium text-green-600">{{ latest_report_card.status.title() }}</span></p>
+                    </div>
+                    <div class="text-right">
+                        <p>Class Teacher: {{ latest_report_card.teacher.first_name }} {{ latest_report_card.teacher.last_name }}</p>
+                        <p>Principal: {{ latest_report_card.school.name }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% else %}
+        <!-- No Report Cards Available -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200">
             <div class="text-center py-12">
                 <i class="fas fa-file-alt text-4xl text-gray-400 mb-4"></i>
                 <h3 class="text-lg font-medium text-gray-900 mb-2">No report cards available</h3>
                 <p class="text-gray-600">Report cards will appear here once they are approved and sent by the school</p>
             </div>
-            {% endif %}
         </div>
+        {% endif %}
 
-        <!-- Performance Summary -->
-        {% if report_cards %}
-        <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
-            <!-- Best Performance -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        <i class="fas fa-trophy text-yellow-500 text-2xl"></i>
-                    </div>
-                    <div class="ml-4">
-                        <h3 class="text-lg font-medium text-gray-900">Best Performance</h3>
-                        <p class="text-sm text-gray-600">
-                            {% set best_report = report_cards|sort(attribute='percentage')|last %}
-                            {{ best_report.student.first_name }} - {{ "%.1f"|format(best_report.percentage) }}%
-                        </p>
-                    </div>
+        <!-- All Report Cards List (Collapsible) -->
+        {% if report_cards|length > 1 %}
+        <div class="mt-8">
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <button id="toggleReportCardsList" class="flex items-center justify-between w-full text-left">
+                        <h3 class="text-lg font-semibold text-gray-900">All Report Cards ({{ report_cards|length }})</h3>
+                        <i class="fas fa-chevron-down transform transition-transform duration-200" id="toggleIcon"></i>
+                    </button>
                 </div>
-            </div>
-
-            <!-- Average Performance -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        <i class="fas fa-chart-line text-blue-500 text-2xl"></i>
-                    </div>
-                    <div class="ml-4">
-                        <h3 class="text-lg font-medium text-gray-900">Average Performance</h3>
-                        <p class="text-sm text-gray-600">
-                            {% set avg_percentage = (report_cards|map(attribute='percentage')|sum / report_cards|length) %}
-                            {{ "%.1f"|format(avg_percentage) }}%
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Total Reports -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        <i class="fas fa-file-alt text-green-500 text-2xl"></i>
-                    </div>
-                    <div class="ml-4">
-                        <h3 class="text-lg font-medium text-gray-900">Total Reports</h3>
-                        <p class="text-sm text-gray-600">{{ report_cards|length }} report{{ 's' if report_cards|length != 1 else '' }}</p>
+                <div id="reportCardsList" class="hidden">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Child</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Term</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Percentage</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Position</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                {% for report in report_cards %}
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center">
+                                            <div class="flex-shrink-0 h-10 w-10">
+                                                <div class="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center">
+                                                    <span class="text-white font-medium text-sm">
+                                                        {{ report.student.first_name[0] }}{{ report.student.last_name[0] }}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div class="ml-4">
+                                                <div class="text-sm font-medium text-gray-900">{{ report.student.first_name }} {{ report.student.last_name }}</div>
+                                                <div class="text-sm text-gray-500">{{ report.student.student_id }}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        {{ report.academic_term.name }} {{ report.academic_term.academic_year }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                            {% if report.percentage >= 80 %}bg-green-100 text-green-800
+                                            {% elif report.percentage >= 70 %}bg-blue-100 text-blue-800
+                                            {% elif report.percentage >= 60 %}bg-yellow-100 text-yellow-800
+                                            {% else %}bg-red-100 text-red-800{% endif %}">
+                                            {{ "%.1f"|format(report.percentage) }}%
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        {{ report.position_in_class }}{{ "st" if report.position_in_class == 1 else "nd" if report.position_in_class == 2 else "rd" if report.position_in_class == 3 else "th" }} of {{ report.total_students }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        {{ report.created_at.strftime('%d/%m/%Y') }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button onclick="loadReportCard({{ report.id }})" 
+                                                class="text-blue-600 hover:text-blue-700 transition duration-150 ease-in-out"
+                                                title="View Full Report Card">
+                                            <i class="fas fa-eye mr-1"></i>
+                                            View
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -164,4 +308,33 @@
         {% endif %}
     </div>
 </div>
+
+<script>
+// Toggle report cards list
+document.getElementById('toggleReportCardsList').addEventListener('click', function() {
+    const list = document.getElementById('reportCardsList');
+    const icon = document.getElementById('toggleIcon');
+    
+    if (list.classList.contains('hidden')) {
+        list.classList.remove('hidden');
+        icon.classList.add('rotate-180');
+    } else {
+        list.classList.add('hidden');
+        icon.classList.remove('rotate-180');
+    }
+});
+
+// Load specific report card
+function loadReportCard(reportId) {
+    window.location.href = `/parent/report-cards/${reportId}`;
+}
+
+// Report card selector
+document.getElementById('reportCardSelector').addEventListener('change', function() {
+    const reportId = this.value;
+    if (reportId) {
+        loadReportCard(reportId);
+    }
+});
+</script>
 {% endblock %}
