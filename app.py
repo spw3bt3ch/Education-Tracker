@@ -2335,6 +2335,33 @@ def api_parent_report_card(report_id):
     
     return jsonify(report_data)
 
+@app.route('/parent/report-cards/<int:report_id>/download')
+@login_required
+def parent_download_report_card(report_id):
+    """Download report card as PDF"""
+    if current_user.role != 'parent':
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    report_card = ReportCard.query.get_or_404(report_id)
+    
+    # Check if report card belongs to parent's child
+    if (report_card.student.parent_id != current_user.id or 
+        report_card.school_id != current_user.school_id):
+        flash('Access denied', 'error')
+        return redirect(url_for('parent_report_cards'))
+    
+    # Get subjects for the class
+    subjects = Subject.query.filter_by(class_id=report_card.class_id, school_id=current_user.school_id).all()
+    
+    # Render the report card template
+    html = render_template('parent/view_report_card.html', 
+                         report_card=report_card, 
+                         subjects=subjects)
+    
+    # For now, return the HTML (you can add PDF generation later with libraries like weasyprint)
+    return html
+
 # Parent Attendance Routes
 @app.route('/parent/attendance')
 @login_required
