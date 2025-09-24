@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}Login - SMIED{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center py-4 sm:py-12 px-2 sm:px-4 lg:px-8">
+    <div class="max-w-md w-full space-y-6 sm:space-y-8">
+        <div class="bg-white py-6 sm:py-8 px-4 sm:px-6 shadow-xl rounded-2xl form-mobile">
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 bg-primary bg-opacity-10 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-graduation-cap text-3xl text-white"></i>
+                </div>
+                <h2 class="text-3xl font-bold text-gray-900">SMIED</h2>
+                <p class="text-gray-600 mt-2">Student Management Information Education Database</p>
+            </div>
+            
+            <form method="POST" class="space-y-6">
+                <div>
+                    <label for="username" class="block text-sm font-medium text-gray-700 mb-2">Username</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-user text-gray-400"></i>
+                        </div>
+                        <input type="text" id="username" name="username" required 
+                               class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition duration-150 ease-in-out"
+                               placeholder="Enter your username">
+                    </div>
+                </div>
+                
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-lock text-gray-400"></i>
+                        </div>
+                        <input type="password" id="password" name="password" required 
+                               class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition duration-150 ease-in-out"
+                               placeholder="Enter your password">
+                    </div>
+                </div>
+                
+                <div>
+                    <button type="submit" class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-primary hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition duration-150 ease-in-out">
+                        <span class="absolute left-0 inset-y-0 flex items-center pl-3">
+                            <i class="fas fa-right-to-bracket text-white"></i>
+                        </span>
+                        Sign In
+                    </button>
+                </div>
+            </form>
+            
+            <div class="mt-8 p-4 bg-blue-50 rounded-lg">
+                <div class="text-center">
+                    <i class="fas fa-info-circle text-blue-500 text-lg mb-2"></i>
+                    <h4 class="text-sm font-medium text-blue-900 mb-2">Need Help?</h4>
+                    <p class="text-xs text-blue-700">
+                        Contact your school administrator for login credentials or password reset assistance.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="mt-4 text-center">
+                <a href="{{ url_for('reset_password') }}" class="text-primary hover:text-blue-700 text-sm font-medium">
+                    <i class="fas fa-key mr-1"></i>Forgot Password?
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
