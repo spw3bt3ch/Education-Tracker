@@ -488,6 +488,9 @@
                 <a href="{{ url_for('create_lesson') }}" class="bg-teal-500 text-white px-4 py-2 rounded-lg hover:bg-teal-600 transition duration-200 text-sm">
                     <i class="fas fa-plus mr-1"></i>Create Lesson
                 </a>
+                <button onclick="openSMIEDAssistant()" class="bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white px-4 py-2 rounded-lg transition-all duration-200 text-sm shadow-lg hover:shadow-xl transform hover:scale-105" title="SMIED AI Assistant">
+                    <i class="fas fa-robot mr-1"></i>SMIED Assistant
+                </button>
             </div>
         </div>
     </div>
@@ -1162,5 +1165,309 @@ function showNotification(message, type = 'info') {
         }
     }, 5000);
 }
+
+// SMIED Assistant Functions
+function openSMIEDAssistant() {
+    const chatbot = document.getElementById('smiEDChatbot');
+    if (chatbot) {
+        chatbot.classList.remove('hidden');
+        chatbot.classList.add('flex');
+        document.getElementById('smiEDInput').focus();
+    }
+}
+
+function toggleSMIEDChatbot() {
+    const chatbot = document.getElementById('smiEDChatbot');
+    if (chatbot) {
+        if (chatbot.classList.contains('hidden')) {
+            chatbot.classList.remove('hidden');
+            chatbot.classList.add('flex');
+            document.getElementById('smiEDInput').focus();
+        } else {
+            chatbot.classList.add('hidden');
+            chatbot.classList.remove('flex');
+        }
+    }
+}
+
+function askSMIEDQuestion(question) {
+    document.getElementById('smiEDInput').value = question;
+    sendSMIEDMessage(new Event('submit'));
+}
+
+function sendSMIEDMessage(event) {
+    event.preventDefault();
+    
+    const input = document.getElementById('smiEDInput');
+    const message = input.value.trim();
+    
+    if (!message) return;
+    
+    // Add user message to chat
+    addSMIEDMessage(message, 'user');
+    
+    // Clear input
+    input.value = '';
+    
+    // Disable send button and show typing indicator
+    const sendButton = document.getElementById('smiEDSend');
+    sendButton.disabled = true;
+    showSMIEDTypingIndicator();
+    
+    // Send to AI API
+    fetch('/api/teacher/ai-chatbot', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            message: message,
+            context: 'Teacher Dashboard - General Teaching Assistance'
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideSMIEDTypingIndicator();
+        sendButton.disabled = false;
+        
+        if (data.success && data.response) {
+            addSMIEDMessage(data.response, 'ai');
+        } else if (data.status && data.result && data.result.length > 0) {
+            addSMIEDMessage(data.result[0], 'ai');
+        } else {
+            addSMIEDMessage('Sorry, I encountered an error. Please try again.', 'ai');
+        }
+    })
+    .catch(error => {
+        hideSMIEDTypingIndicator();
+        sendButton.disabled = false;
+        addSMIEDMessage('Sorry, I\'m having trouble connecting. Please check your internet connection and try again.', 'ai');
+        console.error('SMIED Chatbot error:', error);
+    });
+}
+
+function addSMIEDMessage(text, sender) {
+    const messagesContainer = document.getElementById('smiEDMessages');
+    
+    // Remove suggested questions after first user message
+    if (sender === 'user') {
+        const suggestedQuestions = messagesContainer.querySelector('.space-y-3');
+        if (suggestedQuestions && suggestedQuestions.querySelector('h4')) {
+            suggestedQuestions.remove();
+        }
+    }
+    
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `flex items-start space-x-3 ${sender === 'user' ? 'flex-row-reverse space-x-reverse' : ''}`;
+    
+    const avatar = document.createElement('div');
+    avatar.className = `w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+        sender === 'user' 
+            ? 'bg-indigo-500 text-white' 
+            : 'bg-indigo-100 text-indigo-600'
+    }`;
+    avatar.innerHTML = sender === 'user' ? '<i class="fas fa-user text-xs"></i>' : '<i class="fas fa-robot text-xs"></i>';
+    
+    const content = document.createElement('div');
+    content.className = `rounded-2xl px-4 py-3 shadow-sm border max-w-md ${
+        sender === 'user'
+            ? 'bg-indigo-500 text-white rounded-tr-md'
+            : 'bg-white text-gray-800 border-gray-100 rounded-tl-md'
+    }`;
+    content.innerHTML = `<div class="text-sm leading-relaxed">${formatSMIEDMessage(text)}</div>`;
+    
+    messageDiv.appendChild(avatar);
+    messageDiv.appendChild(content);
+    
+    messagesContainer.appendChild(messageDiv);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+function formatSMIEDMessage(text) {
+    // Professional formatting for SMIED responses
+    let formattedText = text
+        // Clean up the response
+        .replace(/^Hello! I'm SMIED, your AI teaching assistant\. I'd be delighted to help\.\s*/g, '')
+        .replace(/^I'm SMIED, your AI teaching assistant\. I'm here to help with educational content, lesson planning, and teaching support\.\s*/g, '')
+        .replace(/^Good day! I'm SMIED, your AI teaching assistant\. I'm functioning properly and ready to assist with educational content\.\s*/g, '')
+        
+        // Format headers properly
+        .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-gray-900">$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em class="italic text-gray-700">$1</em>')
+        
+        // Format lists
+        .replace(/^•\s*(.+)$/gm, '<li class="ml-4 mb-1">• $1</li>')
+        .replace(/^-\s*(.+)$/gm, '<li class="ml-4 mb-1">• $1</li>')
+        .replace(/^(\d+)\.\s*(.+)$/gm, '<li class="ml-4 mb-1">$1. $2</li>')
+        
+        // Format sections with proper spacing
+        .replace(/\n\n/g, '</p><p class="mb-3">')
+        .replace(/\n/g, '<br>')
+        
+        // Wrap in paragraph tags
+        .replace(/^(.+)$/, '<p class="mb-3">$1</p>')
+        
+        // Clean up empty paragraphs
+        .replace(/<p class="mb-3"><\/p>/g, '')
+        .replace(/<p class="mb-3"><br><\/p>/g, '');
+    
+    // Add professional styling wrapper
+    return `<div class="prose prose-sm max-w-none text-gray-800 leading-relaxed">${formattedText}</div>`;
+}
+
+function showSMIEDTypingIndicator() {
+    const messagesContainer = document.getElementById('smiEDMessages');
+    
+    const typingDiv = document.createElement('div');
+    typingDiv.className = 'flex items-start space-x-3';
+    typingDiv.id = 'smiEDTypingIndicator';
+    
+    const avatar = document.createElement('div');
+    avatar.className = 'w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0';
+    avatar.innerHTML = '<i class="fas fa-robot text-indigo-600 text-xs"></i>';
+    
+    const content = document.createElement('div');
+    content.className = 'bg-white rounded-2xl rounded-tl-md px-4 py-3 shadow-sm border border-gray-100 max-w-xs';
+    content.innerHTML = `
+        <div class="flex items-center space-x-2 text-sm text-gray-600">
+            <span>SMIED is thinking</span>
+            <div class="flex space-x-1">
+                <div class="w-2 h-2 bg-gray-400 rounded-full typing-dot"></div>
+                <div class="w-2 h-2 bg-gray-400 rounded-full typing-dot"></div>
+                <div class="w-2 h-2 bg-gray-400 rounded-full typing-dot"></div>
+            </div>
+        </div>
+    `;
+    
+    typingDiv.appendChild(avatar);
+    typingDiv.appendChild(content);
+    
+    messagesContainer.appendChild(typingDiv);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+function hideSMIEDTypingIndicator() {
+    const typingIndicator = document.getElementById('smiEDTypingIndicator');
+    if (typingIndicator) {
+        typingIndicator.remove();
+    }
+}
 </script>
+
+<!-- SMIED AI Assistant Toggle Button -->
+<button class="fixed bottom-6 right-6 w-16 h-16 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white rounded-full shadow-2xl hover:shadow-3xl transform hover:scale-110 transition-all duration-300 z-50 flex items-center justify-center text-2xl" onclick="toggleSMIEDChatbot()" title="SMIED AI Assistant">
+    <i class="fas fa-robot"></i>
+</button>
+
+<!-- SMIED AI Assistant Widget -->
+<div class="fixed bottom-6 right-6 w-96 h-[600px] bg-white rounded-2xl shadow-2xl z-50 hidden flex-col overflow-hidden border border-gray-200" id="smiEDChatbot">
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-indigo-500 to-purple-600 text-white p-4 flex justify-between items-center">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                <i class="fas fa-robot text-lg"></i>
+            </div>
+            <div>
+                <h3 class="font-semibold text-lg">SMIED AI Assistant</h3>
+                <p class="text-xs text-indigo-100">Ready to help with your teaching</p>
+            </div>
+        </div>
+        <button class="w-8 h-8 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-full flex items-center justify-center transition-all duration-200" onclick="toggleSMIEDChatbot()">
+            <i class="fas fa-times text-sm"></i>
+        </button>
+    </div>
+    
+    <!-- Messages Container -->
+    <div class="flex-1 overflow-y-auto bg-gray-50 p-4 space-y-4" id="smiEDMessages">
+        <!-- Welcome Message -->
+        <div class="flex items-start space-x-3">
+            <div class="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <i class="fas fa-robot text-indigo-600 text-sm"></i>
+            </div>
+            <div class="bg-white rounded-2xl rounded-tl-md px-4 py-3 shadow-sm border border-gray-100 max-w-xs">
+                <p class="text-gray-800 text-sm leading-relaxed">Hello! I'm SMIED, your AI teaching assistant. I can help you with anything:</p>
+                <ul class="text-xs text-gray-600 mt-2 space-y-1">
+                    <li>• Complete lesson notes and content</li>
+                    <li>• Learning objectives and activities</li>
+                    <li>• Teaching strategies and methods</li>
+                    <li>• Assessment questions and tools</li>
+                    <li>• General questions and advice</li>
+                    <li>• Any teaching-related topics</li>
+                </ul>
+                <p class="text-gray-800 text-sm mt-2">Ask me anything - I'm here to help with all your teaching needs!</p>
+            </div>
+        </div>
+        
+        <!-- Quick Questions -->
+        <div class="space-y-3">
+            <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Quick Questions</h4>
+            <div class="flex flex-wrap gap-2">
+                <button class="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs rounded-full border border-blue-200 transition-colors duration-200" onclick="askSMIEDQuestion('Give me a complete lesson note on Solar System for Basic 4')">
+                    Solar System Lesson
+                </button>
+                <button class="px-3 py-1.5 bg-green-50 hover:bg-green-100 text-green-700 text-xs rounded-full border border-green-200 transition-colors duration-200" onclick="askSMIEDQuestion('How can I improve student engagement in my class?')">
+                    Student Engagement
+                </button>
+                <button class="px-3 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 text-xs rounded-full border border-purple-200 transition-colors duration-200" onclick="askSMIEDQuestion('What are effective classroom management strategies?')">
+                    Classroom Management
+                </button>
+                <button class="px-3 py-1.5 bg-orange-50 hover:bg-orange-100 text-orange-700 text-xs rounded-full border border-orange-200 transition-colors duration-200" onclick="askSMIEDQuestion('Help me create assessment questions for mathematics')">
+                    Assessment Help
+                </button>
+                <button class="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 text-xs rounded-full border border-red-200 transition-colors duration-200" onclick="askSMIEDQuestion('What are some creative teaching methods?')">
+                    Teaching Methods
+                </button>
+                <button class="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs rounded-full border border-indigo-200 transition-colors duration-200" onclick="askSMIEDQuestion('How do I handle difficult students?')">
+                    Student Behavior
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Input Area -->
+    <div class="p-4 bg-white border-t border-gray-200">
+        <form class="flex items-center space-x-3" onsubmit="sendSMIEDMessage(event)">
+            <div class="flex-1 relative">
+                <input 
+                    type="text" 
+                    id="smiEDInput" 
+                    placeholder="Ask SMIED anything - I'm here to help!" 
+                    autocomplete="off"
+                    class="w-full px-4 py-3 pr-12 bg-gray-50 border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm placeholder-gray-500"
+                >
+                <button 
+                    type="submit" 
+                    id="smiEDSend"
+                    class="absolute right-2 top-1/2 transform -translate-y-1/2 w-8 h-8 bg-indigo-500 hover:bg-indigo-600 disabled:bg-gray-300 text-white rounded-full flex items-center justify-center transition-colors duration-200"
+                >
+                    <i class="fas fa-paper-plane text-xs"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+/* Custom animations for typing indicator */
+@keyframes typing {
+    0%, 60%, 100% {
+        transform: translateY(0);
+    }
+    30% {
+        transform: translateY(-10px);
+    }
+}
+
+.typing-dot {
+    animation: typing 1.4s infinite;
+}
+
+.typing-dot:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.typing-dot:nth-child(3) {
+    animation-delay: 0.4s;
+}
+</style>
 {% endblock %}
