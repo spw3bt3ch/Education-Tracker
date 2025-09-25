@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}Student Login - SMIED{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full space-y-8">
+        <!-- Header -->
+        <div class="text-center">
+            <div class="mx-auto h-20 w-20 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
+                <i class="fas fa-graduation-cap text-white text-3xl"></i>
+            </div>
+            <h2 class="mt-6 text-4xl font-bold text-gray-900">
+                Student Portal
+            </h2>
+            <p class="mt-2 text-lg text-gray-600">
+                Access Your CBT Practice Center
+            </p>
+        </div>
+
+        <!-- Login Form -->
+        <div class="bg-white py-8 px-6 shadow-xl rounded-2xl border border-gray-100">
+            <form class="space-y-6" method="POST">
+                <div>
+                    <label for="student_id" class="block text-sm font-medium text-gray-700 mb-2">
+                        Student ID
+                    </label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-id-card text-gray-400"></i>
+                        </div>
+                        <input 
+                            id="student_id" 
+                            name="student_id" 
+                            type="text" 
+                            required 
+                            class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-lg"
+                            placeholder="Enter your Student ID"
+                        >
+                    </div>
+                </div>
+
+                <div>
+                    <button 
+                        type="submit" 
+                        class="group relative w-full flex justify-center py-4 px-6 border border-transparent text-lg font-semibold rounded-xl text-white bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                    >
+                        <span class="absolute left-0 inset-y-0 flex items-center pl-4">
+                            <i class="fas fa-rocket text-indigo-300 group-hover:text-indigo-200 text-lg"></i>
+                        </span>
+                        <span class="flex items-center">
+                            <i class="fas fa-laptop-code mr-2"></i>
+                            Start CBT Practice
+                        </span>
+                    </button>
+                </div>
+            </form>
+
+            <!-- CBT Practice Features -->
+            <div class="mt-8">
+                <div class="text-center mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2">CBT Practice Features</h3>
+                    <p class="text-sm text-gray-600">Comprehensive test preparation aligned with Nigerian curriculum</p>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-3 mb-6">
+                    <div class="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-3 text-center">
+                        <i class="fas fa-book-open text-green-600 text-lg mb-1"></i>
+                        <p class="text-xs font-medium text-green-800">Nigerian Curriculum</p>
+                    </div>
+                    <div class="bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-lg p-3 text-center">
+                        <i class="fas fa-subject text-blue-600 text-lg mb-1"></i>
+                        <p class="text-xs font-medium text-blue-800">Multiple Subjects</p>
+                    </div>
+                    <div class="bg-gradient-to-r from-purple-50 to-violet-50 border border-purple-200 rounded-lg p-3 text-center">
+                        <i class="fas fa-chart-line text-purple-600 text-lg mb-1"></i>
+                        <p class="text-xs font-medium text-purple-800">Progress Tracking</p>
+                    </div>
+                    <div class="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-lg p-3 text-center">
+                        <i class="fas fa-lightbulb text-orange-600 text-lg mb-1"></i>
+                        <p class="text-xs font-medium text-orange-800">Instant Feedback</p>
+                    </div>
+                </div>
+                
+                <div class="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg p-4">
+                    <div class="flex items-start">
+                        <i class="fas fa-star text-yellow-500 mr-3 mt-1"></i>
+                        <div class="text-sm text-indigo-800">
+                            <p class="font-semibold mb-2">What You'll Get:</p>
+                            <ul class="space-y-1 text-xs">
+                                <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i>Practice tests for all major subjects</li>
+                                <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i>Detailed explanations for each answer</li>
+                                <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i>Performance analytics and progress reports</li>
+                                <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i>Timed practice sessions</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CBT Practice Call-to-Action -->
+        <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+            <div class="text-center">
+                <div class="w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-laptop-code text-white text-2xl"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 mb-2">Ready to Practice?</h3>
+                <p class="text-gray-600 text-sm mb-4">
+                    Join thousands of students improving their test performance with our comprehensive CBT practice platform.
+                </p>
+                <div class="flex items-center justify-center space-x-4 text-xs text-gray-500">
+                    <div class="flex items-center">
+                        <i class="fas fa-users text-indigo-500 mr-1"></i>
+                        <span>1000+ Students</span>
+                    </div>
+                    <div class="flex items-center">
+                        <i class="fas fa-clock text-indigo-500 mr-1"></i>
+                        <span>24/7 Access</span>
+                    </div>
+                    <div class="flex items-center">
+                        <i class="fas fa-trophy text-indigo-500 mr-1"></i>
+                        <span>Proven Results</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Back to Home -->
+        <div class="text-center">
+            <a href="{{ url_for('index') }}" class="text-indigo-600 hover:text-indigo-500 text-sm font-medium">
+                <i class="fas fa-arrow-left mr-1"></i>
+                Back to Home
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-focus on student ID input
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('student_id').focus();
+    
+    // Add entrance animations
+    const elements = document.querySelectorAll('.bg-white');
+    elements.forEach((el, index) => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+            el.style.transition = 'all 0.6s ease-out';
+            el.style.opacity = '1';
+            el.style.transform = 'translateY(0)';
+        }, index * 200);
+    });
+});
+
+// Add some visual feedback
+document.querySelector('form').addEventListener('submit', function() {
+    const button = document.querySelector('button[type="submit"]');
+    button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Accessing CBT Practice...';
+    button.disabled = true;
+    button.classList.add('opacity-75');
+});
+
+// Add hover effects to feature cards
+document.addEventListener('DOMContentLoaded', function() {
+    const featureCards = document.querySelectorAll('.grid > div');
+    featureCards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-2px)';
+            this.style.transition = 'transform 0.2s ease';
+        });
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+        });
+    });
+});
+</script>
+{% endblock %}

@@ -81,7 +81,7 @@
                 <div class="mt-2 p-4 bg-gray-100 rounded-lg text-xs text-gray-600">
                     <p><strong>Error Type:</strong> Page Not Found</p>
                     <p><strong>Status Code:</strong> 404 Not Found</p>
-                    <p><strong>Timestamp:</strong> {{ moment().format('YYYY-MM-DD HH:mm:ss') }}</p>
+                    <p><strong>Timestamp:</strong> {{ moment().format('YYYY-MM-DD HH:mm:ss') if moment else 'N/A' }}</p>
                     <p><strong>Description:</strong> The requested resource could not be found on this server.</p>
                 </div>
             </details>

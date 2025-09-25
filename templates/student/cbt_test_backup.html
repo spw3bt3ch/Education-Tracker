@@ -1,0 +1,562 @@
+{% extends "base.html" %}
+
+{% block title %}CBT Test - {{ subject.name }} - SMIED{% endblock %}
+
+{% block content %}
+<!-- Ensure hidden class works properly -->
+<style>
+    .question-container.hidden {
+        display: none !important;
+    }
+    .question-container:not(.hidden) {
+        display: block !important;
+    }
+</style>
+
+<div class="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+    <!-- Test Header -->
+    <div class="bg-white shadow-lg border-b border-gray-200 sticky top-0 z-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-4">
+                    <div class="h-12 w-12 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full flex items-center justify-center">
+                        <i class="fas fa-laptop-code text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-gray-900">{{ subject.name }} Practice Test</h1>
+                        <p class="text-sm text-gray-600">{{ student.first_name }} {{ student.last_name }} - {{ student.student_id }}</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="text-right">
+                        <div class="text-sm text-gray-600">Time Remaining</div>
+                        <div id="timer" class="text-lg font-bold text-indigo-600">15:00</div>
+                    </div>
+                    <button onclick="submitTest()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors duration-200">
+                        <i class="fas fa-check mr-1"></i>Submit Test
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Test Content -->
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+            <!-- Question Navigation -->
+            <div class="mb-8">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-semibold text-gray-900">Question Navigation</h2>
+                    <span class="text-sm text-gray-600">Question <span id="current-question">1</span> of {{ questions|length }}</span>
+                </div>
+                <div class="flex flex-wrap gap-2" id="question-nav">
+                    {% for question in questions %}
+                    <button class="w-10 h-10 rounded-full border-2 border-gray-300 text-gray-600 hover:border-indigo-500 hover:text-indigo-600 transition-colors duration-200 question-nav-btn"
+                            data-question="{{ loop.index0 }}">
+                        {{ loop.index }}
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Questions -->
+            <form id="test-form">
+                <!-- Debug: Questions count = {{ questions|length if questions else 0 }} -->
+                {% if questions and questions|length > 0 %}
+                    {% for question in questions %}
+                    <!-- Debug: Question {{ loop.index }} - {{ question.question[:50] }}... -->
+                    <div class="question-container {% if loop.index0 != 0 %}hidden{% endif %}" data-question="{{ loop.index0 }}">
+                        <div class="mb-6">
+                            <h3 class="text-xl font-bold text-gray-900 mb-4">
+                                Question {{ loop.index }}: {{ question.question }}
+                            </h3>
+                        
+                            <div class="space-y-3">
+                                {% for option in question.options %}
+                                <label class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-indigo-50 hover:border-indigo-300 cursor-pointer transition-all duration-200">
+                                <input type="radio" 
+                                       name="question_{{ question.id }}" 
+                                       value="{{ loop.index0 }}" 
+                                       class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"
+                                       data-question-index="{{ loop.index0 }}">
+                                    <span class="ml-3 text-gray-900 font-medium">{{ option }}</span>
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+                {% else %}
+                <div class="text-center py-12">
+                    <div class="mx-auto h-16 w-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                        <i class="fas fa-exclamation-triangle text-red-500 text-2xl"></i>
+                    </div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">No Questions Available</h3>
+                    <p class="text-gray-600">Questions are not being generated properly. Please try again.</p>
+                    <p class="text-sm text-gray-500 mt-2">Debug: Questions count = {{ questions|length if questions else 0 }}</p>
+                </div>
+                {% endif %}
+            </form>
+
+            <!-- Hidden data element for CSP-safe JSON -->
+            <div id="test-data" style="display: none;">{{ questions|tojson|safe }}</div>
+
+            <!-- Navigation Buttons -->
+            <div class="flex justify-between items-center mt-8 pt-6 border-t border-gray-200">
+                <button id="prev-btn"
+                        class="px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <i class="fas fa-arrow-left mr-2"></i>Previous
+                </button>
+                
+                <div class="flex space-x-2">
+                    <button id="mark-review-btn"
+                            class="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-colors duration-200">
+                        <i class="fas fa-flag mr-1"></i>Mark for Review
+                    </button>
+                    <button id="next-btn"
+                            class="px-6 py-3 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg transition-colors duration-200">
+                        Next<i class="fas fa-arrow-right ml-2"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Results Modal -->
+<div id="results-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-8">
+            <div class="text-center">
+                <div class="mx-auto h-16 w-16 bg-gradient-to-r from-green-400 to-blue-500 rounded-full flex items-center justify-center mb-4">
+                    <i class="fas fa-trophy text-white text-2xl"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-900 mb-4">Test Completed!</h3>
+                <div class="space-y-4">
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <div class="text-3xl font-bold text-indigo-600" id="final-score">0/{{ questions|length }}</div>
+                        <div class="text-gray-600">Questions Answered</div>
+                    </div>
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <div class="text-2xl font-bold text-green-600" id="percentage">0%</div>
+                        <div class="text-gray-600">Accuracy</div>
+                    </div>
+                </div>
+                <div class="mt-6 space-y-3">
+                    <button onclick="reviewAnswers()" 
+                            class="w-full px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg transition-colors duration-200">
+                        <i class="fas fa-eye mr-2"></i>Review Answers
+                    </button>
+                    <button onclick="retakeTest()" 
+                            class="w-full px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors duration-200">
+                        <i class="fas fa-redo mr-2"></i>Retake Test
+                    </button>
+                    <a href="{{ url_for('student_cbt_practice') }}" 
+                       class="w-full px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors duration-200 inline-block text-center">
+                        <i class="fas fa-home mr-2"></i>Back to Practice
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentQuestionIndex = 0;
+let totalQuestions = {{ questions|length }};
+let timeRemaining = 15 * 60; // 15 minutes in seconds
+let timerInterval;
+let answeredQuestions = new Set();
+
+// Parse test data safely to avoid CSP issues
+let testData = [];
+try {
+    const testDataElement = document.getElementById('test-data');
+    if (testDataElement) {
+        testData = JSON.parse(testDataElement.textContent);
+    }
+} catch (error) {
+    console.error('Error parsing test data:', error);
+    testData = [];
+}
+
+// Debug logging
+console.log('=== CBT Test Initialization ===');
+console.log('Total questions:', totalQuestions);
+console.log('Test data:', testData);
+console.log('Current question index:', currentQuestionIndex);
+
+// Verify questions are loaded
+if (totalQuestions === 0) {
+    console.error('❌ No questions loaded!');
+} else {
+    console.log('✅ Questions loaded successfully');
+}
+
+// Check if question containers exist and set up event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    const questionContainers = document.querySelectorAll('.question-container');
+    console.log('DOM loaded - Found question containers:', questionContainers.length);
+    
+    if (questionContainers.length === 0) {
+        console.error('❌ No question containers found in DOM!');
+    } else {
+        console.log('✅ Question containers found in DOM');
+        questionContainers.forEach((q, i) => {
+            console.log(`Question ${i}: data-question="${q.getAttribute('data-question')}"`);
+        });
+    }
+    
+    // Set up event listeners for radio buttons
+    const radioButtons = document.querySelectorAll('input[type="radio"][data-question-index]');
+    console.log('Setting up event listeners for', radioButtons.length, 'radio buttons');
+    
+    radioButtons.forEach(radio => {
+        radio.addEventListener('change', function() {
+            const questionIndex = parseInt(this.getAttribute('data-question-index'));
+            console.log('Radio button changed for question:', questionIndex);
+            markQuestionAnswered(questionIndex);
+        });
+    });
+    
+    // Start the timer
+    startTimer();
+});
+
+// Initialize timer
+function startTimer() {
+    timerInterval = setInterval(() => {
+        timeRemaining--;
+        const minutes = Math.floor(timeRemaining / 60);
+        const seconds = timeRemaining % 60;
+        document.getElementById('timer').textContent = 
+            `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        
+        if (timeRemaining <= 0) {
+            submitTest();
+        }
+    }, 1000);
+}
+
+// Navigation functions
+function goToQuestion(index) {
+    try {
+        console.log('=== goToQuestion called ===');
+        console.log('Index:', index);
+        console.log('Current question index:', currentQuestionIndex);
+        console.log('Total questions:', totalQuestions);
+        
+        // Validate index
+        if (index < 0 || index >= totalQuestions) {
+            console.error('Invalid question index:', index, 'Valid range: 0 to', totalQuestions - 1);
+            return;
+        }
+        
+        // Get all question containers
+        const questionContainers = document.querySelectorAll('.question-container');
+        console.log('Found question containers:', questionContainers.length);
+        
+        if (questionContainers.length === 0) {
+            console.error('No question containers found!');
+            return;
+        }
+        
+        // Log current state of all questions BEFORE any changes
+        console.log('BEFORE changes - Current state:');
+        questionContainers.forEach((q, i) => {
+            const isHidden = q.classList.contains('hidden');
+            console.log(`Question ${i}: hidden=${isHidden}, data-question="${q.getAttribute('data-question')}"`);
+        });
+        
+        // Hide all questions
+        questionContainers.forEach(q => {
+            q.classList.add('hidden');
+            console.log('Hiding question:', q.getAttribute('data-question'));
+        });
+        
+        // Log state after hiding
+        console.log('AFTER hiding - Current state:');
+        questionContainers.forEach((q, i) => {
+            const isHidden = q.classList.contains('hidden');
+            console.log(`Question ${i}: hidden=${isHidden}, data-question="${q.getAttribute('data-question')}"`);
+        });
+        
+        // Find target question using multiple methods
+        let targetQuestion = document.querySelector(`[data-question="${index}"]`);
+        console.log('Target question element (method 1):', targetQuestion);
+        
+        // If not found, try alternative method
+        if (!targetQuestion) {
+            targetQuestion = document.querySelector(`.question-container[data-question="${index}"]`);
+            console.log('Target question element (method 2):', targetQuestion);
+        }
+        
+        // If still not found, search through all containers
+        if (!targetQuestion) {
+            questionContainers.forEach((q, i) => {
+                if (q.getAttribute('data-question') === index.toString()) {
+                    targetQuestion = q;
+                    console.log('Target question found in loop at index:', i);
+                }
+            });
+        }
+        
+        console.log('Final target question element:', targetQuestion);
+        console.log('Looking for selector: [data-question="' + index + '"]');
+        
+        if (targetQuestion) {
+            console.log('Before removing hidden class - classes:', targetQuestion.className);
+            targetQuestion.classList.remove('hidden');
+            console.log('After removing hidden class - classes:', targetQuestion.className);
+            console.log('✅ Question', index, 'shown successfully');
+            
+            // Verify the question is actually visible
+            const isVisible = !targetQuestion.classList.contains('hidden');
+            console.log('Question visibility after show:', isVisible);
+            
+            // Additional verification
+            const computedStyle = window.getComputedStyle(targetQuestion);
+            console.log('Computed display style:', computedStyle.display);
+            console.log('Computed visibility style:', computedStyle.visibility);
+            
+        } else {
+            console.error('❌ Question container not found for index:', index);
+            console.log('Available question containers:');
+            questionContainers.forEach((q, i) => {
+                console.log(`  ${i}: data-question="${q.getAttribute('data-question')}"`);
+            });
+            
+            // Try alternative selectors
+            console.log('Trying alternative selectors...');
+            const alt1 = document.querySelector(`.question-container[data-question="${index}"]`);
+            console.log('Alternative selector 1 result:', alt1);
+            
+            const alt2 = document.querySelectorAll('.question-container');
+            console.log('All question containers:', alt2.length);
+            alt2.forEach((q, i) => {
+                console.log(`  Container ${i}:`, q, 'data-question:', q.getAttribute('data-question'));
+            });
+            
+            return;
+        }
+        
+        // Update current question index
+        currentQuestionIndex = index;
+        console.log('Updated currentQuestionIndex to:', currentQuestionIndex);
+        
+        // Update question counter
+        const currentQuestionElement = document.getElementById('current-question');
+        if (currentQuestionElement) {
+            currentQuestionElement.textContent = index + 1;
+            console.log('Updated question counter to:', index + 1);
+        } else {
+            console.warn('Question counter element not found');
+        }
+        
+        // Update navigation buttons
+        updateNavigationButtons();
+        
+        // Update question nav buttons
+        updateQuestionNavButtons();
+        
+        // Final verification
+        console.log('FINAL STATE - All questions:');
+        const finalContainers = document.querySelectorAll('.question-container');
+        finalContainers.forEach((q, i) => {
+            const isHidden = q.classList.contains('hidden');
+            const isVisible = !isHidden;
+            console.log(`Question ${i}: hidden=${isHidden}, visible=${isVisible}, data-question="${q.getAttribute('data-question')}"`);
+        });
+        
+        console.log('✅ Successfully navigated to question', index);
+        console.log('=== goToQuestion completed ===');
+        
+    } catch (error) {
+        console.error('❌ Error in goToQuestion:', error);
+        console.error('Stack trace:', error.stack);
+    }
+}
+
+function nextQuestion() {
+    try {
+        console.log('nextQuestion called, current:', currentQuestionIndex, 'total:', totalQuestions);
+        if (currentQuestionIndex < totalQuestions - 1) {
+            goToQuestion(currentQuestionIndex + 1);
+        } else {
+            console.log('Already at last question');
+        }
+    } catch (error) {
+        console.error('Error in nextQuestion:', error);
+    }
+}
+
+function previousQuestion() {
+    if (currentQuestionIndex > 0) {
+        goToQuestion(currentQuestionIndex - 1);
+    }
+}
+
+function updateNavigationButtons() {
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    
+    if (!prevBtn || !nextBtn) {
+        console.error('Navigation buttons not found');
+        return;
+    }
+    
+    prevBtn.disabled = currentQuestionIndex === 0;
+    nextBtn.disabled = currentQuestionIndex === totalQuestions - 1;
+    
+    if (currentQuestionIndex === totalQuestions - 1) {
+        nextBtn.innerHTML = 'Submit<i class="fas fa-check ml-2"></i>';
+    } else {
+        nextBtn.innerHTML = 'Next<i class="fas fa-arrow-right ml-2"></i>';
+    }
+}
+
+function updateQuestionNavButtons() {
+    document.querySelectorAll('.question-nav-btn').forEach(btn => {
+        const questionIndex = parseInt(btn.dataset.question);
+        if (questionIndex === currentQuestionIndex) {
+            btn.classList.add('bg-indigo-500', 'text-white', 'border-indigo-500');
+        } else if (answeredQuestions.has(questionIndex)) {
+            btn.classList.add('bg-green-500', 'text-white', 'border-green-500');
+        } else {
+            btn.classList.remove('bg-indigo-500', 'text-white', 'border-indigo-500', 'bg-green-500', 'border-green-500');
+        }
+    });
+}
+
+function markQuestionAnswered(questionIndex) {
+    answeredQuestions.add(currentQuestionIndex);
+    updateQuestionNavButtons();
+}
+
+function markForReview() {
+    // Add visual indicator for review
+    const currentBtn = document.querySelector(`[data-question="${currentQuestionIndex}"]`);
+    currentBtn.classList.add('bg-yellow-500', 'text-white', 'border-yellow-500');
+}
+
+function submitTest() {
+    clearInterval(timerInterval);
+    
+    // Calculate results
+    let correctAnswers = 0;
+    const form = document.getElementById('test-form');
+    const formData = new FormData(form);
+    
+    testData.forEach((question, index) => {
+        const selectedAnswer = formData.get(`question_${question.id}`);
+        if (selectedAnswer && parseInt(selectedAnswer) === question.correct) {
+            correctAnswers++;
+        }
+    });
+    
+    // Show results
+    document.getElementById('final-score').textContent = `${correctAnswers}/${totalQuestions}`;
+    document.getElementById('percentage').textContent = `${Math.round((correctAnswers / totalQuestions) * 100)}%`;
+    document.getElementById('results-modal').classList.remove('hidden');
+}
+
+function reviewAnswers() {
+    // Implement answer review functionality
+    alert('Answer review feature coming soon!');
+}
+
+function retakeTest() {
+    location.reload();
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    try {
+        console.log('CBT Test initialized');
+        console.log('Total questions:', totalQuestions);
+        console.log('Test data:', testData);
+        
+        // Validate data
+        if (!totalQuestions || totalQuestions <= 0) {
+            console.error('Invalid total questions:', totalQuestions);
+            return;
+        }
+        
+        if (!testData || !Array.isArray(testData)) {
+            console.error('Invalid test data:', testData);
+            return;
+        }
+        
+        startTimer();
+        updateNavigationButtons();
+        updateQuestionNavButtons();
+        
+        // Set up event listeners
+        const nextBtn = document.getElementById('next-btn');
+        const prevBtn = document.getElementById('prev-btn');
+        const markReviewBtn = document.getElementById('mark-review-btn');
+        
+        if (nextBtn) {
+            nextBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                console.log('Next button clicked');
+                if (currentQuestionIndex === totalQuestions - 1) {
+                    submitTest();
+                } else {
+                    nextQuestion();
+                }
+            });
+        } else {
+            console.error('Next button not found');
+        }
+        
+        if (prevBtn) {
+            prevBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                console.log('Previous button clicked');
+                previousQuestion();
+            });
+        } else {
+            console.error('Previous button not found');
+        }
+        
+        if (markReviewBtn) {
+            markReviewBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                console.log('Mark for review clicked');
+                markForReview();
+            });
+        } else {
+            console.error('Mark review button not found');
+        }
+        
+        // Set up question navigation buttons
+        const questionNavBtns = document.querySelectorAll('.question-nav-btn');
+        console.log('Found question nav buttons:', questionNavBtns.length);
+        
+        questionNavBtns.forEach((btn, index) => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const questionIndex = parseInt(this.dataset.question);
+                console.log('Question nav clicked:', questionIndex);
+                goToQuestion(questionIndex);
+            });
+        });
+        
+        console.log('CBT Test initialization complete');
+        
+    } catch (error) {
+        console.error('Error initializing CBT test:', error);
+    }
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowLeft' && currentQuestionIndex > 0) {
+        previousQuestion();
+    } else if (e.key === 'ArrowRight' && currentQuestionIndex < totalQuestions - 1) {
+        nextQuestion();
+    }
+});
+</script>
+{% endblock %}
