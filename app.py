@@ -932,6 +932,11 @@ def pricing():
         # Return empty plans list if there's an error
         return render_template('pricing.html', plans=[])
 
+@app.route('/contact')
+def contact():
+    """Contact page"""
+    return render_template('contact.html')
+
 @app.route('/payment/initialize', methods=['POST'])
 def initialize_payment():
     """Initialize payment for a subscription plan"""
@@ -1352,6 +1357,1029 @@ def login():
             flash('⚠️ An unexpected error occurred during login. Please try again.', 'error')
     
     return render_template('auth/login.html')
+
+# Student Login Route
+@app.route('/student-login', methods=['GET', 'POST'])
+def student_login():
+    if request.method == 'POST':
+        try:
+            student_id = request.form.get('student_id', '').strip()
+            
+            if not student_id:
+                flash('Please enter your Student ID', 'error')
+                return render_template('auth/student_login.html')
+            
+            # Find student by student_id
+            student = Student.query.filter_by(student_id=student_id).first()
+            
+            if student:
+                # Store student info in session
+                session['student_id'] = student.id
+                session['student_name'] = f"{student.first_name} {student.last_name}"
+                session['student_class_id'] = student.class_id
+                session['student_school_id'] = student.school_id
+                
+                flash(f'Welcome back, {student.first_name}!', 'success')
+                return redirect(url_for('student_cbt_practice'))
+            else:
+                flash('Invalid Student ID. Please check your ID and try again.', 'error')
+                
+        except Exception as e:
+            print(f"Student login error: {e}")
+            flash('⚠️ An unexpected error occurred during login. Please try again.', 'error')
+    
+    return render_template('auth/student_login.html')
+
+# Add test student data (for development only)
+@app.route('/add-test-student')
+def add_test_student():
+    """Add test student data for development"""
+    try:
+        # Check if test student already exists
+        existing_student = Student.query.filter_by(student_id='STU001').first()
+        if existing_student:
+            return jsonify({'message': 'Test student already exists', 'student_id': 'STU001'})
+        
+        # Create a test class if it doesn't exist
+        test_class = Class.query.filter_by(name='Basic 4').first()
+        if not test_class:
+            # First, create a test teacher if it doesn't exist
+            test_teacher = User.query.filter_by(username='test_teacher').first()
+            if not test_teacher:
+                test_teacher = User(
+                    username='test_teacher',
+                    email='teacher@test.com',
+                    password_hash=generate_password_hash('password'),
+                    role='teacher',
+                    first_name='Test',
+                    last_name='Teacher',
+                    is_active=True
+                )
+                db.session.add(test_teacher)
+                db.session.commit()
+            
+            # Create a test school if it doesn't exist
+            test_school = School.query.filter_by(name='Test School').first()
+            if not test_school:
+                test_school = School(
+                    name='Test School',
+                    address='Test Address',
+                    phone='1234567890',
+                    email='school@test.com'
+                )
+                db.session.add(test_school)
+                db.session.commit()
+            
+            test_class = Class(
+                name='Basic 4',
+                grade_level='4',
+                teacher_id=test_teacher.id,
+                school_id=test_school.id
+            )
+            db.session.add(test_class)
+            db.session.commit()
+        
+        # Create test student
+        test_student = Student(
+            first_name='John',
+            last_name='Doe',
+            student_id='STU001',
+            class_id=test_class.id,
+            school_id=test_class.school_id,
+            date_of_birth=datetime(2010, 5, 15).date()
+        )
+        
+        db.session.add(test_student)
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Test student created successfully',
+            'student_id': 'STU001',
+            'name': 'John Doe',
+            'class': 'Basic 4'
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Student CBT Practice Routes
+@app.route('/student/cbt-practice')
+def student_cbt_practice():
+    """CBT Practice page for students"""
+    if 'student_id' not in session:
+        flash('Please login with your Student ID to access CBT practice', 'error')
+        return redirect(url_for('student_login'))
+    
+    try:
+        # Get student info
+        student_id = session['student_id']
+        student = Student.query.get(student_id)
+        
+        if not student:
+            session.clear()
+            flash('Student not found. Please login again.', 'error')
+            return redirect(url_for('student_login'))
+        
+        # Get student's class
+        student_class = Class.query.get(student.class_id)
+        
+        # If class doesn't exist, create a default one
+        if not student_class:
+            student_class = {
+                'name': 'Basic 4',
+                'grade_level': 4
+            }
+        else:
+            # Convert grade_level to int if it's a string
+            try:
+                grade_level = int(student_class.grade_level) if isinstance(student_class.grade_level, str) else student_class.grade_level
+            except (ValueError, TypeError):
+                grade_level = 4
+            
+            student_class = {
+                'name': student_class.name,
+                'grade_level': grade_level
+            }
+        
+        return render_template('student/cbt_practice.html', 
+                             student=student, 
+                             student_class=student_class)
+                             
+    except Exception as e:
+        print(f"CBT Practice error: {e}")
+        import traceback
+        traceback.print_exc()
+        flash('⚠️ An error occurred. Please try again.', 'error')
+        return redirect(url_for('student_login'))
+
+@app.route('/student/cbt-test')
+def student_cbt_test():
+    """Start CBT test for selected subject"""
+    if 'student_id' not in session:
+        return jsonify({'error': 'Please login first'}), 401
+    
+    subject_id = request.args.get('subject_id')
+    if not subject_id:
+        return jsonify({'error': 'Subject not selected'}), 400
+    
+    try:
+        # Get student info
+        student_id = session['student_id']
+        student = Student.query.get(student_id)
+        
+        if not student:
+            return jsonify({'error': 'Student not found'}), 404
+        
+        # Create subject info based on subject_id
+        subject_names = {
+            'math': 'Mathematics',
+            'english': 'English Language',
+            'science': 'Basic Science',
+            'social': 'Social Studies',
+            'crs': 'Christian Religious Studies',
+            'civic': 'Civic Education',
+            'technology': 'Basic Technology',
+            'cca': 'Cultural & Creative Arts',
+            'phe': 'Physical & Health Education'
+        }
+        
+        subject_name = subject_names.get(subject_id, 'General Subject')
+        
+        # Get student's class info
+        student_class = Class.query.get(student.class_id)
+        
+        # Create a default class if none exists
+        if not student_class:
+            class_info = {
+                'name': 'Basic 4',
+                'grade_level': 4
+            }
+            print(f"Student {student.student_id}: Using default class Basic 4")
+        else:
+            try:
+                grade_level = int(student_class.grade_level) if isinstance(student_class.grade_level, str) else student_class.grade_level
+            except (ValueError, TypeError):
+                grade_level = 4
+                print(f"Student {student.student_id}: Invalid grade_level, using default 4")
+            
+            class_info = {
+                'name': student_class.name,
+                'grade_level': grade_level
+            }
+            print(f"Student {student.student_id}: Using class {class_info['name']} with grade level {grade_level}")
+        
+        # Generate questions based on subject and class level
+        questions = generate_cbt_questions(subject_id, class_info)
+        
+        return render_template('student/cbt_test.html', 
+                             student=student, 
+                             subject={'name': subject_name, 'id': subject_id}, 
+                             questions=questions)
+                             
+    except Exception as e:
+        print(f"CBT Test error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': 'Failed to start test'}), 500
+
+@app.route('/student/cbt-results')
+def student_cbt_results():
+    """Display CBT test results"""
+    if 'student_id' not in session:
+        flash('Please login to view results', 'error')
+        return redirect(url_for('student_login'))
+    
+    try:
+        student_id = session['student_id']
+        student = Student.query.get(student_id)
+        
+        # Get recent test results (you can implement this based on your needs)
+        return render_template('student/cbt_results.html', student=student)
+        
+    except Exception as e:
+        print(f"CBT Results error: {e}")
+        flash('⚠️ An error occurred. Please try again.', 'error')
+        return redirect(url_for('student_cbt_practice'))
+
+def generate_cbt_questions(subject_id, class_info):
+    """Generate CBT questions based on subject and class level for Nigerian curriculum"""
+    questions = []
+    grade_level = class_info.get('grade_level', 4) if isinstance(class_info, dict) else (class_info.grade_level if hasattr(class_info, 'grade_level') else 4)
+    
+    print(f"Generating questions for subject: {subject_id}, class: {class_info.get('name', 'Unknown')}, grade_level: {grade_level}")
+    
+    # Mathematics questions based on Nigerian curriculum
+    if subject_id == 'math':
+        if grade_level <= 3:  # Basic 1-3
+            questions = [
+                {
+                    'id': 1,
+                    'question': 'What is 5 + 3?',
+                    'options': ['6', '7', '8', '9'],
+                    'correct': 2,
+                    'explanation': '5 + 3 = 8'
+                },
+                {
+                    'id': 2,
+                    'question': 'How many sides does a triangle have?',
+                    'options': ['2', '3', '4', '5'],
+                    'correct': 1,
+                    'explanation': 'A triangle has 3 sides'
+                },
+                {
+                    'id': 3,
+                    'question': 'What is 10 - 4?',
+                    'options': ['5', '6', '7', '8'],
+                    'correct': 1,
+                    'explanation': '10 - 4 = 6'
+                },
+                {
+                    'id': 4,
+                    'question': 'Which number comes after 15?',
+                    'options': ['14', '16', '17', '18'],
+                    'correct': 1,
+                    'explanation': '16 comes after 15'
+                },
+                {
+                    'id': 5,
+                    'question': 'What is 2 × 3?',
+                    'options': ['5', '6', '7', '8'],
+                    'correct': 1,
+                    'explanation': '2 × 3 = 6'
+                },
+                {
+                    'id': 6,
+                    'question': 'What is 12 ÷ 3?',
+                    'options': ['3', '4', '5', '6'],
+                    'correct': 1,
+                    'explanation': '12 ÷ 3 = 4'
+                },
+                {
+                    'id': 7,
+                    'question': 'How many fingers are on one hand?',
+                    'options': ['4', '5', '6', '7'],
+                    'correct': 1,
+                    'explanation': 'One hand has 5 fingers'
+                },
+                {
+                    'id': 8,
+                    'question': 'What is 7 + 8?',
+                    'options': ['14', '15', '16', '17'],
+                    'correct': 1,
+                    'explanation': '7 + 8 = 15'
+                },
+                {
+                    'id': 9,
+                    'question': 'Which shape has 4 equal sides?',
+                    'options': ['Triangle', 'Rectangle', 'Square', 'Circle'],
+                    'correct': 2,
+                    'explanation': 'A square has 4 equal sides'
+                },
+                {
+                    'id': 10,
+                    'question': 'What is 20 - 12?',
+                    'options': ['6', '7', '8', '9'],
+                    'correct': 2,
+                    'explanation': '20 - 12 = 8'
+                }
+            ]
+        else:  # Basic 4-6
+            questions = [
+                {
+                    'id': 1,
+                    'question': 'What is 15 × 4?',
+                    'options': ['50', '60', '70', '80'],
+                    'correct': 1,
+                    'explanation': '15 × 4 = 60'
+                },
+                {
+                    'id': 2,
+                    'question': 'What is the area of a rectangle with length 8cm and width 5cm?',
+                    'options': ['13cm²', '26cm²', '40cm²', '45cm²'],
+                    'correct': 2,
+                    'explanation': 'Area = length × width = 8 × 5 = 40cm²'
+                },
+                {
+                    'id': 3,
+                    'question': 'What is 144 ÷ 12?',
+                    'options': ['10', '11', '12', '13'],
+                    'correct': 2,
+                    'explanation': '144 ÷ 12 = 12'
+                },
+                {
+                    'id': 4,
+                    'question': 'What is the perimeter of a square with side 6cm?',
+                    'options': ['12cm', '18cm', '24cm', '36cm'],
+                    'correct': 2,
+                    'explanation': 'Perimeter = 4 × side = 4 × 6 = 24cm'
+                },
+                {
+                    'id': 5,
+                    'question': 'What is 25% of 80?',
+                    'options': ['15', '20', '25', '30'],
+                    'correct': 1,
+                    'explanation': '25% of 80 = 0.25 × 80 = 20'
+                },
+                {
+                    'id': 6,
+                    'question': 'What is 7² (7 squared)?',
+                    'options': ['42', '49', '56', '63'],
+                    'correct': 1,
+                    'explanation': '7² = 7 × 7 = 49'
+                },
+                {
+                    'id': 7,
+                    'question': 'What is the value of π (pi) to 2 decimal places?',
+                    'options': ['3.12', '3.14', '3.16', '3.18'],
+                    'correct': 1,
+                    'explanation': 'π (pi) = 3.14 (to 2 decimal places)'
+                },
+                {
+                    'id': 8,
+                    'question': 'What is 3/4 as a decimal?',
+                    'options': ['0.25', '0.5', '0.75', '0.8'],
+                    'correct': 2,
+                    'explanation': '3/4 = 0.75'
+                },
+                {
+                    'id': 9,
+                    'question': 'What is the next number in the sequence: 2, 4, 8, 16, ?',
+                    'options': ['20', '24', '32', '40'],
+                    'correct': 2,
+                    'explanation': 'Each number is doubled: 16 × 2 = 32'
+                },
+                {
+                    'id': 10,
+                    'question': 'What is the volume of a cube with side length 3cm?',
+                    'options': ['9cm³', '18cm³', '27cm³', '36cm³'],
+                    'correct': 2,
+                    'explanation': 'Volume = side³ = 3³ = 27cm³'
+                }
+            ]
+    
+    # English Language questions
+    elif subject_id == 'english':
+        if grade_level <= 3:
+            questions = [
+                {
+                    'id': 1,
+                    'question': 'Which word is a noun?',
+                    'options': ['run', 'beautiful', 'school', 'quickly'],
+                    'correct': 2,
+                    'explanation': 'School is a noun (a place)'
+                },
+                {
+                    'id': 2,
+                    'question': 'What is the plural of "child"?',
+                    'options': ['childs', 'children', 'childes', 'child'],
+                    'correct': 1,
+                    'explanation': 'The plural of child is children'
+                },
+                {
+                    'id': 3,
+                    'question': 'Which word rhymes with "cat"?',
+                    'options': ['dog', 'bat', 'fish', 'bird'],
+                    'correct': 1,
+                    'explanation': 'Bat rhymes with cat'
+                },
+                {
+                    'id': 4,
+                    'question': 'What is the opposite of "big"?',
+                    'options': ['large', 'huge', 'small', 'tall'],
+                    'correct': 2,
+                    'explanation': 'Small is the opposite of big'
+                },
+                {
+                    'id': 5,
+                    'question': 'Which sentence is correct?',
+                    'options': ['I am go to school', 'I go to school', 'I goes to school', 'I going to school'],
+                    'correct': 1,
+                    'explanation': 'I go to school is the correct sentence'
+                },
+                {
+                    'id': 6,
+                    'question': 'What is the first letter of the alphabet?',
+                    'options': ['B', 'A', 'C', 'D'],
+                    'correct': 1,
+                    'explanation': 'A is the first letter of the alphabet'
+                },
+                {
+                    'id': 7,
+                    'question': 'Which word starts with the letter "B"?',
+                    'options': ['Apple', 'Ball', 'Cat', 'Dog'],
+                    'correct': 1,
+                    'explanation': 'Ball starts with the letter B'
+                },
+                {
+                    'id': 8,
+                    'question': 'What is the past tense of "play"?',
+                    'options': ['playing', 'played', 'plays', 'play'],
+                    'correct': 1,
+                    'explanation': 'The past tense of play is played'
+                },
+                {
+                    'id': 9,
+                    'question': 'Which word is a verb?',
+                    'options': ['happy', 'book', 'jump', 'red'],
+                    'correct': 2,
+                    'explanation': 'Jump is a verb (an action word)'
+                },
+                {
+                    'id': 10,
+                    'question': 'What is the correct spelling?',
+                    'options': ['happi', 'happy', 'happie', 'hapi'],
+                    'correct': 1,
+                    'explanation': 'Happy is spelled with double p and y'
+                }
+            ]
+        else:
+            questions = [
+                {
+                    'id': 1,
+                    'question': 'What is a synonym for "happy"?',
+                    'options': ['sad', 'angry', 'joyful', 'tired'],
+                    'correct': 2,
+                    'explanation': 'Joyful is a synonym for happy'
+                },
+                {
+                    'id': 2,
+                    'question': 'Which word is an adjective?',
+                    'options': ['quickly', 'beautiful', 'running', 'teacher'],
+                    'correct': 1,
+                    'explanation': 'Beautiful is an adjective (describes a noun)'
+                },
+                {
+                    'id': 3,
+                    'question': 'What is the past tense of "go"?',
+                    'options': ['goed', 'went', 'gone', 'going'],
+                    'correct': 1,
+                    'explanation': 'The past tense of go is went'
+                },
+                {
+                    'id': 4,
+                    'question': 'Which is a compound word?',
+                    'options': ['book', 'school', 'classroom', 'teacher'],
+                    'correct': 2,
+                    'explanation': 'Classroom is a compound word (class + room)'
+                },
+                {
+                    'id': 5,
+                    'question': 'What type of sentence is "What is your name?"',
+                    'options': ['statement', 'question', 'command', 'exclamation'],
+                    'correct': 1,
+                    'explanation': 'This is a question sentence'
+                },
+                {
+                    'id': 6,
+                    'question': 'What is the comparative form of "good"?',
+                    'options': ['gooder', 'better', 'best', 'goodest'],
+                    'correct': 1,
+                    'explanation': 'The comparative form of good is better'
+                },
+                {
+                    'id': 7,
+                    'question': 'Which word is an adverb?',
+                    'options': ['happy', 'quickly', 'beautiful', 'book'],
+                    'correct': 1,
+                    'explanation': 'Quickly is an adverb (describes how something is done)'
+                },
+                {
+                    'id': 8,
+                    'question': 'What is the plural of "mouse"?',
+                    'options': ['mouses', 'mice', 'mouse', 'mousies'],
+                    'correct': 1,
+                    'explanation': 'The plural of mouse is mice'
+                },
+                {
+                    'id': 9,
+                    'question': 'Which sentence uses correct punctuation?',
+                    'options': ['Hello, how are you?', 'Hello how are you?', 'Hello, how are you', 'Hello how are you'],
+                    'correct': 0,
+                    'explanation': 'Hello, how are you? has correct punctuation with comma and question mark'
+                },
+                {
+                    'id': 10,
+                    'question': 'What is a homophone for "there"?',
+                    'options': ['their', 'they\'re', 'both A and B', 'none of the above'],
+                    'correct': 2,
+                    'explanation': 'Both "their" and "they\'re" are homophones for "there"'
+                }
+            ]
+    
+    # Basic Science questions
+    elif subject_id == 'science':
+        if grade_level <= 3:
+            questions = [
+                {
+                    'id': 1,
+                    'question': 'Which part of the plant makes food?',
+                    'options': ['root', 'stem', 'leaf', 'flower'],
+                    'correct': 2,
+                    'explanation': 'Leaves make food through photosynthesis'
+                },
+                {
+                    'id': 2,
+                    'question': 'What do we use to see?',
+                    'options': ['ears', 'eyes', 'nose', 'mouth'],
+                    'correct': 1,
+                    'explanation': 'We use our eyes to see'
+                },
+                {
+                    'id': 3,
+                    'question': 'Which animal lives in water?',
+                    'options': ['cat', 'dog', 'fish', 'bird'],
+                    'correct': 2,
+                    'explanation': 'Fish live in water'
+                },
+                {
+                    'id': 4,
+                    'question': 'What do plants need to grow?',
+                    'options': ['water only', 'sunlight only', 'water and sunlight', 'nothing'],
+                    'correct': 2,
+                    'explanation': 'Plants need both water and sunlight to grow'
+                },
+                {
+                    'id': 5,
+                    'question': 'Which is a living thing?',
+                    'options': ['rock', 'tree', 'car', 'book'],
+                    'correct': 1,
+                    'explanation': 'A tree is a living thing'
+                },
+                {
+                    'id': 6,
+                    'question': 'What do we use to hear?',
+                    'options': ['eyes', 'ears', 'nose', 'mouth'],
+                    'correct': 1,
+                    'explanation': 'We use our ears to hear'
+                },
+                {
+                    'id': 7,
+                    'question': 'Which animal can fly?',
+                    'options': ['fish', 'bird', 'dog', 'cat'],
+                    'correct': 1,
+                    'explanation': 'Birds can fly'
+                },
+                {
+                    'id': 8,
+                    'question': 'What color is the sun?',
+                    'options': ['blue', 'green', 'yellow', 'red'],
+                    'correct': 2,
+                    'explanation': 'The sun appears yellow to us'
+                },
+                {
+                    'id': 9,
+                    'question': 'Which part of the body helps us breathe?',
+                    'options': ['heart', 'lungs', 'stomach', 'brain'],
+                    'correct': 1,
+                    'explanation': 'Lungs help us breathe'
+                },
+                {
+                    'id': 10,
+                    'question': 'What do we call baby cats?',
+                    'options': ['puppies', 'kittens', 'cubs', 'chicks'],
+                    'correct': 1,
+                    'explanation': 'Baby cats are called kittens'
+                }
+            ]
+        else:
+            questions = [
+                {
+                    'id': 1,
+                    'question': 'What is the process by which plants make food?',
+                    'options': ['respiration', 'photosynthesis', 'digestion', 'circulation'],
+                    'correct': 1,
+                    'explanation': 'Photosynthesis is how plants make food using sunlight'
+                },
+                {
+                    'id': 2,
+                    'question': 'Which organ pumps blood around the body?',
+                    'options': ['brain', 'heart', 'liver', 'kidney'],
+                    'correct': 1,
+                    'explanation': 'The heart pumps blood around the body'
+                },
+                {
+                    'id': 3,
+                    'question': 'What is the largest planet in our solar system?',
+                    'options': ['Earth', 'Mars', 'Jupiter', 'Saturn'],
+                    'correct': 2,
+                    'explanation': 'Jupiter is the largest planet in our solar system'
+                },
+                {
+                    'id': 4,
+                    'question': 'Which gas do we breathe in?',
+                    'options': ['carbon dioxide', 'oxygen', 'nitrogen', 'hydrogen'],
+                    'correct': 1,
+                    'explanation': 'We breathe in oxygen'
+                },
+                {
+                    'id': 5,
+                    'question': 'What is the hardest part of the human body?',
+                    'options': ['bone', 'tooth', 'nail', 'hair'],
+                    'correct': 1,
+                    'explanation': 'Tooth enamel is the hardest part of the human body'
+                },
+                {
+                    'id': 6,
+                    'question': 'What is the center of our solar system?',
+                    'options': ['Earth', 'Moon', 'Sun', 'Mars'],
+                    'correct': 2,
+                    'explanation': 'The Sun is the center of our solar system'
+                },
+                {
+                    'id': 7,
+                    'question': 'Which part of the plant absorbs water from the soil?',
+                    'options': ['leaves', 'stem', 'roots', 'flowers'],
+                    'correct': 2,
+                    'explanation': 'Roots absorb water and nutrients from the soil'
+                },
+                {
+                    'id': 8,
+                    'question': 'What do we call the study of living things?',
+                    'options': ['physics', 'chemistry', 'biology', 'geology'],
+                    'correct': 2,
+                    'explanation': 'Biology is the study of living things'
+                },
+                {
+                    'id': 9,
+                    'question': 'Which animal is warm-blooded?',
+                    'options': ['fish', 'lizard', 'bird', 'frog'],
+                    'correct': 2,
+                    'explanation': 'Birds are warm-blooded animals'
+                },
+                {
+                    'id': 10,
+                    'question': 'What is the chemical symbol for water?',
+                    'options': ['H2O', 'CO2', 'O2', 'NaCl'],
+                    'correct': 0,
+                    'explanation': 'H2O is the chemical symbol for water (2 hydrogen atoms, 1 oxygen atom)'
+                }
+            ]
+    
+    # Social Studies questions
+    elif subject_id == 'social':
+        questions = [
+            {
+                'id': 1,
+                'question': 'What is the capital of Nigeria?',
+                'options': ['Lagos', 'Abuja', 'Kano', 'Ibadan'],
+                'correct': 1,
+                'explanation': 'Abuja is the capital of Nigeria'
+            },
+            {
+                'id': 2,
+                'question': 'How many states are in Nigeria?',
+                'options': ['34', '36', '37', '38'],
+                'correct': 1,
+                'explanation': 'Nigeria has 36 states'
+            },
+            {
+                'id': 3,
+                'question': 'Which continent is Nigeria in?',
+                'options': ['Asia', 'Africa', 'Europe', 'America'],
+                'correct': 1,
+                'explanation': 'Nigeria is in Africa'
+            },
+            {
+                'id': 4,
+                'question': 'What is the largest ethnic group in Nigeria?',
+                'options': ['Yoruba', 'Hausa', 'Igbo', 'Fulani'],
+                'correct': 1,
+                'explanation': 'Hausa is the largest ethnic group in Nigeria'
+            },
+            {
+                'id': 5,
+                'question': 'Which river flows through Nigeria?',
+                'options': ['Nile', 'Niger', 'Congo', 'Zambezi'],
+                'correct': 1,
+                'explanation': 'The Niger River flows through Nigeria'
+            },
+            {
+                'id': 6,
+                'question': 'What is the official language of Nigeria?',
+                'options': ['French', 'English', 'Hausa', 'Yoruba'],
+                'correct': 1,
+                'explanation': 'English is the official language of Nigeria'
+            },
+            {
+                'id': 7,
+                'question': 'Which ocean borders Nigeria to the south?',
+                'options': ['Atlantic Ocean', 'Pacific Ocean', 'Indian Ocean', 'Arctic Ocean'],
+                'correct': 0,
+                'explanation': 'The Atlantic Ocean borders Nigeria to the south'
+            },
+            {
+                'id': 8,
+                'question': 'What is the currency of Nigeria?',
+                'options': ['Dollar', 'Pound', 'Naira', 'Euro'],
+                'correct': 2,
+                'explanation': 'The Naira is the currency of Nigeria'
+            },
+            {
+                'id': 9,
+                'question': 'Which country borders Nigeria to the west?',
+                'options': ['Ghana', 'Togo', 'Benin', 'Cameroon'],
+                'correct': 2,
+                'explanation': 'Benin borders Nigeria to the west'
+            },
+            {
+                'id': 10,
+                'question': 'What is the largest city in Nigeria?',
+                'options': ['Abuja', 'Kano', 'Lagos', 'Ibadan'],
+                'correct': 2,
+                'explanation': 'Lagos is the largest city in Nigeria'
+            }
+        ]
+    
+    # Christian Religious Studies questions
+    elif subject_id == 'crs':
+        questions = [
+            {
+                'id': 1,
+                'question': 'Who created the world according to the Bible?',
+                'options': ['Jesus', 'God', 'Moses', 'Adam'],
+                'correct': 1,
+                'explanation': 'God created the world according to the Bible'
+            },
+            {
+                'id': 2,
+                'question': 'How many days did God take to create the world?',
+                'options': ['5', '6', '7', '8'],
+                'correct': 1,
+                'explanation': 'God created the world in 6 days and rested on the 7th'
+            },
+            {
+                'id': 3,
+                'question': 'Who was the first man according to the Bible?',
+                'options': ['Noah', 'Abraham', 'Adam', 'Moses'],
+                'correct': 2,
+                'explanation': 'Adam was the first man according to the Bible'
+            },
+            {
+                'id': 4,
+                'question': 'What is the first book of the Bible?',
+                'options': ['Exodus', 'Genesis', 'Matthew', 'Psalms'],
+                'correct': 1,
+                'explanation': 'Genesis is the first book of the Bible'
+            },
+            {
+                'id': 5,
+                'question': 'Who was Jesus\' mother?',
+                'options': ['Elizabeth', 'Mary', 'Sarah', 'Rebecca'],
+                'correct': 1,
+                'explanation': 'Mary was Jesus\' mother'
+            },
+            {
+                'id': 6,
+                'question': 'What is the last book of the Bible?',
+                'options': ['Matthew', 'John', 'Revelation', 'Acts'],
+                'correct': 2,
+                'explanation': 'Revelation is the last book of the Bible'
+            },
+            {
+                'id': 7,
+                'question': 'Who built the ark according to the Bible?',
+                'options': ['Moses', 'Abraham', 'Noah', 'David'],
+                'correct': 2,
+                'explanation': 'Noah built the ark according to the Bible'
+            },
+            {
+                'id': 8,
+                'question': 'What is the Ten Commandments?',
+                'options': ['Rules given to Moses', 'Laws given to Adam', 'Commands given to Jesus', 'Instructions given to David'],
+                'correct': 0,
+                'explanation': 'The Ten Commandments were rules given to Moses by God'
+            },
+            {
+                'id': 9,
+                'question': 'Who was the father of Jesus?',
+                'options': ['Joseph', 'God', 'David', 'Abraham'],
+                'correct': 1,
+                'explanation': 'God is the father of Jesus according to Christian belief'
+            },
+            {
+                'id': 10,
+                'question': 'What is the Golden Rule?',
+                'options': ['Do unto others as you would have them do unto you', 'Love your neighbor as yourself', 'Honor your father and mother', 'Thou shalt not steal'],
+                'correct': 0,
+                'explanation': 'The Golden Rule is "Do unto others as you would have them do unto you"'
+            }
+        ]
+    
+    # Civic Education questions
+    elif subject_id == 'civic':
+        questions = [
+            {
+                'id': 1,
+                'question': 'What is the full meaning of NAFDAC?',
+                'options': ['National Agency for Food and Drug Administration and Control', 'National Association for Food and Drug Administration', 'National Agency for Food and Drug Control', 'National Association for Food and Drug Control'],
+                'correct': 0,
+                'explanation': 'NAFDAC stands for National Agency for Food and Drug Administration and Control'
+            },
+            {
+                'id': 2,
+                'question': 'At what age can a Nigerian vote?',
+                'options': ['16', '17', '18', '21'],
+                'correct': 2,
+                'explanation': 'Nigerians can vote at age 18'
+            },
+            {
+                'id': 3,
+                'question': 'What is the national anthem of Nigeria?',
+                'options': ['Arise O Compatriots', 'Nigeria We Hail Thee', 'God Bless Nigeria', 'Nigeria Our Country'],
+                'correct': 0,
+                'explanation': 'Arise O Compatriots is the national anthem of Nigeria'
+            },
+            {
+                'id': 4,
+                'question': 'Who is the head of government in Nigeria?',
+                'options': ['President', 'Governor', 'Minister', 'Senator'],
+                'correct': 0,
+                'explanation': 'The President is the head of government in Nigeria'
+            },
+            {
+                'id': 5,
+                'question': 'What are the three arms of government in Nigeria?',
+                'options': ['Executive, Legislature, Judiciary', 'Federal, State, Local', 'President, Governor, Chairman', 'Senate, House, Court'],
+                'correct': 0,
+                'explanation': 'The three arms of government are Executive, Legislature, and Judiciary'
+            },
+            {
+                'id': 6,
+                'question': 'What is the full meaning of EFCC?',
+                'options': ['Economic and Financial Crimes Commission', 'Economic and Financial Control Commission', 'Economic and Financial Crimes Control', 'Economic and Financial Crimes Committee'],
+                'correct': 0,
+                'explanation': 'EFCC stands for Economic and Financial Crimes Commission'
+            },
+            {
+                'id': 7,
+                'question': 'What is the national flag of Nigeria?',
+                'options': ['Green-White-Green', 'Red-White-Blue', 'Green-White-Red', 'Blue-White-Green'],
+                'correct': 0,
+                'explanation': 'The Nigerian flag is Green-White-Green'
+            },
+            {
+                'id': 8,
+                'question': 'What is the motto of Nigeria?',
+                'options': ['Unity and Faith', 'Peace and Progress', 'Unity and Faith, Peace and Progress', 'One Nigeria'],
+                'correct': 2,
+                'explanation': 'The motto of Nigeria is "Unity and Faith, Peace and Progress"'
+            },
+            {
+                'id': 9,
+                'question': 'What is the full meaning of INEC?',
+                'options': ['Independent National Electoral Commission', 'Independent National Election Commission', 'International National Electoral Commission', 'Independent National Electoral Committee'],
+                'correct': 0,
+                'explanation': 'INEC stands for Independent National Electoral Commission'
+            },
+            {
+                'id': 10,
+                'question': 'What is the national flower of Nigeria?',
+                'options': ['Rose', 'Hibiscus', 'Sunflower', 'Lily'],
+                'correct': 1,
+                'explanation': 'Hibiscus is the national flower of Nigeria'
+            }
+        ]
+    
+    # Default questions for other subjects
+    else:
+        questions = [
+            {
+                'id': 1,
+                'question': f'This is a practice question for your selected subject.',
+                'options': ['Option A', 'Option B', 'Option C', 'Option D'],
+                'correct': 0,
+                'explanation': 'This is a sample question for practice'
+            },
+            {
+                'id': 2,
+                'question': f'Another practice question for your selected subject.',
+                'options': ['Option A', 'Option B', 'Option C', 'Option D'],
+                'correct': 1,
+                'explanation': 'This is another sample question for practice'
+            },
+            {
+                'id': 3,
+                'question': f'Practice question 3 for your selected subject.',
+                'options': ['Option A', 'Option B', 'Option C', 'Option D'],
+                'correct': 2,
+                'explanation': 'This is practice question 3'
+            },
+            {
+                'id': 4,
+                'question': f'Practice question 4 for your selected subject.',
+                'options': ['Option A', 'Option B', 'Option C', 'Option D'],
+                'correct': 3,
+                'explanation': 'This is practice question 4'
+            },
+            {
+                'id': 5,
+                'question': f'Practice question 5 for your selected subject.',
+                'options': ['Option A', 'Option B', 'Option C', 'Option D'],
+                'correct': 0,
+                'explanation': 'This is practice question 5'
+            },
+            {
+                'id': 6,
+                'question': f'Practice question 6 for your selected subject.',
+                'options': ['Option A', 'Option B', 'Option C', 'Option D'],
+                'correct': 1,
+                'explanation': 'This is practice question 6'
+            },
+            {
+                'id': 7,
+                'question': f'Practice question 7 for your selected subject.',
+                'options': ['Option A', 'Option B', 'Option C', 'Option D'],
+                'correct': 2,
+                'explanation': 'This is practice question 7'
+            },
+            {
+                'id': 8,
+                'question': f'Practice question 8 for your selected subject.',
+                'options': ['Option A', 'Option B', 'Option C', 'Option D'],
+                'correct': 3,
+                'explanation': 'This is practice question 8'
+            },
+            {
+                'id': 9,
+                'question': f'Practice question 9 for your selected subject.',
+                'options': ['Option A', 'Option B', 'Option C', 'Option D'],
+                'correct': 0,
+                'explanation': 'This is practice question 9'
+            },
+            {
+                'id': 10,
+                'question': f'Practice question 10 for your selected subject.',
+                'options': ['Option A', 'Option B', 'Option C', 'Option D'],
+                'correct': 1,
+                'explanation': 'This is practice question 10'
+            }
+        ]
+    
+    print(f"Generated {len(questions)} questions for {subject_id} at grade level {grade_level}")
+    return questions
+
+@app.route('/test-class-questions')
+def test_class_questions():
+    """Test route to verify class-based question generation"""
+    test_classes = [
+        {'name': 'Basic 1', 'grade_level': 1},
+        {'name': 'Basic 2', 'grade_level': 2},
+        {'name': 'Basic 3', 'grade_level': 3},
+        {'name': 'Basic 4', 'grade_level': 4},
+        {'name': 'Basic 5', 'grade_level': 5},
+        {'name': 'Basic 6', 'grade_level': 6}
+    ]
+    
+    subjects = ['math', 'english', 'science']
+    results = {}
+    
+    for subject in subjects:
+        results[subject] = {}
+        for class_info in test_classes:
+            questions = generate_cbt_questions(subject, class_info)
+            results[subject][class_info['name']] = len(questions)
+    
+    return f"<pre>{results}</pre>"
 
 @app.route('/logout')
 @login_required
@@ -2043,6 +3071,206 @@ def api_teacher_delete_parent(parent_id):
         
     except Exception as e:
         db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+def filter_inappropriate_content(text):
+    """Filter inappropriate content and ensure professional educational responses"""
+    if not text:
+        return "I'm here to help with educational content. How can I assist you with your teaching needs?"
+    
+    # List of inappropriate terms to filter out
+    inappropriate_terms = [
+        'naughty', 'sexy', 'hot', 'steamy', 'hunty', 'gay friend', 'spice up',
+        'bang', 'adult', 'intimate', 'romantic', 'flirty', 'seductive'
+    ]
+    
+    # Check if response contains inappropriate content
+    text_lower = text.lower()
+    for term in inappropriate_terms:
+        if term in text_lower:
+            return """I'm SMIED, your professional AI teaching assistant. I'm here to help with educational content, lesson planning, and teaching support.
+
+How can I assist you with your teaching needs today? I can help with:
+• Lesson notes and educational content
+• Learning objectives and activities  
+• Teaching strategies and methods
+• Assessment questions and tools
+• Classroom management advice
+
+What would you like to know about teaching?"""
+    
+    # If content is appropriate, return as is
+    return text
+
+# AI Chatbot API for Teachers
+@app.route('/api/teacher/ai-chatbot', methods=['POST'])
+@login_required
+def api_teacher_ai_chatbot():
+    """AI Chatbot endpoint for teachers - provides lesson planning assistance"""
+    if current_user.role != 'teacher':
+        return jsonify({'error': 'Access denied'}), 403
+    
+    try:
+        data = request.get_json()
+        if not data or 'message' not in data:
+            return jsonify({'error': 'Message is required'}), 400
+        
+        user_message = data['message']
+        context = data.get('context', '')
+        
+        # Prepare the prompt for Adult GPT - professional educational approach
+        system_prompt = f"""You are SMIED, a professional AI teaching assistant for Nigerian schools. You provide educational support and teaching assistance.
+
+IMPORTANT: Keep all responses professional, educational, and appropriate for school environments.
+
+TEACHER REQUEST: {user_message}
+
+INSTRUCTIONS:
+1. Provide helpful, educational responses only
+2. Keep language professional and school-appropriate
+3. Focus on teaching, learning, and educational content
+4. Be supportive and informative
+5. If asked about non-educational topics, politely redirect to educational subjects
+6. Maintain a professional tone throughout
+
+RESPOND WITH A PROFESSIONAL EDUCATIONAL RESPONSE:"""
+        
+        # Add context if provided
+        if context:
+            system_prompt += f"\n\nContext: {context}"
+        
+        # Call Adult GPT API using RapidAPI
+        import http.client
+        import json
+        
+        # Debug logging
+        print(f"DEBUG - User message: {user_message}")
+        print(f"DEBUG - System prompt: {system_prompt[:200]}...")
+        
+        conn = http.client.HTTPSConnection("adult-gpt.p.rapidapi.com")
+        
+        payload = json.dumps({
+            "messages": [{"role": "user", "content": system_prompt}],
+            "genere": "ai-gay-1",
+            "bot_name": "SMIED",
+            "temperature": 0.9,
+            "top_k": 10,
+            "top_p": 0.9,
+            "max_tokens": 200
+        })
+        
+        headers = {
+            'x-rapidapi-key': "4a0b790c5bmsh98c0a644346796ap130d54jsn28771f86e2fb",
+            'x-rapidapi-host': "adult-gpt.p.rapidapi.com",
+            'Content-Type': "application/json"
+        }
+        
+        conn.request("POST", "/adultgpt", payload, headers)
+        res = conn.getresponse()
+        response_data = res.read()
+        
+        print(f"DEBUG - API Status: {res.status}")
+        print(f"DEBUG - Raw response: {response_data.decode('utf-8')[:500]}...")
+        
+        if res.status == 200:
+            ai_response = response_data.decode("utf-8")
+            
+            # Parse the JSON response to extract the actual content
+            try:
+                import json
+                parsed_response = json.loads(ai_response)
+                
+                # Extract the actual response content from Adult GPT API
+                if isinstance(parsed_response, dict):
+                    if 'result' in parsed_response:
+                        clean_response = parsed_response['result'].strip()
+                    elif 'response' in parsed_response:
+                        clean_response = parsed_response['response'].strip()
+                    elif 'message' in parsed_response:
+                        clean_response = parsed_response['message'].strip()
+                    elif 'content' in parsed_response:
+                        clean_response = parsed_response['content'].strip()
+                    elif 'text' in parsed_response:
+                        clean_response = parsed_response['text'].strip()
+                    else:
+                        clean_response = ai_response.strip()
+                else:
+                    clean_response = ai_response.strip()
+                
+                # Filter inappropriate content and ensure professional response
+                clean_response = filter_inappropriate_content(clean_response)
+                    
+            except (json.JSONDecodeError, KeyError, IndexError):
+                # If parsing fails, use the raw response
+                clean_response = ai_response.strip()
+            
+            return jsonify({
+                'success': True,
+                'response': clean_response,
+                'timestamp': datetime.utcnow().isoformat()
+            })
+        else:
+            return jsonify({
+                'error': 'AI service temporarily unavailable',
+                'status_code': res.status
+            }), 503
+            
+    except Exception as e:
+        print(f"AI Chatbot error: {e}")
+        return jsonify({
+            'error': 'Failed to process request. Please try again.',
+            'details': str(e)
+        }), 500
+
+# Debug endpoint for testing AI responses
+@app.route('/api/debug/ai-test', methods=['POST'])
+def debug_ai_test():
+    """Debug endpoint to test AI responses directly"""
+    try:
+        data = request.get_json()
+        test_message = data.get('message', 'Give me a lesson note on Solar System for Basic 4')
+        
+        # Professional test prompt
+        test_prompt = f"""You are SMIED, a professional AI teaching assistant for Nigerian schools. Keep responses educational and school-appropriate.
+
+IMPORTANT: Provide professional educational content only. Maintain appropriate language for school environments.
+
+Teacher's request: {test_message}
+
+Provide a professional educational response:"""
+        
+        import http.client
+        import json
+        
+        conn = http.client.HTTPSConnection("adult-gpt.p.rapidapi.com")
+        
+        payload = json.dumps({
+            "messages": [{"role": "user", "content": test_prompt}],
+            "genere": "ai-gay-1",
+            "bot_name": "SMIED",
+            "temperature": 0.9,
+            "top_k": 10,
+            "top_p": 0.9,
+            "max_tokens": 200
+        })
+        
+        headers = {
+            'x-rapidapi-key': "4a0b790c5bmsh98c0a644346796ap130d54jsn28771f86e2fb",
+            'x-rapidapi-host': "adult-gpt.p.rapidapi.com",
+            'Content-Type': "application/json"
+        }
+        
+        conn.request("POST", "/adultgpt", payload, headers)
+        res = conn.getresponse()
+        response_data = res.read()
+        
+        return jsonify({
+            'status': res.status,
+            'raw_response': response_data.decode("utf-8"),
+            'test_prompt': test_prompt
+        })
+        
+    except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 @app.route('/parent/dashboard')
