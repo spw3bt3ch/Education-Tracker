@@ -7,8 +7,17 @@ import os
 from dotenv import load_dotenv
 
 def load_environment():
-    """Load environment variables from .env file"""
-    # Priority order: .env -> aiven_config.env (fallback)
+    """Load environment variables from .env file or system environment"""
+    # Check if we're in production (Render, Heroku, etc.)
+    is_production = os.getenv('FLASK_ENV') == 'production' or os.getenv('RENDER') or os.getenv('DYNO')
+    
+    if is_production:
+        print("✅ Using production environment variables")
+        # In production, environment variables are set directly by the platform
+        # No need to load from .env file
+        return
+    
+    # For local development, try to load .env file
     if os.path.exists('.env'):
         load_dotenv('.env')
         print("✅ Loaded configuration from .env file")
@@ -17,11 +26,11 @@ def load_environment():
         print("⚠️  Using fallback configuration from aiven_config.env")
         print("   Consider copying aiven_config.env to .env for better security")
     else:
-        print("❌ No environment configuration file found!")
-        print("   Please create a .env file using env.template as a guide")
+        print("⚠️  No .env file found, using system environment variables")
+        print("   For local development, create a .env file using config.env.example as a guide")
         # Set some default values to prevent immediate crashes
         os.environ.setdefault('SECRET_KEY', 'default-secret-key-change-in-production')
-        os.environ.setdefault('DATABASE_URL', 'sqlite:///smied.db')
+        os.environ.setdefault('DATABASE_URL', 'sqlite:///edutrack.db')
 
 def get_required_env(key, default=None):
     """Get a required environment variable, raise error if not found"""
@@ -47,7 +56,7 @@ class Config:
     
     # Flask Configuration
     SECRET_KEY = get_required_env('SECRET_KEY')
-    SQLALCHEMY_DATABASE_URI = get_optional_env('DATABASE_URL', 'sqlite:///smied.db')
+    SQLALCHEMY_DATABASE_URI = get_optional_env('DATABASE_URL', 'sqlite:///edutrack.db')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     UPLOAD_FOLDER = 'static/uploads'
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size
